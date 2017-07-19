@@ -5,7 +5,7 @@ static double om = 0.0;
 
 void setMetricParams(struct domain *theDomain)
 {
-   //om = theDomain->theParList.MetricPar1;
+    om = theDomain->theParList.metricPar1;
 }
 
 double metric_lapse(double x[3])
@@ -16,7 +16,7 @@ double metric_lapse(double x[3])
 void metric_shift(double x[3], double b[3])
 {
     b[0] = 0.0;
-    b[1] = 0.0;
+    b[1] = om;
     b[2] = 0.0;
 }
 
@@ -61,7 +61,11 @@ void metric_der_g(double x[3], int i, double dg[16])
         dg[mu] = 0.0;
 
     if(i == 1)
+    {
+        dg[4*0+2] = 2*r*om;
         dg[4*2+2] = 2*r;
+        dg[4*2+0] = dg[4*0+2];
+    }
 }
 
 void metric_der_lapse(double x[3], double da[4])

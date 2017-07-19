@@ -1,8 +1,15 @@
 #include "paul.h"
 
 double PHI_ORDER = 2.0;
+static int grav2D = 0;
 
 double get_dp( double , double );
+
+void setGravParams( struct domain * theDomain ){
+
+   grav2D = theDomain->theParList.grav2D; 
+
+}
 
 double phigrav( double M , double r , double eps ){
    double n = PHI_ORDER;
@@ -39,7 +46,8 @@ void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
 
 void planetaryForce( struct planet * pl , double r , double phi , double z , double * fr , double * fp , double * fz , int mode ){
 
-   z = 0.0;
+   if(grav2D)
+      z = 0.0;
 
    double rp = pl->r;
    double pp = pl->phi;

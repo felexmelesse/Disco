@@ -267,11 +267,11 @@ void restart( struct domain * theDomain ){
    if( Nq != NUM_Q+NUM_FACES+1 ){ if(rank==0)printf("Ummm, I got an hdf5 read error. Check NUM_Q.\n"); exit(1); }
 
    
-   // Setup Radial Diagnostics
-   double num_tools = num_diagnostics();
+   // Setup Diagnostics
+   int num_tools = num_diagnostics();
    theDomain->num_tools = num_tools;
    theDomain->theTools.t_avg = 0.0;
-   theDomain->theTools.Qr = (double *) calloc( Nr*num_tools , 
+   theDomain->theTools.Qrz = (double *) calloc( Nr*Nz*num_tools , 
                                             sizeof(double) );
 
    theDomain->N_ftracks_r = get_num_rzFaces( theDomain->Nr , theDomain->Nz , 1 ); 

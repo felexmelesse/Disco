@@ -12,6 +12,7 @@ void adjust_RK_planets( struct domain * , double );
 void move_cells( struct domain * , double );
 void calc_dp( struct domain * );
 void calc_prim( struct domain * );
+void calc_cons( struct domain * );
 void B_faces_to_cells( struct domain * , int );
 
 void setup_faces( struct domain * , int );
@@ -79,16 +80,21 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
    }
    clean_pi( theDomain );
    calc_dp( theDomain );
-
+   
    if( bflag && theDomain->theParList.CT ){
       B_faces_to_cells( theDomain , 1 );
    }
+   
 
    calc_prim( theDomain ); //ORDERING??? AFTER?
-
-   if( last_step ){
-      AMR( theDomain );
+   
+   /*if( bflag && theDomain->theParList.CT ){
+      B_faces_to_cells( theDomain , 0 );
    }
+
+   //TODO: interaction with MHD? Hail Mary
+   calc_cons(theDomain);
+   */
 
    boundary_trans( theDomain , 1 );
    exchangeData( theDomain , 0 );
@@ -97,6 +103,15 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
       if( !Periodic ) boundary_trans( theDomain , 2 );
       exchangeData( theDomain , 1 );
    }
+
+   //TODO: This was BEFORE BCs, but if wrecks cell pointers...
+   //      Here, the BCs may not be satisfied if boundary zones are AMR'd...
+   //TODO 2: AMR leading to STRANGE behaviour in 3d? Z boundaries being
+   //           overwritten?  Needs a closer look.
+   if( last_step ){
+      //AMR( theDomain );
+   }
+
 
    if( theDomain->theFaces_1 ) free( theDomain->theFaces_1 );
    if( theDomain->theFaces_2 ) free( theDomain->theFaces_2 );

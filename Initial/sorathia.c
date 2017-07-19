@@ -34,7 +34,6 @@ void initial( double * prim , double * x ){
 
    double rho = 100.0;
    double omega = pow( r , -1.5 );
-   double Pp = rho/Mach/Mach;
 
    double dvp = 2e-2*rnd1 - 1e-2;
    double vz = 2e-2*rnd2 - 1e-2;
@@ -42,7 +41,14 @@ void initial( double * prim , double * x ){
    double A0 = 0.37;
    double H0 = 0.2;
    double R0 = 1.0;
+   double R1 = 2*R0;
    double Bz = A0*sin(2.*M_PI*(r-R0)/H0)/r*I(r)/sqrt(Rs(r));
+
+   double Pp;
+   if (Mach > 0.0)
+      Pp = rho/Mach/Mach;
+   else
+      Pp = rho * H0*H0/(2*R1*R1*R1);
 
    prim[RHO] = rho;
    prim[PPP] = Pp;

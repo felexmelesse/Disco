@@ -46,13 +46,18 @@ double getmindt( struct domain * theDomain ){
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
 
-   double dt = 1e100;
+   double dt = theDomain->theParList.maxDT / theDomain->theParList.CFL;
+   if(dt <= 0.0)
+       dt = 1.0e100; //HUGE_VAL
+
    int i,j,k;
    for( j=1 ; j<Nr-1 ; ++j ){
       for( k=0 ; k<Nz ; ++k ){
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);
+            if(!(c->real))
+                continue;
             double phip = c->piph;
             double phim = phip - c->dphi;
             double xp[3] = {r_jph[j  ] , phip , z_kph[k  ]};
@@ -320,6 +325,36 @@ void calc_prim( struct domain * theDomain ){
    }
 }
 
+void calc_cons( struct domain * theDomain ){
+
+   struct cell ** theCells = theDomain->theCells;
+   int Nr = theDomain->Nr;
+   int Nz = theDomain->Nz;
+   int * Np = theDomain->Np;
+   double * r_jph = theDomain->r_jph;
+   double * z_kph = theDomain->z_kph;
+
+   int i,j,k;
+   for( j=0 ; j<Nr ; ++j ){
+      double rm = r_jph[j-1];
+      double rp = r_jph[j];
+      for( k=0 ; k<Nz ; ++k ){
+         int jk = j+Nr*k;
+         for( i=0 ; i<Np[jk] ; ++i ){
+            struct cell * c = &(theCells[jk][i]);
+            double phip = c->piph;
+            double phim = phip-c->dphi;
+            double xp[3] = {rp,phip,z_kph[k]  };
+            double xm[3] = {rm,phim,z_kph[k-1]};
+            double r = get_moment_arm( xp , xm );
+            double dV = get_dV( xp , xm );
+            double x[3] = {r, 0.5*(phim+phip), 0.5*(z_kph[k]+z_kph[k-1])};
+            prim2cons( c->prim , c->cons , x , dV );
+         }
+      }
+   }
+}
+
 void plm_phi( struct domain * );
 void riemann_phi( struct cell * , struct cell * , double * , double );
 
@@ -580,3 +615,23 @@ void AMR( struct domain * theDomain ){
    }
 }
 
+void print_welcome()
+{
+    printf("\nDisco!\n\n");
+    printf("Git Version: %s\n\n", GIT_VERSION);
+    printf("*Compile-time Options*\n");
+    printf("HYDRO: %s\n", HYDRO);
+    printf("INITIAL: %s\n", INITIAL);
+    printf("BOUNDARY: %s\n", BOUNDARY);
+    printf("OUTPUT: %s\n", OUTPUT);
+    printf("RESTART: %s\n", RESTART);
+    printf("PLANETS: %s\n", PLANETS);
+    printf("HLLD: %s\n", HLLD);
+    printf("ANALYSIS: %s\n", ANALYSIS);
+    printf("METRIC: %s\n", METRIC);
+    printf("FRAME: %s\n", FRAME);
+    printf("NUM_C: %d\n", NUM_C);
+    printf("NUM_N: %d\n", NUM_N);
+    printf("CT_MODE: %d\n", CT_MODE);
+    printf("\n");
+}

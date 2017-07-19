@@ -1,0 +1,21 @@
+### Makefile.in for Disco ###
+
+# This file contains user-specified build options
+
+# Build options
+INITIAL  = bl
+HYDRO    = greuler
+BOUNDARY = fixed
+OUTPUT   = h5out
+RESTART  = h5in
+PLANETS  = none
+HLLD     = hlld
+ANALYSIS = diag_euler
+
+METRIC   = schw_sc_rpz
+FRAME    = normal
+
+NUM_C	 = 5
+NUM_N	 = 1
+CT_MODE	 = 0
+

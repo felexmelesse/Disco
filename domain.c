@@ -11,10 +11,15 @@ void setICparams( struct domain * );
 void setHydroParams( struct domain * );
 void setGeometryParams( struct domain * );
 void setRiemannParams( struct domain * );
+void setGravParams( struct domain * );
 void setPlanetParams( struct domain * );
 void setHlldParams( struct domain * );
-void setDiskParams( struct domain * );
 void setOmegaParams( struct domain * );
+void setRotFrameParams( struct domain * );
+void setMetricParams( struct domain * );
+void setFrameParams(struct domain * );
+void setDiagParams( struct domain * );
+void setNoiseParams( struct domain * );
 
 int get_num_rzFaces( int , int , int );
 
@@ -32,6 +37,7 @@ void setupDomain( struct domain * theDomain ){
       theDomain->theCells[jk] = (struct cell *) malloc( Np[jk]*sizeof(struct cell) );
    }
 
+   setGravParams( theDomain );
    setPlanetParams( theDomain );
    int Npl = theDomain->Npl;
    theDomain->thePlanets = (struct planet *) malloc( Npl*sizeof(struct planet) );
@@ -40,9 +46,9 @@ void setupDomain( struct domain * theDomain ){
    int num_tools = num_diagnostics();
    theDomain->num_tools = num_tools;
    theDomain->theTools.t_avg = 0.0;
-   theDomain->theTools.Qr = (double *) malloc( Nr*num_tools*sizeof(double) );
+   theDomain->theTools.Qrz = (double *) malloc( Nr*Nz*num_tools*sizeof(double) );
    int i;
-   for( i=0 ; i<Nr*num_tools ; ++i ) theDomain->theTools.Qr[i] = 0.0;
+   for( i=0 ; i<Nr*Nz*num_tools ; ++i ) theDomain->theTools.Qrz[i] = 0.0;
 
    double Pmax = theDomain->theParList.phimax;
    for( jk=0 ; jk<Nr*Nz ; ++jk ){
@@ -86,8 +92,12 @@ void setupDomain( struct domain * theDomain ){
    setGeometryParams( theDomain );
    setRiemannParams( theDomain );
    setHlldParams( theDomain );
-   setDiskParams( theDomain );
    setOmegaParams( theDomain );
+   setRotFrameParams( theDomain );
+   setMetricParams( theDomain );
+   setFrameParams( theDomain );
+   setDiagParams( theDomain );
+   setNoiseParams( theDomain );
 
 }
 
@@ -100,11 +110,14 @@ void set_wcell( struct domain * );
 void adjust_gas( struct planet * , double * , double * , double );
 void set_B_fields( struct domain * );
 void subtract_omega( double * );
+void addNoise(double *prim, double *x);
 
 void setupCells( struct domain * theDomain ){
 
    int restart_flag = theDomain->theParList.restart_flag;
    if( restart_flag ) restart( theDomain );
+
+   int noiseType = theDomain->theParList.noiseType;
 
    calc_dp( theDomain );
 
@@ -144,8 +157,11 @@ void setupCells( struct domain * theDomain ){
                   }
                }
             }
+            if(noiseType != 0)
+                addNoise(c->prim, x);            
             prim2cons( c->prim , c->cons , x , dV );
             cons2prim( c->cons , c->prim , x , dV );
+            c->real = 1;
          }    
       }    
    }
@@ -187,7 +203,7 @@ void freeDomain( struct domain * theDomain ){
    theDomain->z_kph--;
    free( theDomain->z_kph );
    free( theDomain->thePlanets );
-   free( theDomain->theTools.Qr );
+   free( theDomain->theTools.Qrz );
    free( theDomain->fIndex_r );
    free( theDomain->fIndex_z );
 

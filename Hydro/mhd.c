@@ -526,3 +526,13 @@ double getReynolds( double * prim , double w , double * x , double dx ){
 
 }
 
+void reflect_prims(double * prim, double * x, int dim)
+{
+    //dim == 0: r, dim == 1: p, dim == 2: z
+    if(dim == 0)
+        prim[URR] = -prim[URR];
+    else if(dim == 1)
+        prim[UPP] = -prim[UPP];
+    else if(dim == 2)
+        prim[UZZ] = -prim[UZZ];
+}

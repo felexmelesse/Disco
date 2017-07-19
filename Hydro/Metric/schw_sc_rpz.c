@@ -2,19 +2,19 @@
 #include "../metric.h"
 
 /*
- * This is the Schwarzschild metric in Kerr-Schild cylindrical coordinates 
+ * This is the Schwarzschild metric in Schwarzschild cylindrical coordinates 
  * (t, r, phi, z). These are related to the usual spherical Schwarzschild 
  * coordinates (t_sc, R, theta, phi) by: t = t_sc + 2M log|R/2M-1|, 
  * r = R sin(theta), phi = phi, and z = R cos(theta).
  */
 
 static double om = 0.0; 
-static double M = 1.0; 
+static double M = 0.0; 
 
 void setMetricParams(struct domain *theDomain)
 {
-   //om = theDomain->theParList.MetricPar1;
-   //M = theDomain->theParList.MetricPar2;
+   om = theDomain->theParList.metricPar1;
+   M = theDomain->theParList.metricPar2;
 }
 
 double metric_lapse(double x[3])

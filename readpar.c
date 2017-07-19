@@ -7,7 +7,7 @@ int readvar( char * filename , char * varname , int vartype , void * ptr ){
 
    FILE * inFile = fopen( filename , "r" );
    char s[512];
-   char nm[512];
+   char nm[512]="";
    char s1[512];
    int found = 0;
    
@@ -81,16 +81,25 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Max_Aspect_Short"      , VAR_DOUB , &(theList->MaxShort)        );
          err += readvar( pfile , "Max_Aspect_Long"       , VAR_DOUB , &(theList->MaxLong)         );
          err += readvar( pfile , "CFL"                   , VAR_DOUB , &(theList->CFL)             );
+         err += readvar( pfile , "Max_DT"                   , VAR_DOUB , &(theList->maxDT)             );
          err += readvar( pfile , "PLM"                   , VAR_DOUB , &(theList->PLM)             );
          err += readvar( pfile , "Adiabatic_Index"       , VAR_DOUB , &(theList->Adiabatic_Index) );
          err += readvar( pfile , "Isothermal"            , VAR_INT  , &(theList->isothermal_flag) );
+         err += readvar( pfile , "Cs2_Profile"      , VAR_INT  , &(theList->Cs2_Profile)     );
+         err += readvar( pfile , "Cs2_Par"  , VAR_DOUB  , &(theList->Cs2_Par)     );
          err += readvar( pfile , "Density_Floor"         , VAR_DOUB , &(theList->Density_Floor)   );
          err += readvar( pfile , "Pressure_Floor"        , VAR_DOUB , &(theList->Pressure_Floor)  );
          err += readvar( pfile , "Mesh_Motion"           , VAR_INT  , &(theList->Mesh_Motion)     );
+         err += readvar( pfile , "Exact_Mesh_Omega"      , VAR_INT  , &(theList->Exact_Mesh_Omega)     );
+         err += readvar( pfile , "Exact_Mesh_Omega_Par"  , VAR_DOUB  , &(theList->Exact_Mesh_Omega_Par)     );
+         err += readvar( pfile , "Energy_Omega"      , VAR_INT  , &(theList->Energy_Omega)     );
+         err += readvar( pfile , "Energy_Omega_Par"  , VAR_DOUB  , &(theList->Energy_Omega_Par)     );
+         err += readvar( pfile , "RotFrame"             , VAR_INT  , &(theList->RotFrame)     );
+         err += readvar( pfile , "RotOmega"             , VAR_DOUB  , &(theList->RotOmega)     );
+         err += readvar( pfile , "RotD"                 , VAR_DOUB  , &(theList->RotD)     );
          err += readvar( pfile , "Riemann_Solver"        , VAR_INT  , &(theList->Riemann_Solver)  );
          err += readvar( pfile , "Initial_Regrid"        , VAR_INT  , &(theList->Initial_Regrid)  );
          err += readvar( pfile , "Restart"               , VAR_INT  , &(theList->restart_flag)    );
-         err += readvar( pfile , "Use_Logtime"           , VAR_INT  , &(theList->Out_LogTime)     );
          err += readvar( pfile , "Use_Viscosity"         , VAR_INT  , &(theList->visc_flag)       );
          err += readvar( pfile , "Viscosity"             , VAR_DOUB , &(theList->viscosity)       );
          err += readvar( pfile , "Use_As_Alpha"          , VAR_INT  , &(theList->alpha_flag)      );
@@ -102,7 +111,21 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Eccentricity"          , VAR_DOUB , &(theList->Eccentricity)    );
          err += readvar( pfile , "Drift_Rate"            , VAR_DOUB , &(theList->Drift_Rate)      );
          err += readvar( pfile , "Drift_Exp"             , VAR_DOUB , &(theList->Drift_Exp)       );
+         err += readvar( pfile , "Grav2D"                , VAR_INT  , &(theList->grav2D)       );
          err += readvar( pfile , "Constrained_Transport" , VAR_INT  , &(theList->CT)              );
+         err += readvar( pfile , "Metric_Par0" , VAR_INT  , &(theList->metricPar0));
+         err += readvar( pfile , "Metric_Par1" , VAR_DOUB  , &(theList->metricPar1));
+         err += readvar( pfile , "Metric_Par2" , VAR_DOUB  , &(theList->metricPar2));
+         err += readvar( pfile , "Metric_Par3" , VAR_DOUB  , &(theList->metricPar3));
+         err += readvar( pfile , "Metric_Par4" , VAR_DOUB  , &(theList->metricPar4));
+         err += readvar( pfile , "Init_Par0" , VAR_INT  , &(theList->initPar0));
+         err += readvar( pfile , "Init_Par1" , VAR_DOUB  , &(theList->initPar1));
+         err += readvar( pfile , "Init_Par2" , VAR_DOUB  , &(theList->initPar2));
+         err += readvar( pfile , "Init_Par3" , VAR_DOUB  , &(theList->initPar3));
+         err += readvar( pfile , "Init_Par4" , VAR_DOUB  , &(theList->initPar4));
+         err += readvar( pfile , "Noise_Type" , VAR_INT  , &(theList->noiseType));
+         err += readvar( pfile , "Noise_Abs" , VAR_DOUB  , &(theList->noiseAbs));
+         err += readvar( pfile , "Noise_Rel" , VAR_DOUB  , &(theList->noiseRel));
       }
       MPI_Barrier(MPI_COMM_WORLD);
    }

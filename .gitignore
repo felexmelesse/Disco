@@ -5,6 +5,7 @@ disco
 Makefile_dir.in*
 Makefile_opt.in*
 in.par*
+bins/
 
 # Output files
 *.dat
@@ -15,6 +16,8 @@ in.par*
 *.o
 *.swp
 .DS_Store
+*.pyc
+*.so
 
 # Viewer files
 Viewer/Movies/
@@ -23,4 +26,7 @@ Viewer/vdisco
 *.png
 *.eps
 *.ppm
-
+test*
+out*
+UnitTest
+disco.dSYM
