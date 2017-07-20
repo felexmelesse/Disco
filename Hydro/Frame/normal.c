@@ -1,5 +1,10 @@
+#include "../../paul.h"
 #include "../metric.h"
 #include "../frame.h"
+
+void setFrameParams(struct domain *theDomain)
+{
+}
 
 void frame_U(double x[3], double U[4])
 {

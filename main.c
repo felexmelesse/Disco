@@ -23,13 +23,18 @@ void possiblyOutput( struct domain * , int );
 void start_clock( struct domain * );
 void generate_log( struct domain * );
 
+void print_welcome();
+
 int main( int argc , char * argv[] ){
  
    MPI_Init(&argc,&argv);
    struct domain theDomain = {0};
    start_clock( &theDomain ); 
    read_par_file( &theDomain );
-   
+  
+   if(theDomain.rank==0)
+      print_welcome();
+
    int error = mpiSetup(&theDomain,argc,argv);
    if( error==1 ) return(0);
 
@@ -72,4 +77,3 @@ int main( int argc , char * argv[] ){
    return(0);
 
 }
-

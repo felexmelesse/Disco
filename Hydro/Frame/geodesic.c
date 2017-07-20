@@ -1,7 +1,16 @@
+#include "../../paul.h"
+#include <math.h>
 #include "../metric.h"
 #include "../frame.h"
 
-static double M = 1.0;
+static double M = 0.0;
+static double a = 0.0;
+
+void setFrameParams(struct domain *theDomain)
+{
+   M = theDomain->theParList.metricPar2;
+   a = theDomain->theParList.metricPar3;
+}
 
 void frame_U(double x[3], double U[4])
 {

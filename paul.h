@@ -1,6 +1,5 @@
 enum{RHO,PPP,URR,UPP,UZZ,BRR,BPP,BZZ};
 enum{DDD,TAU,SRR,LLL,SZZ};
-enum{C_FIXED,C_WCELL,C_WRIEMANN};
 
 #include <mpi.h>
 #include <stdio.h>
@@ -9,17 +8,30 @@ enum{C_FIXED,C_WCELL,C_WRIEMANN};
 #include <string.h>
 #include <time.h>
 
-#define MOVE_CELLS C_WCELL
+// NUM_C, NUM_N, and CT_MODE are specified at compile time and defined
+// with -D in the Makefile
 
-#define NUM_C 5
-#define NUM_N 0
 #define NUM_Q (NUM_C+NUM_N)
 #define NUM_G 2
 
 //Magnetic field tracking things.  Can be set to zero if there is no MHD.
-#define NUM_EDGES 0    //0, 4 or 8 
-#define NUM_FACES 0    //0, 3 or 5
-#define NUM_AZ_EDGES 0 //0, 0 or 4
+#if CT_MODE == 0        //No CT
+    #define NUM_EDGES 0    
+    #define NUM_FACES 0    
+    #define NUM_AZ_EDGES 0 
+#elif CT_MODE == 1      //2D MHD, no E^phi
+    #define NUM_EDGES 4    
+    #define NUM_FACES 3    
+    #define NUM_AZ_EDGES 0 
+#elif CT_MODE == 2      //3D MHD
+    #define NUM_EDGES 8    
+    #define NUM_FACES 5    
+    #define NUM_AZ_EDGES 4 
+#else                   //default
+    #define NUM_EDGES 0    
+    #define NUM_FACES 0 
+    #define NUM_AZ_EDGES 0 
+#endif
 
 struct param_list{
 
@@ -39,26 +51,51 @@ struct param_list{
    int Mesh_Motion, Riemann_Solver;
    int Absorb_BC, Initial_Regrid, visc_flag, include_atmos;
 
-   double CFL, PLM;
+   double CFL, PLM, maxDT;
    double Density_Floor, Pressure_Floor;
+
+   int Exact_Mesh_Omega;
+   double Exact_Mesh_Omega_Par;
+   int Energy_Omega;
+   double Energy_Omega_Par;
+   int RotFrame;
+   double RotOmega, RotD;
 
    double Adiabatic_Index;
    double viscosity;
    int isothermal_flag;
+   int Cs2_Profile;
+   double Cs2_Par;
 
    double Disk_Mach;
    double Mass_Ratio;
    double Eccentricity;
    double Drift_Rate,Drift_Exp;
+   int grav2D;
    int alpha_flag;
 
    int restart_flag;
    int CT;
 
+   int metricPar0;
+   double metricPar1;
+   double metricPar2;
+   double metricPar3;
+   double metricPar4;
+   
+   int initPar0;
+   double initPar1;
+   double initPar2;
+   double initPar3;
+   double initPar4;
+
+   int noiseType;
+   double noiseAbs;
+   double noiseRel;
 };
 
 struct diagnostic_avg{
-   double * Qr;
+   double * Qrz;
    double t_avg;
 };
 
@@ -124,6 +161,7 @@ struct cell{
    double RK_Phi[NUM_FACES];
    double tempDoub;
 
+   int real;
 };
 
 struct edge{

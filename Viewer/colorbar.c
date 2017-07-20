@@ -8,6 +8,7 @@
 3. Roy G. Biv
 4. Electric
 5. Blank
+6. Inv. Blank
 */
 
 #include <stdio.h>

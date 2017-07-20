@@ -28,7 +28,7 @@ void setRiemannParams( struct domain * theDomain ){
 void prim2cons( double * , double * , double * , double );
 void flux( double * , double * , double * , double * );
 void getUstar( double * , double * , double * , double , double , double * , double * );
-void get_Ustar_HLLD( double , double * , double * , double * , double * , double , double * );
+void get_Ustar_HLLD( double , double * , double * , double * , double * , double * , double * );
 void vel( double * , double * , double * , double * , double * , double * , double * , double * );
 double get_signed_dp( double , double );
 
@@ -245,7 +245,7 @@ void solve_riemann( double * primL , double * primR , double * consL , double * 
          }
       }
    }else{
-      get_Ustar_HLLD( w , primL , primR , Flux , Ustr , r , n );
+      get_Ustar_HLLD( w , primL , primR , Flux , Ustr , x , n );
    }
 
    if( visc_flag ){

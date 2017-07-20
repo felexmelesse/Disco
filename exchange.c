@@ -233,10 +233,20 @@ void exchangeData( struct domain * theDomain , int dim ){
    MPI_Sendrecv( &send_sizeR , 1 , MPI_INT , right_rank[dim] , tag+1 ,
                  &recv_sizeL , 1 , MPI_INT ,  left_rank[dim] , tag+1, grid_comm , &status);
 
-   struct cell_lite pl_send[send_sizeL];
-   struct cell_lite pr_send[send_sizeR];
-   struct cell_lite pl_recv[recv_sizeL];
-   struct cell_lite pr_recv[recv_sizeR];
+   // Old version failed in some 3D MHD cases when allocation became too
+   // large for the stack.  Changed to heap (ie. malloc() ) to fix this.
+   //struct cell_lite pl_send[send_sizeL];
+   //struct cell_lite pr_send[send_sizeR];
+   //struct cell_lite pl_recv[recv_sizeL];
+   //struct cell_lite pr_recv[recv_sizeR];
+   struct cell_lite *pl_send = (struct cell_lite *)malloc(
+                                        sizeof(struct cell_lite) * send_sizeL);
+   struct cell_lite *pr_send = (struct cell_lite *)malloc(
+                                        sizeof(struct cell_lite) * send_sizeR);
+   struct cell_lite *pl_recv = (struct cell_lite *)malloc(
+                                        sizeof(struct cell_lite) * recv_sizeL);
+   struct cell_lite *pr_recv = (struct cell_lite *)malloc(
+                                        sizeof(struct cell_lite) * recv_sizeR);
 //Build up list of cells to send...
    generate_sendbuffer( theDomain , rnum , znum , dim , nijk , &indexL , &indexR , pl_send , pr_send , Ng , NN-2*Ng , 1 );
 //Send!
@@ -246,6 +256,11 @@ void exchangeData( struct domain * theDomain , int dim ){
                  pl_recv , recv_sizeL , cell_mpi ,  left_rank[dim] , tag+3, grid_comm , &status);
 //Now take the list of cells and put them into the appropriate locations...
    generate_sendbuffer( theDomain , rnum , znum , dim , nijk , &indexL , &indexR , pl_recv , pr_recv , 0  , NN-Ng   , 2 );
+
+   free(pl_send);
+   free(pr_send);
+   free(pl_recv);
+   free(pr_recv);
 
    MPI_Type_free( &cell_mpi );
 }

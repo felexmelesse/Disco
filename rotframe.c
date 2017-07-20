@@ -4,10 +4,10 @@ static int om_flag = 0;
 static double Omega0 = 0.0;
 static double d = 0.0;
 
-void setOmegaParams( struct domain * theDomain ){
-   om_flag = 0;
-   Omega0 = 1.0;
-   d = 0.5;
+void setRotFrameParams( struct domain * theDomain ){
+   om_flag = theDomain->theParList.RotFrame;
+   Omega0  = theDomain->theParList.RotOmega;
+   d       = theDomain->theParList.RotD;
 }
 
 double get_dp( double , double );

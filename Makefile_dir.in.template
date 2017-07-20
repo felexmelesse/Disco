@@ -2,6 +2,12 @@
 
 # This file contains machine-specific variables for building Disco.
 
-# Location of HDF5 Library
-H55 = /opt/local
+#C Compiler
+CC = mpicc
 
+# Location of HDF5 Library
+H55 = /usr/local
+
+#Extra compiling/linking flags
+LOCAL_CFLAGS =
+LOCAL_LDFLAGS =

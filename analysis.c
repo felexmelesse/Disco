@@ -1,44 +1,24 @@
 
 #include "paul.h"
 
-int num_diagnostics(void){
-   return(5);
-}
-
-void planetaryForce( struct planet * , double , double , double , double * , double * , double * , int );
-
-void get_diagnostics( double * x , double * prim , double * Q , struct domain * theDomain ){
-   double r = x[0];
-   double phi = x[1];
-
-   double rho = prim[RHO];
-   double vr = prim[URR];
-   double omega = prim[UPP];
-
-   Q[0] = rho;
-   Q[1] = 2.*M_PI*r*rho*vr;
-   double Fr,Fp,Fz;
-   Fp = 0.0;
-   if( theDomain->Npl > 1 ){
-      struct planet * pl = theDomain->thePlanets+1;
-      planetaryForce( pl , r , phi , 0.0 , &Fr , &Fp , &Fz , 0 );
-   }
-   Q[2] = 2.*M_PI*r*rho*(r*Fp);
-   Q[3] = 2.*M_PI*r*rho*( r*r*omega*vr );
-   Q[4] = omega;
-}
+int num_diagnostics(void);
+void get_diagnostics( double * x , double * prim , double * Qrz, 
+                        struct domain * theDomain );
 
 void zero_diagnostics( struct domain * theDomain ){
 
    int Nr = theDomain->Nr;
+   int Nz = theDomain->Nz;
    int Nq = theDomain->num_tools;
    struct diagnostic_avg * theTools = &(theDomain->theTools);
 
-   int i,q;
-   for( i=0 ; i<Nr ; ++i ){
-      for( q=0 ; q<Nq ; ++q ){
-         int iq = i*Nq + q;
-         theTools->Qr[iq] = 0.0;
+   int i,k,q;
+   for( k=0 ; k<Nz ; ++k ){
+      for( i=0 ; i<Nr ; ++i ){
+         for( q=0 ; q<Nq ; ++q ){
+            int iq = k*Nr*Nq + i*Nq + q;
+               theTools->Qrz[iq] = 0.0;
+         }
       }
    }
    theTools->t_avg = 0.0;
@@ -48,17 +28,21 @@ void zero_diagnostics( struct domain * theDomain ){
 void avg_diagnostics( struct domain * theDomain ){
 
    int Nr = theDomain->Nr;
+   int Nz = theDomain->Nz;
    int Nq = theDomain->num_tools;
    struct diagnostic_avg * theTools = &(theDomain->theTools);
    double dt = theTools->t_avg;
 
-   int i,q; 
-   for( i=0 ; i<Nr ; ++i ){
-      for( q=0 ; q<Nq ; ++q ){
-         int iq = i*Nq + q; 
-         theTools->Qr[iq] /= dt; 
-      }    
+   int i,k,q; 
+   for(k=0; k<Nz; k++){
+      for( i=0 ; i<Nr ; ++i ){
+         for( q=0 ; q<Nq ; ++q ){
+            int iq = k*Nq*Nr + i*Nq + q; 
+            theTools->Qrz[iq] /= dt; 
+         }
+      }
    }
+       
    theTools->t_avg = 0.0; 
 
 }
@@ -76,37 +60,48 @@ void add_diagnostics( struct domain * theDomain , double dt ){
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
 
-   double temp_sum[Nr*Nq];
-   memset( temp_sum , 0 , Nr*Nq*sizeof(double) );
+   double temp_sum[Nr*Nz*Nq];
+   double temp_vol[Nr*Nz];
+   memset( temp_sum, 0 , Nr*Nz*Nq*sizeof(double) );
+   memset( temp_vol, 0 , Nr*Nz*sizeof(double) );
    int i,j,k,q;
    int kmin = 0;
    int kmax = Nz;
+   int jmin = 0;
+   int jmax = Nr;
 
-   for( j=0 ; j<Nr ; ++j ){
-      double dV_tot = 0.0;
-      for( k=kmin ; k<kmax ; ++k ){
-         int jk = j+Nr*k;
-         for( i=0 ; i<Np[jk] ; ++i ){
-            struct cell * c = theCells[jk]+i;
-            double phip = c->piph;
-            double phim = phip - c->dphi;
-            double xp[3] = {r_jph[j  ] , phip , z_kph[k  ]};  
-            double xm[3] = {r_jph[j-1] , phim , z_kph[k-1]};
-            double xc[3];
-            for( q=0 ; q<3 ; ++q ) xc[q] = .5*(xp[q]+xm[q]);
-            double dV = get_dV(xp,xm);
-            double Q[Nq];
-            get_diagnostics( xc , c->prim , Q , theDomain );
-            for( q=0 ; q<Nq ; ++q ) temp_sum[ j*Nq + q ] += Q[q]*dV;
-            dV_tot += dV;
-         }
-      }
-      for( q=0 ; q<Nq ; ++q ){
-         theTools->Qr[ j*Nq + q ] += temp_sum[ j*Nq + q ]*dt/dV_tot;
-      }
-   }
+    for(k=kmin; k<kmax; k++)
+    {
+        for(j=jmin; j<jmax; j++)
+        {
+            int jk = k*Nr + j;
+            for(i=0; i<Np[jk]; i++)
+            {
+                struct cell * c = theCells[jk]+i;
+                double phip = c->piph;
+                double phim = phip - c->dphi;
+                double xp[3] = {r_jph[j  ] , phip , z_kph[k  ]};  
+                double xm[3] = {r_jph[j-1] , phim , z_kph[k-1]};
+                double xc[3];
+                for( q=0 ; q<3 ; ++q ) xc[q] = .5*(xp[q]+xm[q]);
+                double dV = get_dV(xp,xm);
+                double Qrz[Nq];
+                get_diagnostics( xc , c->prim , Qrz , theDomain );
+                for( q=0 ; q<Nq ; ++q ) 
+                    temp_sum[ jk*Nq + q ] += Qrz[q]*dV;
+                temp_vol[jk] += dV;
+            }
+        }
+    }
+
+    for(k=kmin; k<kmax; k++)
+        for(j=jmin; j<jmax; j++)
+        {
+            int jk = k*Nr + j;
+            for(q=0; q<Nq; q++)
+                theTools->Qrz[jk*Nq+q] += temp_sum[jk*Nq+q]*dt / temp_vol[jk];
+        }
 
    theTools->t_avg += dt;
-
 }
 

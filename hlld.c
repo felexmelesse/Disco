@@ -275,8 +275,9 @@ void get_double_star( double * UsL , double * UsR , double * Uss , double * vel 
 
 }
 
-void get_Ustar_HLLD( double w , double * pL , double * pR , double * F , double * U , double r , double * n ){
+void get_Ustar_HLLD( double w , double * pL , double * pR , double * F , double * U , double * x , double * n ){
 
+   double r = x[0];
    //Get Velocities
    double vel[5];
    double Pt_star;

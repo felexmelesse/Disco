@@ -1,8 +1,10 @@
+MAKEFILE_H5 = $(PWD)/../Makefile_dir.in
+include $(MAKEFILE_H5)
 
 EXE  = vdisco
 
 GLUT = /usr/X11R6
-HDF5 = /opt/local
+HDF5 = $(H55)
 
 LIBS = -L$(GLUT)/lib -L$(HDF5)/lib -framework GLUT -framework OpenGL -lXmu -lXext -lXi -lX11 -lm -lhdf5 -lz
 INCL = -I$(GLUT)/include -I$(HDF5)/include
