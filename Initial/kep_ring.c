@@ -5,9 +5,9 @@ static int visc_flag = 0;
 static double nu = 0.0;
 static double r0 = 0.0;
 static double dr = 0.0;
+static double dr2 = 0.0;
 static int prof = 0;
 static double sig0 = 0.0;
-static double sig1 = 0.0;
 static double mach = 0.0;
 static double gam = 0.0;
 static double M = 0.0;
@@ -20,8 +20,8 @@ void setICparams( struct domain * theDomain ){
     prof = theDomain->theParList.initPar0;
     r0 = theDomain->theParList.initPar1;
     dr = theDomain->theParList.initPar2;
-    sig0 = theDomain->theParList.initPar3;
-    sig1 = theDomain->theParList.initPar4;
+    dr2 = theDomain->theParList.initPar3;
+    sig0 = theDomain->theParList.initPar4;
     mach = theDomain->theParList.Disk_Mach;
     gam = theDomain->theParList.Adiabatic_Index;
     
@@ -42,18 +42,44 @@ void initial( double * prim , double * x ){
    double rm = r0-dr;
    double rp = r0+dr;
 
+   double sig1 = 1.0;
+
    
    if(prof == 1) //Gaussian
    {
        rho = sig0 + (sig1-sig0)*exp(-0.5*(r-r0)*(r-r0)/(dr*dr));
        drhodr = -(sig1-sig0)*(r-r0)/(dr*dr);
    }
-   else if (prof == 2)  //Smoothed top hat, smoothing length = 0.2*r0
+   else if (prof == 2)  //Smoothed top hat ~ tanh(1-r^2)
    {
-       double d = 0.2*r0;
-       rho = sig0 + (sig1-sig0) * 0.5*(1.0+tanh(-(r-rm)*(r-rp)/ (d*d)));
-       double coshr = cosh((r-rm)*(r-rp)/(d*d));
-       drhodr = -(sig1-sig0) * (r-0.5*(rm+rp)) / (coshr*coshr*d*d);
+       rho = sig0 + (sig1-sig0) * 0.5*(1.0+tanh(-(r-rm)*(r-rp)/ (dr2*dr2)));
+       double coshr = cosh((r-rm)*(r-rp)/(dr2*dr2));
+       drhodr = -(sig1-sig0) * (r-0.5*(rm+rp)) / (coshr*coshr*dr2*dr2);
+   }
+   else if (prof == 3)  //Top Hat with cosine boundaries
+   {
+       double rm2 = rm - dr2;
+       double rp2 = rp + dr2;
+       if(r > rm && r < rp)
+       {
+           rho = sig1;
+           drhodr = 0.0;
+       }
+       else if(r>rm2 && r < rm)
+       {
+           rho = sig0 + (sig1-sig0) * 0.5*(1+cos(M_PI*(r-rm)/dr2));
+           drhodr = -0.5*M_PI*(sig1-sig0)/dr2 * sin(M_PI*(r-rm)/dr2);
+       }
+       else if(r>rp && r < rp2)
+       {
+           rho = sig0 + (sig1-sig0) * 0.5*(1+cos(M_PI*(r-rp)/dr2));
+           drhodr = -0.5*M_PI*(sig1-sig0)/dr2 * sin(M_PI*(r-rp)/dr2);
+       }
+       else
+       {
+           rho = sig0;
+           drhodr = 0.0;
+       }
    }
    else
    {
