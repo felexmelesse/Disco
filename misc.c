@@ -6,7 +6,7 @@ double get_dV( double * , double * );
 double get_moment_arm( double * , double * );
 
 void clean_pi( struct domain * theDomain ){
-   
+
    struct cell ** theCells = theDomain->theCells;
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
@@ -21,8 +21,8 @@ void clean_pi( struct domain * theDomain ){
          double phi = c->piph;
          while( phi > phi_max ){ phi -= phi_max; }
          while( phi < 0.0     ){ phi += phi_max; }
-         c->piph = phi; 
-      }    
+         c->piph = phi;
+      }
    }
    int p;
    for( p=0 ; p<Npl ; ++p ){
@@ -30,7 +30,16 @@ void clean_pi( struct domain * theDomain ){
       double phi = pl->phi;
       while( phi > phi_max ){ phi -= phi_max; pl->RK_phi -= phi_max; }
       while( phi < 0.0     ){ phi += phi_max; pl->RK_phi += phi_max; }
-      pl->phi = phi; 
+      pl->phi = phi;
+   }
+
+   struct tracer *tr = theDomain->theTracers->head;
+   while( tr!=NULL ){
+      double phi = tr->Phi;
+      while( phi > phi_max ){ phi -= phi_max; tr->RK_phi -= phi_max; }
+      while( phi < 0.0     ){ phi += phi_max; tr->RK_phi += phi_max; }
+      tr->Phi = phi;
+      tr = tr->next;
    }
 
 }
@@ -63,7 +72,7 @@ double getmindt( struct domain * theDomain ){
             double xp[3] = {r_jph[j  ] , phip , z_kph[k  ]};
             double xm[3] = {r_jph[j-1] , phim , z_kph[k-1]};
             int im = i-1;
-            if( i==0 ) im = Np[jk]-1; 
+            if( i==0 ) im = Np[jk]-1;
             double wm = theCells[jk][im].wiph;
             double wp = c->wiph;
             double w = .5*(wm+wp);
@@ -72,7 +81,7 @@ double getmindt( struct domain * theDomain ){
          }
       }
    }
-   dt *= theDomain->theParList.CFL; 
+   dt *= theDomain->theParList.CFL;
    MPI_Allreduce( MPI_IN_PLACE , &dt , 1 , MPI_DOUBLE , MPI_MIN , theDomain->theComm );
 
    return( dt );
@@ -116,7 +125,7 @@ void set_wcell( struct domain * theDomain ){
          double zm = z_kph[k-1];
          double zp = z_kph[k];
          for( i=0 ; i<Np[jk] ; ++i ){
-            struct cell * cL = &(theCells[jk][i ]);  
+            struct cell * cL = &(theCells[jk][i ]);
             double w = 0.0;
             if( mesh_motion ){
                int ip = (i+1)%Np[jk];
@@ -138,11 +147,11 @@ void set_wcell( struct domain * theDomain ){
                x[1] = 0.5*(phim+phip);
                double wR = get_omega( cR->prim , x );
 
-               w = .5*(wL + wR); 
+               w = .5*(wL + wR);
             }
             cL->wiph = w;
          }
-      }    
+      }
    }
    if( mesh_motion == 3 ){
       for( j=0 ; j<Nr ; ++j ){
@@ -150,14 +159,14 @@ void set_wcell( struct domain * theDomain ){
             int jk = j+Nr*k;
             double w = 0.0;
             for( i=0 ; i<Np[jk] ; ++i ){
-               w += theCells[jk][i].wiph; 
-            }    
+               w += theCells[jk][i].wiph;
+            }
             w /= (double)Np[jk];
             for( i=0 ; i<Np[jk] ; ++i ){
-               theCells[jk][i].wiph = w; 
-            }    
-         }    
-      } 
+               theCells[jk][i].wiph = w;
+            }
+         }
+      }
    }
    if( mesh_motion == 4 ){
       for( j=0 ; j<Nr ; ++j ){
@@ -165,10 +174,10 @@ void set_wcell( struct domain * theDomain ){
          for( k=0 ; k<Nz ; ++k ){
             int jk = j+Nr*k;
             for( i=0 ; i<Np[jk] ; ++i ){
-               theCells[jk][i].wiph = r*mesh_om(r); 
-            }    
-         }    
-      } 
+               theCells[jk][i].wiph = r*mesh_om(r);
+            }
+         }
+      }
    }
 
 }
@@ -258,6 +267,17 @@ void adjust_RK_planets( struct domain * theDomain , double RK ){
    for( p=0 ; p<Npl ; ++p ){
       planet_RK_adjust( theDomain->thePlanets+p , RK );
    }
+}
+
+void tracer_RK_adjust( struct tracer * , double);
+
+void adjust_RK_tracers( struct domain *theDomain , double RK){
+
+   struct tracer *tr = theDomain->theTracers->head;
+   while( tr!= NULL ){
+     tracer_RK_adjust( tr , RK );
+     tr = tr->next;
+  }
 }
 
 void move_cells( struct domain * theDomain , double dt){
@@ -378,7 +398,7 @@ void phi_flux( struct domain * theDomain , double dt ){
             double xp[3] = {r_jph[j]  ,phi,z_kph[k]  };
             double xm[3] = {r_jph[j-1],phi,z_kph[k-1]};
             double r = get_moment_arm(xp,xm);
-            double dA = get_dA(xp,xm,0); 
+            double dA = get_dA(xp,xm,0);
             double x[3] = {r, phi, 0.5*(z_kph[k-1]+z_kph[k])};
             riemann_phi( &(cp[i]) , &(cp[ip]) , x , dA*dt );
          }
@@ -418,7 +438,7 @@ void setup_faces( struct domain * theDomain , int dim ){
    struct face ** theFaces;
    int NN;
    int * nn;
-   if( dim==1 ){ 
+   if( dim==1 ){
       theFaces = &(theDomain->theFaces_1);
       nn = theDomain->fIndex_r;
       NN = theDomain->N_ftracks_r;
@@ -467,9 +487,9 @@ void add_source( struct domain * theDomain , double dt ){
                planet_src( thePlanets+p , c->prim , c->cons , xp , xm , dV*dt );
             }
             omega_src( c->prim , c->cons , xp , xm , dV*dt );
-         }    
-      }    
-   }   
+         }
+      }
+   }
 
 }
 
@@ -491,8 +511,8 @@ void longandshort( struct domain * theDomain , double * L , double * S , int * i
       double dy = r*sweep[i].dphi;
       double l = dy/dx;
       double s = dx/dy;
-      if( Long  < l ){ Long  = l; iLong  = i; } 
-      if( Short < s ){ Short = s; iShort = i; } 
+      if( Long  < l ){ Long  = l; iLong  = i; }
+      if( Short < s ){ Short = s; iShort = i; }
    }
    *L  = Long;
    *iL = iLong;
@@ -614,9 +634,45 @@ void AMR( struct domain * theDomain ){
       AMRsweep( theDomain , theCells+jk , jk );
    }
 }
+   
+int getN0( int, int, int );
 
-void print_welcome()
-{
+void setProcessCoords( struct domain *theDomain ){
+  //Sets coordinate bounds of each process without ghost cells
+  //Built for use in implementing tracers
+  int Num_R = theDomain->theParList.Num_R;
+  int Num_Z = theDomain->theParList.Num_Z;
+  int *dim_rank = theDomain->dim_rank;
+  int *dim_size = theDomain->dim_size;
+
+  double rmin = theDomain->theParList.rmin;
+  double rmax = theDomain->theParList.rmax;
+  double zmin = theDomain->theParList.zmin;
+  double zmax = theDomain->theParList.zmax;
+
+  int N0r = getN0( dim_rank[0], dim_size[0], Num_R );
+  int N1r = getN0( dim_rank[0]+1, dim_size[0], Num_R);
+  int Nr = N1r - N0r;
+
+  int N0z = getN0( dim_rank[1], dim_size[1], Num_Z );
+  int N1z = getN0( dim_rank[1]+1, dim_size[1], Num_Z);
+  int Nz = N1z - N0z;
+
+  double dr = (rmax-rmin)/(double)Num_R;
+  double r0 = rmin + (double)N0r*dr;
+  double delr = Nr*dr;
+
+  double dz = (zmax-zmin)/(double)Num_Z;
+  double z0 = zmin + (double)N0z*dz;
+  double delz = Nz*dz;
+
+  theDomain->r0 = r0;
+  theDomain->z0 = z0;
+  theDomain->delr = delr;
+  theDomain->delz = delz;
+}
+
+void print_welcome(){
     printf("\nDisco!\n\n");
     printf("Git Version: %s\n\n", GIT_VERSION);
     printf("*Compile-time Options*\n");
@@ -635,3 +691,4 @@ void print_welcome()
     printf("CT_MODE: %d\n", CT_MODE);
     printf("\n");
 }
+ 

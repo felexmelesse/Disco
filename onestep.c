@@ -1,7 +1,7 @@
 
 #include "paul.h"
 
-void AMR( struct domain * ); 
+void AMR( struct domain * );
 void move_BCs( struct domain * , double );
 
 void clean_pi( struct domain * );
@@ -9,6 +9,7 @@ void set_wcell( struct domain * );
 
 void adjust_RK_cons( struct domain * , double );
 void adjust_RK_planets( struct domain * , double );
+void adjust_RK_tracers( struct domain * , double );
 void move_cells( struct domain * , double );
 void calc_dp( struct domain * );
 void calc_prim( struct domain * );
@@ -27,11 +28,13 @@ void check_flipped( struct domain * , int );
 void flip_fluxes( struct domain * , int );
 
 void movePlanets( struct planet * , double , double );
+void updateTracers( struct domain *, double );
 int planet_motion_analytic(void);
 
 void boundary_r( struct domain * );
 void boundary_trans( struct domain * , int );
 void exchangeData( struct domain * , int );
+void exchangeTracers( struct domain * , int );
 
 //int get_num_rzFaces( int , int , int );
 int set_B_flag( void );
@@ -40,7 +43,7 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
 
    int Nz = theDomain->Nz;
    int bflag = set_B_flag();
- 
+
    if( first_step ) set_wcell( theDomain );
    adjust_RK_cons( theDomain , RK );
 
@@ -78,6 +81,10 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
       adjust_RK_planets( theDomain , RK );
       movePlanets( theDomain->thePlanets , theDomain->t , dt );
    }
+
+   adjust_RK_tracers( theDomain , RK );
+   updateTracers( theDomain, dt );
+
    clean_pi( theDomain );
    calc_dp( theDomain );
    
@@ -98,10 +105,12 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
 
    boundary_trans( theDomain , 1 );
    exchangeData( theDomain , 0 );
+   exchangeTracers( theDomain, 0 );
    if( Nz > 1 ){
       int Periodic = theDomain->theParList.Z_Periodic;
       if( !Periodic ) boundary_trans( theDomain , 2 );
       exchangeData( theDomain , 1 );
+      exchangeTracers( theDomain, 1 );
    }
 
    //TODO: This was BEFORE BCs, but if wrecks cell pointers...
@@ -117,4 +126,3 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
    if( theDomain->theFaces_2 ) free( theDomain->theFaces_2 );
 
 }
-

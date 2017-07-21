@@ -74,6 +74,8 @@ struct param_list{
    int grav2D;
    int alpha_flag;
 
+   int num_tracers;
+
    int restart_flag;
    int CT;
 
@@ -105,13 +107,17 @@ struct domain{
    struct face * theFaces_1;
    struct face * theFaces_2;
    struct planet * thePlanets;
+   struct tracerList * theTracers;   //object for local linked list of tracers
+   //struct tracer * head;        //pointer to start of linked list of tracers
    int * Np;
    int Nr,Nz,Ng;
    int N_ftracks_r;
    int N_ftracks_z;
-   int Npl;
+   int Npl, Ntr;	//number of planets and number of tracers
    double * r_jph;
    double * z_kph;
+   double r0, delr;
+   double z0, delz;
    double phi_max;
    int * fIndex_r;
    int * fIndex_z;
@@ -129,7 +135,7 @@ struct domain{
    struct diagnostic_avg theTools;
 
    double t;
-   int count_steps;
+   int count_steps, mdStep;
    double t_init, t_fin;
    int nrpt;
    int N_rpt;
@@ -194,7 +200,7 @@ struct face{
 
 struct planet{
    double r;
-   double phi; 
+   double phi;
    double M;
    double omega;
    double vr;
@@ -207,4 +213,36 @@ struct planet{
    double eps;
    double Fr;
    double Fp;
+};
+
+struct tracer{
+   int    Type;
+
+   double R;
+   double Phi;
+   double Z;
+   double Vr;
+   double Omega;
+   double Vz;
+
+   double RK_r;
+   double RK_phi;
+   double RK_z;
+   double RK_vr;
+   double RK_omega;
+   double RK_vz;
+
+   //Pointers to neighbors in linked list of tracers
+   struct tracer *next;
+   struct tracer *prev;
+
+   //Flag for removal from linked list
+   int rmFlag;
+
+};
+
+struct tracerList{
+
+   int size;               //size of list
+   struct tracer *head;    //pointer to first tracer in list
 };

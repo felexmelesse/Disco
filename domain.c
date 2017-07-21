@@ -6,6 +6,8 @@ double get_dV( double * , double * );
 
 int num_diagnostics( void );
 void initializePlanets( struct planet * );
+void init_tracerList( struct domain * );
+void initializeTracers( struct domain * );
 
 void setICparams( struct domain * );
 void setHydroParams( struct domain * );
@@ -13,6 +15,7 @@ void setGeometryParams( struct domain * );
 void setRiemannParams( struct domain * );
 void setGravParams( struct domain * );
 void setPlanetParams( struct domain * );
+void setTracerParams( struct domain * );
 void setHlldParams( struct domain * );
 void setOmegaParams( struct domain * );
 void setRotFrameParams( struct domain * );
@@ -20,6 +23,8 @@ void setMetricParams( struct domain * );
 void setFrameParams(struct domain * );
 void setDiagParams( struct domain * );
 void setNoiseParams( struct domain * );
+void setProcessCoords( struct domain * );
+void build_tracerList( struct domain * );
 
 int get_num_rzFaces( int , int , int );
 
@@ -42,6 +47,19 @@ void setupDomain( struct domain * theDomain ){
    int Npl = theDomain->Npl;
    theDomain->thePlanets = (struct planet *) malloc( Npl*sizeof(struct planet) );
    initializePlanets( theDomain->thePlanets );
+
+   //initialize tracers
+   setTracerParams( theDomain );
+   setProcessCoords( theDomain );
+   //int Ntr = theDomain->Ntr;
+   //theDomain->theTracers = (struct tracer *) malloc( Ntr*sizeof(struct tracer) );
+   theDomain->theTracers = (struct tracerList *) malloc( sizeof(struct tracerList) );
+   printf("Created space for tracerList\n");
+   init_tracerList( theDomain );  //initialize each processor's tracer list
+   printf("Initialized Tracer List\n");
+   initializeTracers( theDomain );  //initialize tracers on each process
+   //initTracers_Rand( theDomain );
+   printf("Initialized Tracers\n");
 
    int num_tools = num_diagnostics();
    theDomain->num_tools = num_tools;
@@ -101,10 +119,10 @@ void setupDomain( struct domain * theDomain ){
 
 }
 
-void initial( double * , double * ); 
+void initial( double * , double * );
 void prim2cons( double * , double * , double * , double );
 void cons2prim( double * , double * , double * , double );
-void restart( struct domain * ); 
+void restart( struct domain * );
 void calc_dp( struct domain * );
 void set_wcell( struct domain * );
 void adjust_gas( struct planet * , double * , double * , double );
@@ -138,7 +156,7 @@ void setupCells( struct domain * theDomain ){
             struct cell * c = &(theCells[jk][i]);
             double phip = c->piph;
             double phim = phip-c->dphi;
-            c->wiph = 0.0; 
+            c->wiph = 0.0;
             double xp[3] = {r_jph[j  ],phip,z_kph[k  ]};
             double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
             double r = get_moment_arm( xp , xm );
@@ -148,7 +166,7 @@ void setupCells( struct domain * theDomain ){
             if( !restart_flag )
             {
                initial( c->prim , x );
-               subtract_omega( c->prim ); 
+               subtract_omega( c->prim );
                if( atmos ){
                   int p;
                   for( p=0 ; p<Npl ; ++p ){
@@ -165,7 +183,6 @@ void setupCells( struct domain * theDomain ){
          }    
       }    
    }
-
    set_wcell( theDomain );
 
 }
@@ -239,6 +256,7 @@ void check_dt( struct domain * theDomain , double * dt ){
 void report( struct domain * );
 void snapshot( struct domain * , char * );
 void output( struct domain * , char * );
+void tracerOutput( struct domain * );
 
 void possiblyOutput( struct domain * theDomain , int override ){
 
@@ -249,6 +267,7 @@ void possiblyOutput( struct domain * theDomain , int override ){
    double Nsnp = theDomain->N_snp;
    double Nchk = theDomain->N_chk;
    int LogOut = theDomain->theParList.Out_LogTime;
+   int step = theDomain->mdStep;
    int n0;
 
    n0 = (int)( t*Nrpt/t_fin );
@@ -257,7 +276,8 @@ void possiblyOutput( struct domain * theDomain , int override ){
       theDomain->nrpt = n0;
       //longandshort( &theDomain , &L , &S , &iL , &iS , theDomain.theCells[0] , 0 , 0 );
       report( theDomain );
-      if( theDomain->rank==0 ) printf("t = %.3e\n",t);
+
+      if( theDomain->rank==0 ) printf("t = %.3e   Step = %d\n", t,step);
    }
    n0 = (int)( t*Nchk/t_fin );
    if( LogOut ) n0 = (int)( Nchk*log(t/t_min)/log(t_fin/t_min) );
@@ -274,9 +294,11 @@ void possiblyOutput( struct domain * theDomain , int override ){
             theDomain->check_plz = 0;
          }
          output( theDomain , filename );
+         // tracerOutput( theDomain );
       }else{
          if(theDomain->rank==0) printf("Creating Final Checkpoint...\n");
          output( theDomain , "output" );
+	 // tracerOutput( theDomain );
       }
    }
    n0 = (int)( t*Nsnp/t_fin );
@@ -291,4 +313,58 @@ void possiblyOutput( struct domain * theDomain , int override ){
 
 }
 
+int getListSize( struct tracerList * );
 
+void tracerOutput( struct domain *theDomain ){
+
+   char filename[256];
+   sprintf(filename, "%s.xyz", "tracerParal" );
+
+   int Ntr_tot = theDomain->Ntr;
+   int step = theDomain->mdStep;
+   int rank = theDomain->rank;
+   int size = theDomain->size;
+
+   MPI_Allreduce( MPI_IN_PLACE, &Ntr_tot, 1, MPI_INT, MPI_SUM, theDomain->theComm );
+
+   if( rank==0 && step==0 ){
+	   FILE * pFile = fopen(filename, "w");
+	   fclose(pFile);
+   }
+   MPI_Barrier( theDomain->theComm);
+
+   int rk;
+   int count=0;
+   for( rk=0; rk<size; ++rk){
+      //MPI_Barrier( theDomain->theComm );
+      if( rank==rk ){
+         FILE * pFile = fopen(filename, "a");
+         if( rank==0 ){
+            fprintf(pFile, "%d \nAtoms. Timestep: %d\n", Ntr_tot+1, step);
+            fprintf(pFile, "%d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f \n",
+                     0, 0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
+         }
+         struct tracer *tr = theDomain->theTracers->head;
+         while( tr != NULL){
+   	      int type = tr->Type;
+   	      double r = tr->R;
+      	   double phi = tr->Phi;
+      	   double z = tr->Z;
+      	   double x = r*cos(phi);
+         	double y = r*sin(phi);
+         	double vr = tr->Vr;
+      	   double om = tr->Omega;
+         	double vz = tr->Vz;
+      	   fprintf(pFile, "%d %4.4f %4.4f %4.4f %4.4f %4.4f  %4.4f %4.4f %4.4f \n",
+                            type, x,y,z, r,phi, vr,om,vz);
+            tr = tr->next;
+            count++;
+         }
+         fclose(pFile);
+      }
+      MPI_Barrier( theDomain->theComm );
+   }
+   step++;
+   theDomain->mdStep = step;
+   }
+}
