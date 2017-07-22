@@ -12,6 +12,7 @@ static double explicit_viscosity = 0.0;
 static int include_viscosity = 0;
 static int isothermal = 0;
 static int alpha_flag = 0;
+static int polar_sources = 0;
 
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
@@ -21,6 +22,8 @@ void setHydroParams( struct domain * theDomain ){
    explicit_viscosity = theDomain->theParList.viscosity;
    include_viscosity = theDomain->theParList.visc_flag;
    alpha_flag = theDomain->theParList.alpha_flag;
+   if(strcmp(BOUNDARY, "polar") == 0)
+       polar_sources = 1;
 }
 
 int set_B_flag(void){
@@ -167,6 +170,7 @@ void flux( double * prim , double * flux , double * x , double * n ){
 }
 
 double get_dp( double , double );
+double get_moment_arm( double * xp , double * xm );
 
 void source( double * prim , double * cons , double * xp , double * xm , double dVdt ){
    
@@ -175,12 +179,26 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    double dphi = get_dp(xp[1],xm[1]);
    double rho = prim[RHO];
    double Pp  = prim[PPP];
+   double r = get_moment_arm(xp, xm);
    double r_1  = .5*(rp+rm);
    double r2_3 = (rp*rp + rp*rm + rm*rm)/3.;
    double vr  = prim[URR];
    double omega = prim[UPP];
- 
-   double centrifugal = rho*omega*omega*r2_3/r_1*sin(.5*dphi)/(.5*dphi);
+
+   double centrifugal;
+
+   //Polar_Sources are the result of integrating the centripetal source term
+   //in a cartesian frame, assuming rho and omega are constant. This leads to
+   //better behaviour at r=0.
+   //
+   //The naive source term (polar_sources==0), on the other hand, can exactly
+   //cancel with gravitational source terms.
+   //
+   if(polar_sources)
+      centrifugal = rho*omega*omega*r2_3/r_1*sin(.5*dphi)/(.5*dphi);
+   else
+      centrifugal = rho*omega*omega*r;
+
    double press_bal   = Pp/r_1;
 
    cons[SRR] += dVdt*( centrifugal + press_bal );
