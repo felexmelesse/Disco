@@ -185,7 +185,6 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    double vr  = prim[URR];
    double omega = prim[UPP];
 
-   double centrifugal;
 
    //Polar_Sources are the result of integrating the centripetal source term
    //in a cartesian frame, assuming rho and omega are constant. This leads to
@@ -194,6 +193,7 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    //The naive source term (polar_sources==0), on the other hand, can exactly
    //cancel with gravitational source terms.
    //
+   double centrifugal;
    if(polar_sources)
       centrifugal = rho*omega*omega*r2_3/r_1*sin(.5*dphi)/(.5*dphi);
    else
