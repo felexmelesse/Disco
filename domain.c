@@ -366,5 +366,4 @@ void tracerOutput( struct domain *theDomain ){
    }
    step++;
    theDomain->mdStep = step;
-   }
 }
