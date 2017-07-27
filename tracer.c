@@ -31,6 +31,8 @@ void setTracerParams( struct domain * theDomain){
    theDomain->Ntr = dV*ratio; 
 */
 
+   //theDomain->tr_out = theDomain->theParList.tr_out_flag;
+
 }
 
 double getRandIn( double xmin, double dx){
