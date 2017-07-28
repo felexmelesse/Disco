@@ -98,6 +98,7 @@ void initializeTracers( struct domain *theDomain ){
   //printTracerCoords( theDomain );
 }
 
+
 int check_phi(double phi, double phip, double dphi, double phi_max){
 
    double phic = phi - phip;
