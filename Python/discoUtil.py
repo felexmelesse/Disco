@@ -67,7 +67,7 @@ def loadCheckpoint(filename):
             primPhi0[k,j,:] = prim[idPhi0[k,j],:]
 
     return t, r, phi, z, prim, (riph, ziph, primPhi0, piph, planetDat, Phi,
-                                    idPhi0)
+                                    idPhi0, nphi)
 
 def loadDiagRZ(filename):
 

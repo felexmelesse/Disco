@@ -45,18 +45,18 @@ void initial( double * prim , double * x ){
    double sig1 = 1.0;
 
    
-   if(prof == 1) //Gaussian
+   if(prof == 1 || prof == -1) //Gaussian
    {
        rho = sig0 + (sig1-sig0)*exp(-0.5*(r-r0)*(r-r0)/(dr*dr));
        drhodr = -(sig1-sig0)*(r-r0)/(dr*dr);
    }
-   else if (prof == 2)  //Smoothed top hat ~ tanh(1-r^2)
+   else if (prof == 2 || prof == -2)  //Smoothed top hat ~ tanh(1-r^2)
    {
        rho = sig0 + (sig1-sig0) * 0.5*(1.0+tanh(-(r-rm)*(r-rp)/ (dr2*dr2)));
        double coshr = cosh((r-rm)*(r-rp)/(dr2*dr2));
        drhodr = -(sig1-sig0) * (r-0.5*(rm+rp)) / (coshr*coshr*dr2*dr2);
    }
-   else if (prof == 3)  //Top Hat with cosine boundaries
+   else if (prof == 3 || prof == -3)  //Top Hat with cosine boundaries
    {
        double rm2 = rm - dr2;
        double rp2 = rp + dr2;
@@ -90,8 +90,17 @@ void initial( double * prim , double * x ){
    double cs20 = 1.0/r0 / (mach*mach);
    double Pp0 = sig1 * cs20 / gam;
 
-   double Pp = Pp0 * pow(rho / sig1, gam);
-   double dPdr = (gam*Pp/rho) * drhodr;
+   double Pp, dPdr;
+   if(prof > 0)
+   {
+      Pp = Pp0 * pow(rho / sig1, gam);
+      dPdr = (gam*Pp/rho) * drhodr;
+   }
+   else
+   {
+       Pp = Pp0;
+       dPdr = 0.0;
+   }
 
    double qp1 = 1+q;
    double y = a/((1+q)*r);
