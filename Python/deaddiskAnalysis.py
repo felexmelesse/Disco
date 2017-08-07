@@ -358,6 +358,7 @@ def summaryQuantities(grid, prim, pars, planetDat, name):
 
     dphi = np.empty((N,))
     r = np.empty((N,))
+    dV = np.empty((N,))
 
     for j in range(nr):
         ia = id0[j]
@@ -372,10 +373,9 @@ def summaryQuantities(grid, prim, pars, planetDat, name):
         
         r[ia:ib] = rj
         dphi[ia:ib] = dphij[:]
+        dV[ia:ib] = 0.5*(rhpj[j]+rjph[j+1])*(rjph[j+1]-rjph[j])*dphij[:]
 
     phi = piph - 0.5*dphi
-
-    dV = r*dphi
 
     sig = prim[:,0]
     P = prim[:,1]
@@ -395,12 +395,11 @@ def summaryQuantities(grid, prim, pars, planetDat, name):
     Ek = (0.5*sig*(vr*vr+r*r*om*om) * dV).sum()
     Ekq = (q * 0.5*sig*(vr*vr+r*r*om*om) * dV).sum()
     S = (sig*s * dV).sum()
-    Sq = (q * sig*s * dV).sum()
-    
+    Sq = (q * sig*s * dV).sum() 
 
     return M, Mq, L, Lq, Eth, Ethq, Ek, Ekq, S, Sq
 
-def analysisSingle(filename):
+def analysisSingle(filename, flux=False, fourier=False, summary=True):
 
     print("Loading {0}".format(filename))
     t, r, phi, z, prim, dat = du.loadCheckpoint(filename)
@@ -429,14 +428,20 @@ def analysisSingle(filename):
 
     name = filename.split('/')[-1].split('.')[0].split('_')[-1]
 
-    print("    Fluxes...")
-    fluxDat = fluxPlots(grid, prim, planetDat, pars, name)
-    R, Sig, ell, Mdot, FJ, Tg, TJ, Tacc, TRe = fluxDat
+    if flux:
+        print("    Fluxes...")
+        fluxDat = fluxPlots(grid, prim, planetDat, pars, name)
+        R, Sig, ell, Mdot, FJ, Tg, TJ, Tacc, TRe = fluxDat
 
-    print("    Fourier...")
-    fourierPlots(grid, prim, planetDat, pars, name)
-    print("    Summary...")
-    summ = summaryQuantities(grid, prim, pars, planetDat, name)
+    if fourier:
+        print("    Fourier...")
+        fourierPlots(grid, prim, planetDat, pars, name)
+    
+    if summary:
+        print("    Summary...")
+        summ = summaryQuantities(grid, prim, pars, planetDat, name)
+    else:
+        summ = None
 
     return t, summ
 

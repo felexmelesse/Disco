@@ -46,19 +46,26 @@ def plotGradients(filename):
     PLM = pars['PLM']
     PHI_MAX = pars['Phi_Max']
     gam = pars['Adiabatic_Index']
-    gradr, gradp = calcCellGrad(grid, prim, PLM, PHI_MAX)
+    mach0 = pars['Mach_Number']
+    R0 = pars['Init_Par1']
+
+    gradr, gradp = calcCellGrad(grid, prim, PHI_MAX)
 
     rho = prim[:,0]
     P = prim[:,1]
     vr = prim[:,2]
     om = prim[:,3]
-    s = np.log(P * np.power(rho, -gam)) / (gam-1.0)
-    s -= s.min()
+
+    rho0 = 1.0
+    c20 = (1.0/R0) / (mach0*mach0)
+    P0 = rho0 * c20 / gam
+
+    s = np.log(P/P0 * np.power(rho/rho0, -gam)) / (gam-1.0)
 
     divv = gradr[:,2] + vr/r + gradp[:,3]
     rotv = r*gradr[:,3] + 2*om - gradp[:,2]/r
     
-    L = rho * np.power(s, 2.0/gam) / (2*rotv)
+    L = rho * np.power(P/P0 * np.power(rho/rho0,-gam), 2.0/gam) / (2*rotv)
 
     print("    Plotting ")
 
@@ -179,7 +186,7 @@ def plotGradients(filename):
     fig.savefig(plotname)
     plt.close(fig)
 
-def calcCellGrad(grid, prim, PLM, PHI_MAX):
+def calcCellGrad(grid, prim, PHI_MAX, PLM=None):
 
     rjph = grid[0]
     piph = grid[1]
@@ -231,11 +238,15 @@ def calcCellGrad(grid, prim, PLM, PHI_MAX):
         gC = (primR[:,:] - primL[:,:]) / (phiR[:,None]-phiL[:,None])
         gL = (primC[:,:] - primL[:,:]) / (phiC[:,None]-phiL[:,None])
 
-        gradp[ia:ib,:] = minmod3(PLM*gL, gC, PLM*gR)
+        if PLM is not None:
+            gradp[ia:ib,:] = minmod3(PLM*gL, gC, PLM*gR)
+        else:
+            gradp[ia:ib,:] = gC
 
     dA = np.zeros(piph.shape)
 
     # Calc gradr - 1st pass
+    print("      Calc gr")
     for j in range(nr-1):
         j1 = j
         j2 = j+1
@@ -312,76 +323,77 @@ def calcCellGrad(grid, prim, PLM, PHI_MAX):
     gradr[:,:] /= dA[:,None]
 
     # Calc gradr - 2nd pass
-    for j in range(nr-1):
-        j1 = j
-        j2 = j+1
-        i1a = id0[j1]
-        i1b = i1a + nphi[j1]
-        i2a = id0[j2]
-        i2b = i2a + nphi[j2]
+    if PLM is not None:
+        for j in range(nr-1):
+            j1 = j
+            j2 = j+1
+            i1a = id0[j1]
+            i1b = i1a + nphi[j1]
+            i2a = id0[j2]
+            i2b = i2a + nphi[j2]
 
-        rfm = rjph[j]
-        rf = rjph[j+1]
-        rfp = rjph[j+2]
+            rfm = rjph[j]
+            rf = rjph[j+1]
+            rfp = rjph[j+2]
 
-        r1 = 2.0/3.0  * (rfm*rfm+rfm*rf+rf*rf) / (rfm+rf)
-        r2 = 2.0/3.0  * (rf*rf+rf*rfp+rfp*rfp) / (rf+rfp)
+            r1 = 2.0/3.0  * (rfm*rfm+rfm*rf+rf*rf) / (rfm+rf)
+            r2 = 2.0/3.0  * (rf*rf+rf*rfp+rfp*rfp) / (rf+rfp)
 
-        piph1 = piph[i1a:i1b]
-        piph2 = piph[i2a:i2b]
-        dphi1 = dphi[i1a:i1b]
-        dphi2 = dphi[i2a:i2b]
+            piph1 = piph[i1a:i1b]
+            piph2 = piph[i2a:i2b]
+            dphi1 = dphi[i1a:i1b]
+            dphi2 = dphi[i2a:i2b]
 
-        prim1 = prim[i1a:i1b,:]
-        prim2 = prim[i2a:i2b,:]
-        gradp1 = gradp[i1a:i1b,:]
-        gradp2 = gradp[i2a:i2b,:]
+            prim1 = prim[i1a:i1b,:]
+            prim2 = prim[i2a:i2b,:]
+            gradp1 = gradp[i1a:i1b,:]
+            gradp2 = gradp[i2a:i2b,:]
 
-        phi1p = piph1[0]
-        phi1m = piph1[0] - dphi1[0]
-        for i2 in range(nphi[j2]):
-            phi2p = piph2[i2]
-            while phi2p > phi1m+0.5*PHI_MAX:
-                phi2p -= PHI_MAX
-            while phi2p < phi1m-0.5*PHI_MAX:
-                phi2p += PHI_MAX
-            if phi2p > phi1m and phi2p - dphi2[i2] < phi1m:
-                break
-
-        for i1 in range(nphi[j1]):
-            phi1p = piph1[i1]
-            phi1m = piph1[i1] - dphi1[i1]
-            phi1 = piph1[i1] - 0.5*dphi[i1]
-            f1 = prim1[i1,:]
-            while True:
+            phi1p = piph1[0]
+            phi1m = piph1[0] - dphi1[0]
+            for i2 in range(nphi[j2]):
                 phi2p = piph2[i2]
                 while phi2p > phi1m+0.5*PHI_MAX:
                     phi2p -= PHI_MAX
                 while phi2p < phi1m-0.5*PHI_MAX:
                     phi2p += PHI_MAX
-                phi2m = phi2p - dphi2[i2]
-                phi2 = phi2p - 0.5*dphi2[i2]
-
-                f2 = prim2[i2,:]
-
-                phip = min(phi1p, phi2p)
-                phim = max(phi1m, phi1m)
-
-                dAf = rf*(phip-phim)
-                phif = 0.5*(phim+phip)
-
-                s = (f2 + gradp2[i2]*(phif-phi2) - f1 - gradp1[i1]*(phif-phi1)
-                        ) / (r2 - r1)
-
-                gradr[i1a+i1,:] = minmod2(gradr[i1a+i1,:], PLM*s)
-                gradr[i2a+i2,:] = minmod2(gradr[i2a+i2,:], PLM*s)
-
-                if phi2p > phi1p:
+                if phi2p > phi1m and phi2p - dphi2[i2] < phi1m:
                     break
-                else:
-                    i2 += 1
-                    if i2 >= nphi[j2]:
-                        i2 = 0;
+
+            for i1 in range(nphi[j1]):
+                phi1p = piph1[i1]
+                phi1m = piph1[i1] - dphi1[i1]
+                phi1 = piph1[i1] - 0.5*dphi[i1]
+                f1 = prim1[i1,:]
+                while True:
+                    phi2p = piph2[i2]
+                    while phi2p > phi1m+0.5*PHI_MAX:
+                        phi2p -= PHI_MAX
+                    while phi2p < phi1m-0.5*PHI_MAX:
+                        phi2p += PHI_MAX
+                    phi2m = phi2p - dphi2[i2]
+                    phi2 = phi2p - 0.5*dphi2[i2]
+
+                    f2 = prim2[i2,:]
+
+                    phip = min(phi1p, phi2p)
+                    phim = max(phi1m, phi1m)
+
+                    dAf = rf*(phip-phim)
+                    phif = 0.5*(phim+phip)
+
+                    s = (f2 + gradp2[i2]*(phif-phi2)
+                            - f1 - gradp1[i1]*(phif-phi1)) / (r2 - r1)
+
+                    gradr[i1a+i1,:] = minmod2(gradr[i1a+i1,:], PLM*s)
+                    gradr[i2a+i2,:] = minmod2(gradr[i2a+i2,:], PLM*s)
+
+                    if phi2p > phi1p:
+                        break
+                    else:
+                        i2 += 1
+                        if i2 >= nphi[j2]:
+                            i2 = 0;
 
     return gradr, gradp
 
