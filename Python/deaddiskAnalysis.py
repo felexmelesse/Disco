@@ -373,6 +373,8 @@ def summaryQuantities(grid, prim, pars, planetDat, name):
         r[ia:ib] = rj
         dphi[ia:ib] = dphij[:]
 
+    phi = piph - 0.5*dphi
+
     dV = r*dphi
 
     sig = prim[:,0]
@@ -393,7 +395,7 @@ def summaryQuantities(grid, prim, pars, planetDat, name):
     Ek = (0.5*sig*(vr*vr+r*r*om*om) * dV).sum()
     Ekq = (q * 0.5*sig*(vr*vr+r*r*om*om) * dV).sum()
     S = (sig*s * dV).sum()
-    Sq = (a * sig*s * dV).sum()
+    Sq = (q * sig*s * dV).sum()
     
 
     return M, Mq, L, Lq, Eth, Ethq, Ek, Ekq, S, Sq
@@ -441,6 +443,8 @@ def analysisSingle(filename):
 
 def analysisSumm(summaries):
 
+    print("Summary Time series")
+
     N = len(summaries)
 
     T = np.zeros(N)
@@ -463,24 +467,43 @@ def analysisSumm(summaries):
 
     fig, ax = plt.subplots(2,2, figsize=(12,9))
     ax[0,0].plot(T, M, 'k+')
-    ax[0,0].plot(T, Mq, 'b+')
     ax[0,0].set_ylabel(r'$M$')
     
     ax[0,1].plot(T, L, 'k+')
-    ax[0,1].plot(T, Lq, 'b+')
     ax[0,1].set_ylabel(r'$J$')
     
     ax[1,0].plot(T, Eth, 'k+')
-    ax[1,0].plot(T, Ethq, 'b+')
     ax[1,0].set_xlabel(r'$t$')
-    ax[1,0].set_ylabel(r'$J$')
+    ax[1,0].set_ylabel(r'$E_{\mathrm{th}}$')
     
     ax[1,1].plot(T, S, 'k+')
-    ax[1,1].plot(T, Sq, 'b+')
     ax[1,1].set_xlabel(r'$t$')
-    ax[1,1].set_ylabel(r'$J$')
+    ax[1,1].set_ylabel(r'$S$')
 
-    plotname = "plot_dd_summ_cons_time.pdf"
+    fig.tight_layout()
+
+    plotname = "plot_dd_summ_cons_time_full.pdf"
+    fig.savefig(plotname)
+    plt.close(fig)
+
+    fig, ax = plt.subplots(2,2, figsize=(12,9))
+    ax[0,0].plot(T, Mq, 'k+')
+    ax[0,0].set_ylabel(r'$M$')
+    
+    ax[0,1].plot(T, Lq, 'k+')
+    ax[0,1].set_ylabel(r'$J$')
+    
+    ax[1,0].plot(T, Ethq, 'k+')
+    ax[1,0].set_xlabel(r'$t$')
+    ax[1,0].set_ylabel(r'$E_{\mathrm{th}}$')
+    
+    ax[1,1].plot(T, Sq, 'k+')
+    ax[1,1].set_xlabel(r'$t$')
+    ax[1,1].set_ylabel(r'$S$')
+
+    fig.tight_layout()
+
+    plotname = "plot_dd_summ_cons_time_q.pdf"
     fig.savefig(plotname)
     plt.close(fig)
 
