@@ -373,7 +373,7 @@ def summaryQuantities(grid, prim, pars, planetDat, name):
         
         r[ia:ib] = rj
         dphi[ia:ib] = dphij[:]
-        dV[ia:ib] = 0.5*(rhpj[j]+rjph[j+1])*(rjph[j+1]-rjph[j])*dphij[:]
+        dV[ia:ib] = 0.5*(rjph[j]+rjph[j+1])*(rjph[j+1]-rjph[j])*dphij[:]
 
     phi = piph - 0.5*dphi
 
