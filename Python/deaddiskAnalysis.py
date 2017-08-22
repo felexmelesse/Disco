@@ -172,6 +172,7 @@ def fourierPlots(grid, prim, planetDat, pars, name, plot_heatmap=False,
     hm = np.empty((nm,nr), dtype=np.complex)
     grm = np.empty((nm,nr), dtype=np.complex)
     gpm = np.empty((nm,nr), dtype=np.complex)
+    sm = np.empty((nm,nr), dtype=np.complex)
 
 
     for j in range(nr):
@@ -196,6 +197,7 @@ def fourierPlots(grid, prim, planetDat, pars, name, plot_heatmap=False,
         om = prim[ia:ib,3]
 
         h = gam/(gam-1) * P/sig
+        s = np.log(P * np.power(sig, -gam)) / (gam-1)
 
         R[j] = r
         sigm[:,j] = np.fft.rfft(sig)[:nm]
@@ -203,6 +205,7 @@ def fourierPlots(grid, prim, planetDat, pars, name, plot_heatmap=False,
         vrm[:,j] = np.fft.rfft(vr)[:nm]
         omm[:,j] = np.fft.rfft(om)[:nm]
         hm[:,j] = np.fft.rfft(h)[:nm]
+        sm[:,j] = np.fft.rfft(s)[:nm]
         grm[:,j] = np.fft.rfft(gr)[:nm]
         gpm[:,j] = np.fft.rfft(gp)[:nm]
 
@@ -242,19 +245,26 @@ def fourierPlots(grid, prim, planetDat, pars, name, plot_heatmap=False,
         ax[1,0].set_title(r'$h$')
         fig.colorbar(C, ax=ax[1,0])
 
-        C = ax[1,1].pcolormesh(rjph[2:-2], Mb, np.abs(grm)[:,2:-2], 
-                cmap=mpl.cm.viridis)
+        C = ax[1,1].pcolormesh(rjph[2:-2], Mb, np.abs(sm)[:,2:-2], 
+                            cmap=mpl.cm.viridis)
         ax[1,1].set_xlabel(r'$r$')
         ax[1,1].set_ylabel(r'$m$')
-        ax[1,1].set_title(r'$g_r$')
+        ax[1,1].set_title(r'$s$')
         fig.colorbar(C, ax=ax[1,1])
 
-        C = ax[1,2].pcolormesh(rjph[2:-2], Mb, np.abs(gpm)[:,2:-2], 
+        C = ax[1,2].pcolormesh(rjph[2:-2], Mb, np.abs(grm)[:,2:-2], 
                 cmap=mpl.cm.viridis)
         ax[1,2].set_xlabel(r'$r$')
         ax[1,2].set_ylabel(r'$m$')
-        ax[1,2].set_title(r'$g_\phi$')
+        ax[1,2].set_title(r'$g_r$')
         fig.colorbar(C, ax=ax[1,2])
+
+        C = ax[1,3].pcolormesh(rjph[2:-2], Mb, np.abs(gpm)[:,2:-2], 
+                cmap=mpl.cm.viridis)
+        ax[1,3].set_xlabel(r'$r$')
+        ax[1,3].set_ylabel(r'$m$')
+        ax[1,3].set_title(r'$g_\phi$')
+        fig.colorbar(C, ax=ax[1,3])
 
         fig.tight_layout()
 
@@ -269,16 +279,18 @@ def fourierPlots(grid, prim, planetDat, pars, name, plot_heatmap=False,
         ax[0,2].plot(R, vrm[m,:].real)
         ax[0,3].plot(R, omm[m,:].real)
         ax[1,0].plot(R, hm[m,:].real)
-        ax[1,1].plot(R, grm[m,:].real)
-        ax[1,2].plot(R, gpm[m,:].real)
+        ax[1,1].plot(R, sm[m,:].real)
+        ax[1,2].plot(R, grm[m,:].real)
+        ax[1,3].plot(R, gpm[m,:].real)
     ax[0,0].legend(fontsize=10)
     ax[0,0].set_ylabel(r"$\Sigma$")
     ax[0,1].set_ylabel(r"$P$")
     ax[0,2].set_ylabel(r"$v_r$")
     ax[0,3].set_ylabel(r"$\Omega$")
     ax[1,0].set_ylabel(r"$h$")
-    ax[1,1].set_ylabel(r"$g_r$")
-    ax[1,2].set_ylabel(r"$g_\phi$")
+    ax[1,1].set_ylabel(r"$s$")
+    ax[1,2].set_ylabel(r"$g_r$")
+    ax[1,3].set_ylabel(r"$g_\phi$")
     fig.tight_layout()
 
     fig, ax = plt.subplots(2,4, figsize=(16,9))
@@ -289,16 +301,18 @@ def fourierPlots(grid, prim, planetDat, pars, name, plot_heatmap=False,
         ax[0,2].plot(R[ind], vrm[m,ind].real)
         ax[0,3].plot(R[ind], omm[m,ind].real)
         ax[1,0].plot(R[ind], hm[m,ind].real)
-        ax[1,1].plot(R[ind], grm[m,ind].real)
-        ax[1,2].plot(R[ind], gpm[m,ind].real)
+        ax[1,1].plot(R[ind], sm[m,ind].real)
+        ax[1,2].plot(R[ind], grm[m,ind].real)
+        ax[1,3].plot(R[ind], gpm[m,ind].real)
     ax[0,0].legend(fontsize=10)
     ax[0,0].set_ylabel(r"$\Sigma$")
     ax[0,1].set_ylabel(r"$P$")
     ax[0,2].set_ylabel(r"$v_r$")
     ax[0,3].set_ylabel(r"$\Omega$")
     ax[1,0].set_ylabel(r"$h$")
-    ax[1,1].set_ylabel(r"$g_r$")
-    ax[1,2].set_ylabel(r"$g_\phi$")
+    ax[1,1].set_ylabel(r"$h$")
+    ax[1,2].set_ylabel(r"$g_r$")
+    ax[1,3].set_ylabel(r"$g_\phi$")
     fig.tight_layout()
 
     plotname = "plot_dd_fourier_real_cut_{0:s}.pdf".format(name)
@@ -315,15 +329,17 @@ def fourierPlots(grid, prim, planetDat, pars, name, plot_heatmap=False,
     ax[0,2].plot(R, vrm[0,:].real)
     ax[0,3].plot(R, omm[0,:].real)
     ax[1,0].plot(R, hm[0,:].real)
-    ax[1,1].plot(R, grm[0,:].real)
-    ax[1,2].plot(R, gpm[0,:].real)
+    ax[1,1].plot(R, sm[0,:].real)
+    ax[1,2].plot(R, grm[0,:].real)
+    ax[1,3].plot(R, gpm[0,:].real)
     ax[0,0].set_ylabel(r"$\Sigma$")
     ax[0,1].set_ylabel(r"$P$")
     ax[0,2].set_ylabel(r"$v_r$")
     ax[0,3].set_ylabel(r"$\Omega$")
     ax[1,0].set_ylabel(r"$h$")
-    ax[1,1].set_ylabel(r"$g_r$")
-    ax[1,2].set_ylabel(r"$g_\phi$")
+    ax[1,1].set_ylabel(r"$s$")
+    ax[1,2].set_ylabel(r"$g_r$")
+    ax[1,3].set_ylabel(r"$g_\phi$")
     fig.tight_layout()
 
     plotname = "plot_dd_aveR_{0:s}.pdf".format(name)
@@ -399,7 +415,7 @@ def summaryQuantities(grid, prim, pars, planetDat, name):
 
     return M, Mq, L, Lq, Eth, Ethq, Ek, Ekq, S, Sq
 
-def analysisSingle(filename, flux=False, fourier=False, summary=True):
+def analysisSingle(filename, flux=True, fourier=True, summary=True):
 
     print("Loading {0}".format(filename))
     t, r, phi, z, prim, dat = du.loadCheckpoint(filename)
@@ -522,9 +538,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     files = args.checkpoints
 
+    print(files)
+
     summaries = []
     for f in files:
         summ = analysisSingle(f)
-        summaries.append(summ)
+        if summ[1] is not None:
+            summaries.append(summ)
 
-    analysisSumm(summaries)
+    if len(summaries) > 0:
+        analysisSumm(summaries)

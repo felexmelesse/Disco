@@ -33,6 +33,42 @@ void setICparams( struct domain * theDomain ){
         a = 0.0;
 }
 
+double poly_step(double x, double a, double b, double ya, double yb)
+{
+    double y;
+    if(x <= a)
+        y = ya;
+    else if(x >= b)
+        y = yb;
+    else
+    {
+        double X = (2*x - (a+b)) / (b-a);
+        double Y = 15.0*X/8.0 * (1.0 - 2.0*X*X/3.0 + X*X*X*X/5.0);
+        y = 0.5*(yb-ya) * Y + 0.5*(ya+yb);
+    }
+
+    return y;
+}
+
+double dpoly_step(double x, double a, double b, double ya, double yb)
+{
+    double dy;
+    if(x <= a)
+        dy = 0.0;
+    else if(x >= b)
+        dy = 0.0;
+    else
+    {
+        double X = (2*x - (a+b)) / (b-a);
+        double dX = 2.0/(b-a);
+        double Y = 15.0*X/8.0 * (1.0 - 2.0*X*X/3.0 + X*X*X*X/5.0);
+        double dY = 15.0/8.0 * (1.0 - 2.0*X*X + X*X*X*X) * dX;
+        dy = 0.5*(yb-ya) * dY;
+    }
+
+    return dy;
+}
+
 void initial( double * prim , double * x ){
 
    double r = x[0];
@@ -80,7 +116,50 @@ void initial( double * prim , double * x ){
            rho = sig0;
            drhodr = 0.0;
        }
+   else if (prof == 4 || prof == -4)  //Top Hat with polynomial boundaries
+   {
+       double rm2 = rm - dr2;
+       double rp2 = rp + dr2;
+       if(r > rm && r < rp)
+       {
+           rho = sig1;
+           drhodr = 0.0;
+       }
+       else if(r>rm2 && r < rm)
+       {
+           rho = poly_step(r, rm2, rm, sig0, sig1);
+           drhodr = dpoly_step(r, rm2, rm, sig0, sig1);
+       }
+       else if(r>rp && r < rp2)
+       {
+           rho = poly_step(r, rp, rp2, sig1, sig0);
+           drhodr = dpoly_step(r, rp, rp2, sig1, sig0);
+       }
+       else
+       {
+           rho = sig0;
+           drhodr = 0.0;
+       }
    }
+   else if (prof == 5 || prof == -5)  //Polynomial step up
+   {
+       double rm2 = rm - dr2;
+       double rp2 = rp + dr2;
+       if(r > rm)
+       {
+           rho = sig1;
+           drhodr = 0.0;
+       }
+       else if(r>rm2 && r < rm)
+       {
+           rho = poly_step(r, rm2, rm, sig0, sig1);
+           drhodr = dpoly_step(r, rm2, rm, sig0, sig1);
+       }
+       else
+       {
+           rho = sig0;
+           drhodr = 0.0;
+       }
    else
    {
        rho = sig1;
