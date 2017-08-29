@@ -11,18 +11,31 @@ void setICparams( struct domain * theDomain ){
    Mach = theDomain->theParList.Disk_Mach;
 }
 
+double interp( double r ){
+
+   double r3 = r*r*r;
+   return 15./16.*( r - 2./3.*r3 + 1./5.*r*r*r3 ) + 0.5;
+}
+
 double get_cs2( double );
 
 void initial( double * prim , double * x ){
-
+   
    double r = x[0];
    double z = x[2];
 
+   double d    = 10.0;
+   double r0   = 2.5; 
    double sint = z/sqrt(r*r+z*z);
-   double cs2 = get_cs2( r );
+   double cs2  = get_cs2( r );
 
-   double rho = 1.0*exp(-sint*sint*Mach*Mach);
-   double Pp  = rho*cs2/gam;
+   double rho, Pp;
+   //rho = 1.0*exp(-sint*sint*Mach*Mach);
+   rho = pow(r,-0.5)*exp( -pow(r/r0,-d) );
+   
+   Pp  = rho*cs2/gam;
+   //Pp  = 0.01*pow(r,-3./2.)*exp( -pow(r/r0,-d) );
+   
    //double n = 1.5;
    //double omega = ( pow( r , n-1.5 ) + 1. )/( pow( r , n ) + 1. );
    //double omega = 1./pow( pow( r , 1.5*n ) + 0.3 , 1./n );
@@ -30,7 +43,8 @@ void initial( double * prim , double * x ){
    double omega2P = 0.0*cs2/r/r;
    double omega = sqrt( omega2 - omega2P );
 
-   if( omega > 1. ) omega = 1.;
+   if( omega > 1. ) omega = 1;  //r;
+   //if( r < 2.0 ) omega = sqrt(2.0)/4.*interp(r);
 
    double X = 0.0; 
    if( r > 1.0 ) X = 1.0; 

@@ -4,34 +4,44 @@ double get_dV( double *, double * );
 
 void setTracerParams( struct domain * theDomain){
 
+   int initType = theDomain->theParList.tr_init_type;
    int num_tracers = theDomain->theParList.num_tracers;
-   int size = theDomain->size;
-   theDomain->Ntr = num_tracers/size;
 
-/*   
-   double rmin = theDomain->theParList.rmin;
-   double rmax = theDomain->theParList.rmax;
-   double zmin = theDomain->theParList.zmin;
-   double zmax = theDomain->theParList.zmax;
-   double phi_max = theDomain->theParList.phimax;
-   double XM[3] = {rmin, 0.0, zmin};
-   double XP[3] = {rmax, phi_max, zmax};
-   double Vtot = get_dV( XP, XM );
-   double ratio = num_tracers/Vtot;
+   if( !initType ){
+      int Ncells = theDomain->Ncells;
+      theDomain->Ntr = Ncells;
+   }else if( initType==1 ){
+      if( theDomain->rank==0 )
+         printf("Total Tracers: %d \n", num_tracers );
+   
+      double rmin = theDomain->theParList.rmin;
+      double rmax = theDomain->theParList.rmax;
+      double zmin = theDomain->theParList.zmin;
+      double zmax = theDomain->theParList.zmax;
+      double phi_max = theDomain->theParList.phimax;
+      double XM[3] = {rmin, 0.0, zmin};
+      double XP[3] = {rmax, phi_max, zmax};
+      double Vtot = get_dV( XP, XM );
+      double ratio = num_tracers/Vtot;
 
+      double r0   = theDomain->r0;
+      double z0   = theDomain->z0;
+      double delr = theDomain->delr;
+      double delz = theDomain->delz;
+      double xm[3] = {r0, 0.0, z0};
+      double xp[3] = {r0+delr, phi_max, z0+delz};
+      double dV = get_dV( xp, xm );
 
-   double r0   = theDomain->r0;
-   double z0   = theDomain->z0;
-   double delr = theDomain->delr;
-   double delz = theDomain->delz;
-   double xm[3] = {r0, 0.0, z0};
-   double xp[3] = {r0+delr, phi_max, z0+delz};
-   double dV = get_dV( xp, xm );
+      theDomain->Ntr = dV*ratio; 
+   }else{
+      int size = theDomain->size;
+      theDomain->Ntr = num_tracers/size;
+   }
 
-   theDomain->Ntr = dV*ratio; 
-*/
 
    //theDomain->tr_out = theDomain->theParList.tr_out_flag;
+   MPI_Barrier( theDomain->theComm );
+   printf("Rank %d: Ntr = %d \n", theDomain->rank, theDomain->Ntr);
 
 }
 
@@ -63,7 +73,8 @@ void initTracers_Rand( struct domain *theDomain ){  //randomly init tracers in s
      double z = getRandIn( zmin, dz );
      double phi = getRandIn( 0.0, phimax );
      tr->R = r; tr->Z = z; tr->Phi = phi;
-     tr->Type = 0; tr->rmFlag = 0;
+     tr->Type   = 0;
+     tr->rmFlag = 0;
      tr = tr->next;
    }
    //printTracerCoords( theDomain );
@@ -71,31 +82,85 @@ void initTracers_Rand( struct domain *theDomain ){  //randomly init tracers in s
 
 
 int getN0( int , int , int );
+double get_moment_arm( double *, double * );
+void syncTracerIDs( struct domain * );
 
 void initializeTracers( struct domain *theDomain ){
 
-  double r0   = theDomain->r0;
-  double z0   = theDomain->z0;
-  double delr = theDomain->delr;
-  double delz = theDomain->delz;
-  double phi_max = theDomain->theParList.phimax;
-
+  int initType = theDomain->theParList.tr_init_type;
+  int id = 0.0;
   int rank = theDomain->rank;
-  srand(rank);
-  rand();
+  struct tracer *tr = theDomain->theTracers->head;
 
-  double r, z, phi;
-  struct tracerList *theList = theDomain->theTracers;
-  struct tracer *tr = theList->head;
-  while( tr != NULL){
-    r = getRandIn(r0, delr);
-    z = getRandIn(z0, delz);
-    phi = getRandIn(0, phi_max);
-    tr->R = r; tr->Z = z; tr->Phi = phi;
-    tr->Type = rank+1; tr->rmFlag = 0;
-    tr = tr->next;
+  if( !initType ){
+      if( !rank )
+         printf("Initializing tracers per cell\n");
+
+      struct cell **theCells = theDomain->theCells;
+      int  Nr = theDomain->Nr;
+      int  Nz = theDomain->Nz;
+      int *Np = theDomain->Np;
+      double *r_jph = theDomain->r_jph;
+      double *z_kph = theDomain->z_kph;
+
+      int i,j,k;
+      for( j=0; j<Nr; ++j ){
+         for( k=0; k<Nz; ++k ){
+            int jk = j+Nr*k;
+            double rm = r_jph[j-1];
+            double rp = r_jph[j];
+            double zm = z_kph[k-1];
+            double zp = z_kph[k];
+            for( i=0; i<Np[jk]; ++i ){
+               if( tr==NULL ){
+                  printf("Tracer list size does not match cell number\n");
+                  break;
+               }
+               struct cell *c = &(theCells[jk][i]);
+               double phip = c->piph;
+               double phim = phip - c->dphi;
+               double xp[3] = {rp,phip,zp};
+               double xm[3] = {rm,phim,zm};
+               double r = get_moment_arm(xp,xm);
+               tr->R   = r;
+               tr->Phi = 0.5*(phim+phip);
+               tr->Z   = 0.5*(zm+zp);
+               tr->ID  = id;
+               tr->Type   = 1; 
+               tr->rmFlag = 0;
+               id++;
+               tr = tr->next; 
+            }
+         }
+      }
+  }else{
+      if( !rank )
+         printf("Initializing tracers by number\n");
+
+      double r0   = theDomain->r0;
+      double z0   = theDomain->z0;
+      double delr = theDomain->delr;
+      double delz = theDomain->delz;
+      double phi_max = theDomain->theParList.phimax;
+
+      srand(rank);
+      rand();
+
+      double r, z, phi;
+      while( tr != NULL){
+         r = getRandIn(r0, delr);
+         z = getRandIn(z0, delz);
+         phi = getRandIn(0, phi_max);
+         tr->R = r; tr->Z = z; tr->Phi = phi;
+         tr->ID     = id;
+         tr->Type   = 1; // rank+1;
+         tr->rmFlag = 0;
+         id++;
+         tr = tr->next;
+     }
   }
   //printTracerCoords( theDomain );
+  syncTracerIDs( theDomain );
 }
 
 
@@ -160,6 +225,10 @@ void get_local_vel(struct tracer *tr, struct cell *c){
    double vr, om, vz;
    int type = 1;
 
+   //For testing
+   double Vv  = sqrt(20);
+   double phi = tr->Phi;
+
   if( c != NULL ){
       vr = c->prim[URR];
       om = c->prim[UPP];
@@ -169,14 +238,26 @@ void get_local_vel(struct tracer *tr, struct cell *c){
       om = 0.0;
       vz = 0.0;
       type = 2;
+      tr->Type = type;
    }
    tr->Vr    = vr;
    tr->Omega = om;
    tr->Vz    = vz;
    //tr->Type  = type;
-   if( c != NULL ){
-     //test_cell_vel( tr, c );
-   }
+   //if( c != NULL ){
+   //  test_cell_vel( tr, c );
+   //}
+}
+
+void set_tracer_vel( struct tracer *tr ){
+   //For testing
+   double Vv  = sqrt(50);
+   double phi = tr->Phi;
+
+   tr->Vr   =  Vv*cos(phi);
+   tr->Omega= -Vv*sin(phi);
+   tr->Vz   =  Vv*Vv;
+
 }
 
 struct cell * get_tracer_cell(struct domain *theDomain, struct tracer *tr){
@@ -226,12 +307,24 @@ void moveTracers(struct domain *theDomain, struct tracer *tr, double dt){
    double z = tr->Z;
 
    r += tr->Vr*dt;
-   if( r > rmax ) r = 0.0/0.0;
-   if( r < rmin ) r = 0.0/0.0;
+   if( r > rmax ){ 
+      r = 0.0/0.0;
+      tr->Type = 11;
+   }
+   if( r < rmin ) {
+      r = 0.0/0.0;
+      tr->Type = 11;
+   }
 
    z += tr->Vz*dt;
-   if( z > zmax ) z = 0.0/0.0;
-   if( z < zmin ) z = 0.0/0.0;
+   if( z > zmax ){
+      z = 0.0/0.0;
+      tr->Type = 21;
+   }
+   if( z < zmin ){
+      z = 0.0/0.0;
+      tr->Type = 21;
+   }
 
    tr->R = r;
    tr->Z = z;
@@ -242,11 +335,11 @@ void moveTracers(struct domain *theDomain, struct tracer *tr, double dt){
 
 
 void tracer_RK_copy( struct tracer * tr ){
-   tr->RK_r     = tr->R;
-   tr->RK_phi   = tr->Phi;
-   tr->RK_z	= tr->Z;
+   tr->RK_r    = tr->R;
+   tr->RK_phi  = tr->Phi;
+   tr->RK_z	   = tr->Z;
    tr->RK_vr	= tr->Vr;
-   tr->RK_omega = tr->Omega;
+   tr->RK_omega= tr->Omega;
    tr->RK_vz	= tr->Vz;
 }
 
@@ -267,6 +360,8 @@ void updateTracers(struct domain *theDomain, double dt){
    while( tr!=NULL ){
    	struct cell   *c  = get_tracer_cell( theDomain , tr );
 	   get_local_vel( tr , c );
+      //set_tracer_vel( tr );
+      //if( theDomain->rank==1 ) printf("%f\n", (tr->Vr)*(tr->Vr)+(tr->Omega)*(tr->Omega) );
       moveTracers( theDomain , tr , dt );
       tr = tr->next;
    }

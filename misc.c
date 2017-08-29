@@ -77,6 +77,7 @@ double getmindt( struct domain * theDomain ){
             double wp = c->wiph;
             double w = .5*(wm+wp);
             double dt_temp = mindt( c->prim , w , xp , xm );
+            //printf("jk, i, dt, dt_temp: %d, %d, %g, %g\n", jk,i,dt,dt_temp);
             if( dt > dt_temp ) dt = dt_temp;
          }
       }
@@ -640,36 +641,41 @@ int getN0( int, int, int );
 void setProcessCoords( struct domain *theDomain ){
   //Sets coordinate bounds of each process without ghost cells
   //Built for use in implementing tracers
-  int Num_R = theDomain->theParList.Num_R;
-  int Num_Z = theDomain->theParList.Num_Z;
+  int Nr = theDomain->Nr;
+  int Nz = theDomain->Nz;
+  int Ng = theDomain->Ng;
   int *dim_rank = theDomain->dim_rank;
   int *dim_size = theDomain->dim_size;
+  double *r_jph = theDomain->r_jph;
+  double *z_kph = theDomain->z_kph;
+  int Z_Periodic = theDomain->theParList.Z_Periodic;
+ 
+  double r0, rf;
+  if( dim_rank[0]!=0) 
+     r0 = r_jph[Ng-1];
+  else
+     r0 = r_jph[-1];
 
-  double rmin = theDomain->theParList.rmin;
-  double rmax = theDomain->theParList.rmax;
-  double zmin = theDomain->theParList.zmin;
-  double zmax = theDomain->theParList.zmax;
+  if( dim_rank[0]!=dim_size[0]-1)
+     rf = r_jph[(Nr-1)-Ng];
+  else
+     rf = r_jph[Nr-1];
 
-  int N0r = getN0( dim_rank[0], dim_size[0], Num_R );
-  int N1r = getN0( dim_rank[0]+1, dim_size[0], Num_R);
-  int Nr = N1r - N0r;
+  double z0, zf;
+  if( dim_rank[1]!=0 || Z_Periodic)
+     z0 = z_kph[Ng-1];
+  else
+     z0 = z_kph[-1];
 
-  int N0z = getN0( dim_rank[1], dim_size[1], Num_Z );
-  int N1z = getN0( dim_rank[1]+1, dim_size[1], Num_Z);
-  int Nz = N1z - N0z;
-
-  double dr = (rmax-rmin)/(double)Num_R;
-  double r0 = rmin + (double)N0r*dr;
-  double delr = Nr*dr;
-
-  double dz = (zmax-zmin)/(double)Num_Z;
-  double z0 = zmin + (double)N0z*dz;
-  double delz = Nz*dz;
+  if( dim_rank[1]!=dim_size[1]-1 || Z_Periodic )
+     zf = z_kph[(Nz-1)-Ng];
+  else
+     zf = z_kph[Nz-1];
 
   theDomain->r0 = r0;
   theDomain->z0 = z0;
-  theDomain->delr = delr;
-  theDomain->delz = delz;
+  theDomain->delr = rf-r0;
+  theDomain->delz = zf-z0;
 }
 
 void print_welcome(){

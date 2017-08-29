@@ -75,7 +75,9 @@ struct param_list{
    int alpha_flag;
 
    int num_tracers;
+   int tr_out_step;
    int tr_out_flag;
+   int tr_init_type;
 
    int restart_flag;
    int CT;
@@ -109,12 +111,13 @@ struct domain{
    struct face * theFaces_2;
    struct planet * thePlanets;
    struct tracerList * theTracers;   //object for local linked list of tracers
-   //struct tracer * head;        //pointer to start of linked list of tracers
+   //struct tracer * head;           //pointer to start of linked list of tracers
    int * Np;
    int Nr,Nz,Ng;
+   int Ncells;
    int N_ftracks_r;
    int N_ftracks_z;
-   int Npl, Ntr;	//number of planets and number of tracers
+   int Npl, Ntr;	                  //number of planets and number of tracers
    double * r_jph;
    double * z_kph;
    double r0, delr;
@@ -217,7 +220,9 @@ struct planet{
 };
 
 struct tracer{
+   int    ID;
    int    Type;
+   double Charac;
 
    double R;
    double Phi;
@@ -235,7 +240,7 @@ struct tracer{
 
    //Pointers to neighbors in linked list of tracers
    struct tracer *next;
-   struct tracer *prev;
+   //struct tracer *prev;
 
    //Flag for removal from linked list
    int rmFlag;

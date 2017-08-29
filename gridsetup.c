@@ -73,6 +73,7 @@ void setupGrid( struct domain * theDomain ){
       theDomain->z_kph[k] = z0 + ((double)k+1.)*dz;
    }
 
+   int Ncells = 0;
    for( j=0 ; j<Nr ; ++j ){
       double rp = theDomain->r_jph[j];
       double rm = theDomain->r_jph[j-1];
@@ -84,6 +85,8 @@ void setupGrid( struct domain * theDomain ){
          if( Np<4 ) Np=4;
 //         if( Np<40 ) Np=40;
          theDomain->Np[jk] = Np;
+         Ncells += Np;
       }
    }
+   theDomain->Ncells = Ncells;
 }

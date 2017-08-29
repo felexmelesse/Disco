@@ -22,14 +22,13 @@ int getListSize( struct tracerList *theList ){
   return size;
 }
 
-void rmTracers( struct tracerList *theList ){
+void rmTracers( struct domain *theDomain ){
 
-   int rank;
-   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  struct tracer *tr = theList->head;
-  struct tracer *prev = NULL;
-  struct tracer *del  = NULL;
-  while( tr!=NULL ){
+   struct tracerList *theList = theDomain->theTracers;
+   struct tracer *tr = theList->head;
+   struct tracer *prev = NULL;
+   struct tracer *del  = NULL;
+   while( tr!=NULL ){
       if( tr->rmFlag ){
          if( prev ){ //if prev has a valid value
             prev->next = tr->next;
@@ -76,7 +75,20 @@ void printTracerCoords( struct domain *theDomain ){
    while ( tr!=NULL ){
       type = tr->Type;
       r = tr->R; z = tr->Z; phi = tr->Phi;
-      printf("%d,\t (%4.4f,\t %4.4f,\t %4.4f)\n", type, r, phi, z);
+      printf("%d,  (%4.2f, %4.2f, %4.2f)\n", type, r, phi, z);
+      tr = tr->next;
+   }
+}
+
+void printTracerVels( struct domain *theDomain ){
+
+   struct tracer *tr = theDomain->theTracers->head;
+   int type;
+   double vr, vz, vp;
+   printf("Vels: (vr, om, vz)\n");
+   while( tr!=NULL ){
+      vr = tr->Vr; vp = tr->Omega; vz = tr->Vz;
+      printf("(%4.2f, %4.2f, %4.2f)\n", vr,vp,vz);
       tr = tr->next;
    }
 }

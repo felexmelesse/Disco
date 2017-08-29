@@ -4,7 +4,7 @@
 static double phi_max = 0.0;
 
 void setGeometryParams( struct domain * theDomain ){
-   phi_max = theDomain->phi_max;
+   phi_max = theDomain->theParList.phimax;
 }
 
 double get_dp( double phip , double phim ){

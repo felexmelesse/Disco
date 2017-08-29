@@ -48,15 +48,10 @@ void setupDomain( struct domain * theDomain ){
    theDomain->thePlanets = (struct planet *) malloc( Npl*sizeof(struct planet) );
    initializePlanets( theDomain->thePlanets );
 
-   //initialize tracers
-   setTracerParams( theDomain );
+   //set tracer params
    setProcessCoords( theDomain );
-   //int Ntr = theDomain->Ntr;
-   //theDomain->theTracers = (struct tracer *) malloc( Ntr*sizeof(struct tracer) );
-   theDomain->theTracers = (struct tracerList *) malloc( sizeof(struct tracerList) );
-   init_tracerList( theDomain );  //initialize each processor's tracer list
-   initializeTracers( theDomain );  //initialize tracers on each process
-   //initTracers_Rand( theDomain );
+   setGeometryParams( theDomain );
+   setTracerParams( theDomain );
 
    int num_tools = num_diagnostics();
    theDomain->num_tools = num_tools;
@@ -76,6 +71,13 @@ void setupDomain( struct domain * theDomain ){
          theDomain->theCells[jk][i].dphi = dp;
       }
    }
+
+   //Initialize Tracers
+   theDomain->theTracers = (struct tracerList *) malloc( sizeof(struct tracerList) );
+   init_tracerList( theDomain );  //initialize each processor's tracer list
+   initializeTracers( theDomain );  //initialize tracers on each process
+   //initTracers_Rand( theDomain );
+  
 
    theDomain->t       = theDomain->theParList.t_min;
    theDomain->t_init  = theDomain->theParList.t_min;
@@ -104,7 +106,6 @@ void setupDomain( struct domain * theDomain ){
 
    setICparams( theDomain );
    setHydroParams( theDomain );
-   setGeometryParams( theDomain );
    setRiemannParams( theDomain );
    setHlldParams( theDomain );
    setOmegaParams( theDomain );
@@ -274,7 +275,8 @@ void possiblyOutput( struct domain * theDomain , int override ){
       //longandshort( &theDomain , &L , &S , &iL , &iS , theDomain.theCells[0] , 0 , 0 );
       report( theDomain );
 
-      if( theDomain->rank==0 ) printf("t = %.3e   Step = %d\n", t,step);
+      if( theDomain->rank==0 ) 
+         printf("t = %.3e   Step = %d\n", t,step);
    }
    n0 = (int)( t*Nchk/t_fin );
    if( LogOut ) n0 = (int)( Nchk*log(t/t_min)/log(t_fin/t_min) );
@@ -284,7 +286,7 @@ void possiblyOutput( struct domain * theDomain , int override ){
       if( !override ){
          if( !theDomain->check_plz ){
             if(theDomain->rank==0) printf("Creating Checkpoint #%04d...\n",n0);
-            sprintf(filename,"checkpoint_%04d",n0);
+            sprintf(filename,"./checkpoint_%04d",n0);
          }else{
             if(theDomain->rank==0) printf("Creating Requested Checkpoint...\n");
             sprintf(filename,"checkpoint_latest");
@@ -310,12 +312,23 @@ void possiblyOutput( struct domain * theDomain , int override ){
 
 }
 
+int trOutStep( struct domain *theDomain ){
+
+   int step = theDomain->mdStep;
+   int printStep = theDomain->theParList.tr_out_step;
+
+   if( (step+printStep)%printStep==0 )
+      return 1;
+   else
+      return 0;
+}
+
 int getListSize( struct tracerList * );
 
 void tracerOutput( struct domain *theDomain ){
 
    char filename[256];
-   sprintf(filename, "%s.xyz", "tracerKepler" );
+   sprintf(filename, "%s.xyz", "zbinary" );
 
    int Ntr_tot = theDomain->Ntr;
    int step = theDomain->mdStep;
@@ -329,6 +342,7 @@ void tracerOutput( struct domain *theDomain ){
 
    if( rank==0 && step==0 ){
 	   FILE * pFile = fopen(filename, "w");
+      printf("Rewriting Tracer Out-File\n");
 	   fclose(pFile);
    }
    MPI_Barrier( theDomain->theComm);
@@ -341,12 +355,14 @@ void tracerOutput( struct domain *theDomain ){
          FILE * pFile = fopen(filename, "a");
          if( rank==0 && outFlag==0 ){
             fprintf(pFile, "%d \nAtoms. Timestep: %d\n", Ntr_tot+1, step);
-            //step, time, x, y, z, r, phi, vr, om, vz
-            fprintf(pFile, "%d %f %d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f \n",
-                     step,t, 0, 0.0,0.0,0.0, 0.0,0.0 ,0.0,0.0,0.0);
+            //printf(" Ntr_tot from output: %d \n", Ntr_tot );
+            // step,time, id,tpe,  x, y, z, r, phi, vr, om, vz
+            fprintf(pFile, "%d %4.2f %d %d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f \n",
+                     step,t, 0,0, 0.0,0.0,0.0, 0.0,0.0 ,0.0,0.0,0.0);
          }
          struct tracer *tr = theDomain->theTracers->head;
          while( tr != NULL){
+            int id   = tr->ID;
    	      int type = tr->Type;
    	      double r = tr->R;
       	   double phi = tr->Phi;
@@ -356,8 +372,12 @@ void tracerOutput( struct domain *theDomain ){
          	double vr = tr->Vr;
       	   double om = tr->Omega;
          	double vz = tr->Vz;
-      	   fprintf(pFile, "%d %3.3f %d %4.4f %4.4f %4.4f %4.4f %4.4f  %4.4f %4.4f %4.4f \n",
-                            step,t, type, x,y,z, r,phi, vr,om,vz);
+      	   fprintf(pFile, "%d %4.2f %d %d %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f \n",    
+                           step,t, 
+                           id,type, 
+                           x,y,z, 
+                           r,phi, 
+                           vr,om,vz);
             tr = tr->next;
             count++;
          }
@@ -365,6 +385,5 @@ void tracerOutput( struct domain *theDomain ){
       }
       MPI_Barrier( theDomain->theComm );
    }
-   step++;
-   theDomain->mdStep = step;
+
 }
