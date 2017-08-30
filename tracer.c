@@ -13,7 +13,7 @@ void setTracerParams( struct domain * theDomain){
    }else if( initType==1 ){
       if( theDomain->rank==0 )
          printf("Total Tracers: %d \n", num_tracers );
-   
+
       double rmin = theDomain->theParList.rmin;
       double rmax = theDomain->theParList.rmax;
       double zmin = theDomain->theParList.zmin;
@@ -32,7 +32,7 @@ void setTracerParams( struct domain * theDomain){
       double xp[3] = {r0+delr, phi_max, z0+delz};
       double dV = get_dV( xp, xm );
 
-      theDomain->Ntr = dV*ratio; 
+      theDomain->Ntr = dV*ratio;
    }else{
       int size = theDomain->size;
       theDomain->Ntr = num_tracers/size;
@@ -126,10 +126,11 @@ void initializeTracers( struct domain *theDomain ){
                tr->Phi = 0.5*(phim+phip);
                tr->Z   = 0.5*(zm+zp);
                tr->ID  = id;
-               tr->Type   = 1; 
+               tr->Type   = 1;
+               tr->Charac = 0.0;
                tr->rmFlag = 0;
                id++;
-               tr = tr->next; 
+               tr = tr->next;
             }
          }
       }
@@ -260,6 +261,21 @@ void set_tracer_vel( struct tracer *tr ){
 
 }
 
+int binSearch(double target, double *arr, int size){
+
+  int lo = 0;
+  int hi = size;
+  int mid = lo + (hi-lo)/2;
+  while( lo < hi ){
+    if( arr[mid] < target )
+      lo = mid+1;
+    else
+      hi = mid;
+    mid = lo + (hi-lo)/2;
+  }
+  return mid;
+}
+
 struct cell * get_tracer_cell(struct domain *theDomain, struct tracer *tr){
 
    struct cell **theCells = theDomain->theCells;
@@ -270,6 +286,16 @@ struct cell * get_tracer_cell(struct domain *theDomain, struct tracer *tr){
    double *r_jph = theDomain->r_jph;
    double *z_kph = theDomain->z_kph;
 
+   int i;
+   int j  = binSearch( tr->R, r_jph, Nr );
+   int k  = binSearch( tr->Z, z_kph, Nz );
+   int jk = j + Nr*k;
+   for( i=0; i<Np[jk]; ++i ){
+     struct cell *c = &(theCells[jk][i]);
+     if( check_phi( tr->Phi, c->piph, c->dphi, phi_max) )
+        return c;
+   }
+/*
    int i,j,k;
    for( j=0; j<Nr; ++j){
 	for( k=0; k<Nz; ++k){
@@ -285,11 +311,14 @@ struct cell * get_tracer_cell(struct domain *theDomain, struct tracer *tr){
 		   double xp[3] = {rp, phip, zp};
 		   double xm[3] = {rm, phim, zm};
 		   if( check_in_cell(tr, xp, xm, phi_max) ){
+         printf("(i,j,k): (%d, %d, %d)\n", i,j,k);
+         printf("(i,j,k)_1: (%d, %d, %d)\n", i1, j1, k1);
 			   return c;
 		}
 	   }
 	}
    }
+*/
    return NULL;
 
 }
@@ -307,7 +336,7 @@ void moveTracers(struct domain *theDomain, struct tracer *tr, double dt){
    double z = tr->Z;
 
    r += tr->Vr*dt;
-   if( r > rmax ){ 
+   if( r > rmax ){
       r = 0.0/0.0;
       tr->Type = 11;
    }
