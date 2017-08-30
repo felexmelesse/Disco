@@ -84,27 +84,31 @@ int Cell2Doub( struct cell * c , double * Q , int mode ){
    }
 }
 
-void buildTracerBuffers(struct domain *theDomain, int **trInt, double **trDubs, int *Nints, int *Ndubs  ){
-// (1) Build 1D array for local tracer data
-   *Nints = 2;
-   *Ndubs = 7;
-   int Ntr = theDomain->Ntr;
-   *trInt = (int*)malloc( (*Nints)*Ntr*sizeof(int) );
-   *trDubs = (double*)malloc( (*Ndubs)*Ntr*sizeof(double) );
+void buildTracerBuffers( struct domain *theDomain, int *trInt, double *trDubs, int Nints, int Ndubs, int Ncharcs  ){
+   //*Nints = 2;
+   //*Ndubs = 7;
+   //int Ntr = theDomain->Ntr;
+   //trInt = ( int** )    malloc( (*Nints)*Ntr*sizeof(int*) );
+   //trDubs = ( double** )malloc( (*Ndubs)*Ntr*sizeof(double*) );
 
-   int count = 0;
+   int count = 0, i;
+   int chNum[Ncharcs];
+   for( i=0; i<Ncharcs; i++)
+      chNum[i] = i;
    struct tracer *tr = theDomain->theTracers->head;
-   while( tr!=NULL){
-      *trInt[count*(*Nints) + 0] = tr->ID;
-      *trInt[count*(*Nints) + 1] = tr->Type;
+   if( 6+Ncharcs != Ndubs ) printf("Number of doubles to be written does not match!");
+   while( tr!=NULL ){
+      trInt[count*(Nints) + 0] = tr->ID;
+      trInt[count*(Nints) + 1] = tr->Type;
       
-      *trDubs[count*(*Ndubs) + 0] = tr->R;
-      *trDubs[count*(*Ndubs) + 1] = tr->Phi;
-      *trDubs[count*(*Ndubs) + 2] = tr->Z;      
-      *trDubs[count*(*Ndubs) + 3] = tr->Vr;
-      *trDubs[count*(*Ndubs) + 4] = tr->Omega;
-      *trDubs[count*(*Ndubs) + 5] = tr->Vz;
-      *trDubs[count*(*Ndubs) + 6] = tr->Charac;
+      trDubs[count*(Ndubs) + 0] = tr->R;
+      trDubs[count*(Ndubs) + 1] = tr->Phi;
+      trDubs[count*(Ndubs) + 2] = tr->Z;      
+      trDubs[count*(Ndubs) + 3] = tr->Vr;
+      trDubs[count*(Ndubs) + 4] = tr->Omega;
+      trDubs[count*(Ndubs) + 5] = tr->Vz;
+      for( i=0; i<Ncharcs; i++)
+         trDubs[count*(Ndubs) +chNum[i] +6 ] = tr->Charac;
       
       tr = tr->next;
       count++;
@@ -389,15 +393,15 @@ void output( struct domain * theDomain , char * filestart ){
    int Ndoub = Cell2Doub(NULL,NULL,0);
 
 //Building Tracer Buffer
-   int Nints, Ndubs;
-   int Ntr_tot = theDomain->Ntr;
-   int myNtr   = Ntr_tot;
-   int    *trInts;
-   double *trDubs;
+   int Nints    = 2;
+   int Ncharacs = 1;
+   int Ndubs    = 6 + Ncharacs;
+   int Ntr_tot  = theDomain->Ntr;
+   int myNtr    = Ntr_tot;
+   int    *trInts = (int*)    malloc( Nints*myNtr*sizeof(int) );
+   double *trDubs = (double*) malloc( Ndubs*myNtr*sizeof(double) );
    MPI_Allreduce( MPI_IN_PLACE, &Ntr_tot, 1, MPI_INT, MPI_SUM, theDomain->theComm );
-
-   buildTracerBuffers( theDomain, &trInts, &trDubs, &Nints, &Ndubs );
-
+   buildTracerBuffers( theDomain, trInts, trDubs, Nints, Ndubs, Ncharacs );
 
    hsize_t fdims1[1];
    hsize_t fdims2[2];
@@ -437,6 +441,7 @@ void output( struct domain * theDomain , char * filestart ){
       hsize_t fdims3[3] = {Nz_Tot, Nr_Tot, Ntools};
       createDataset(filename,"Data", "Diagnostics", 3, fdims3, H5T_NATIVE_DOUBLE);
    }
+
    MPI_Barrier( theDomain->theComm );
    if( rank==0 ){
       writeSimple(filename,"Grid","T",&(theDomain->t),H5T_NATIVE_DOUBLE);
@@ -592,7 +597,6 @@ void output( struct domain * theDomain , char * filestart ){
          glo_size2[1] = Ndubs;
          writePatch( filename, "Data", "Tracer_data", trDubs, H5T_NATIVE_DOUBLE, 2, start2, loc_size2, glo_size2 );
 
-
       }
       MPI_Barrier( theDomain->theComm );
    }
@@ -607,5 +611,4 @@ void output( struct domain * theDomain , char * filestart ){
    free(trDubs);
    MPI_Barrier(theDomain->theComm);
 }
-
 
