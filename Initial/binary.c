@@ -4,11 +4,13 @@
 static double gam  = 0.0;
 static double nu   = 0.0;
 static double Mach = 0.0;
+static double rho_fl = 0.0;
 
 void setICparams( struct domain * theDomain ){
    gam  = theDomain->theParList.Adiabatic_Index;
    nu   = theDomain->theParList.viscosity;
    Mach = theDomain->theParList.Disk_Mach;
+   rho_fl = theDomain->theParList.Density_Floor;
 }
 
 double interp( double r ){
@@ -31,7 +33,7 @@ void initial( double * prim , double * x ){
 
    double rho, Pp;
    //rho = 1.0*exp(-sint*sint*Mach*Mach);
-   rho = pow(r,-0.5)*exp( -pow(r/r0,-d) );
+   rho = pow(r,-0.5)*exp( -pow(r/r0,-d) ) + rho_fl;
    
    Pp  = rho*cs2/gam;
    //Pp  = 0.01*pow(r,-3./2.)*exp( -pow(r/r0,-d) );
@@ -55,5 +57,7 @@ void initial( double * prim , double * x ){
    prim[UPP] = omega;
    prim[UZZ] = 0.0;
    if( NUM_N>0 ) prim[NUM_C] = X;
-
+  
+   if( r<2 && r>-2)
+      printf("r, om: %g, %g\n", r,omega);
 }
