@@ -30,8 +30,8 @@ void initial( double * prim , double * x ){
    double cs2  = get_cs2( r );
 
    double rho, Pp;
-   //rho = 1.0*exp(-sint*sint*Mach*Mach);
-   rho = pow(r,-0.5)*exp( -pow(r/r0,-d) );
+   rho = 1.0*exp(-sint*sint*Mach*Mach);
+   //rho = pow(r,-0.5)*exp( -pow(r/r0,-d) );
    
    Pp  = rho*cs2/gam;
    //Pp  = 0.01*pow(r,-3./2.)*exp( -pow(r/r0,-d) );

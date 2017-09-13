@@ -328,7 +328,7 @@ int getListSize( struct tracerList * );
 void tracerOutput( struct domain *theDomain ){
 
    char filename[256];
-   sprintf(filename, "%s.xyz", "zbinary" );
+   sprintf(filename, "%s.xyz", "tracers" );
 
    int Ntr_tot = theDomain->Ntr;
    int step = theDomain->mdStep;

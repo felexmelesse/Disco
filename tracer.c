@@ -1,5 +1,7 @@
 #include "paul.h"
 
+static int Nmc = 0.0;
+
 double get_dV( double *, double * );
 
 void setTracerParams( struct domain * theDomain){
@@ -38,7 +40,7 @@ void setTracerParams( struct domain * theDomain){
       theDomain->Ntr = num_tracers/size;
    }
 
-
+   theDomain->Nmc = Nmc;
    //theDomain->tr_out = theDomain->theParList.tr_out_flag;
    MPI_Barrier( theDomain->theComm );
    printf("Rank %d: Ntr = %d \n", theDomain->rank, theDomain->Ntr);

@@ -4,7 +4,6 @@ import h5py as h5
 import matplotlib.pyplot as plt
 import numpy as np
 
-<<<<<<< HEAD
 def loadPars(filename):
 
     f = h5.File(filename, "r")
