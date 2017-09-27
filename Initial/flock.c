@@ -20,10 +20,10 @@ void initial( double * prim , double * x ){
    double cs = 0.1*omega*r;
    double Pp = cs*cs*rho/(5./3.);
 
-   double vr = 1e-3*rnd1 - 5e-4;
-   double vz = 1e-3*rnd2 - 5e-4;
+   double vr = 0.0; //1e-3*rnd1 - 5e-4;
+   double vz = 0.0; //1e-3*rnd2 - 5e-4;
 
-   double Bz = 0.05513/n;
+   double Bz = 0.0; //0.05513/n;
    if( r < 2. || r > 3. ) Bz = 0.0;
 
    prim[RHO] = rho;

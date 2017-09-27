@@ -85,7 +85,7 @@ def primPlot(fig, ax, rjph, piph, r, q, label, pars, vmin=None, vmax=None,
 
 def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
                     bounds=None, rmax=None, planets=False, k=None):
-   
+    
     print("Loading {0:s}...".format(file))
 
     t, r, phi, z, prim, dat = du.loadCheckpoint(file)
@@ -268,4 +268,7 @@ if __name__ == "__main__":
         plotCheckpoint(f, vars=vars, logvars=logvars, bounds=bounds, om=om, 
                         rmax=rmax, noGhost=noghost, planets=planets)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 625b9c03f5e8972f861326538853898537e57b35

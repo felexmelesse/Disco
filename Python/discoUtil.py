@@ -28,6 +28,7 @@ def loadOpts(filename):
 
     return opts
 
+
 def loadCheckpoint(filename):
 
     f = h5.File(filename, "r")

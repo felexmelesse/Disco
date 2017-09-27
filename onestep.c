@@ -121,6 +121,14 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
       //AMR( theDomain );
    }
 
+   //TODO: This was BEFORE BCs, but if wrecks cell pointers...
+   //      Here, the BCs may not be satisfied if boundary zones are AMR'd...
+   //TODO 2: AMR leading to STRANGE behaviour in 3d? Z boundaries being
+   //           overwritten?  Needs a closer look.
+   if( last_step ){
+      //AMR( theDomain );
+   }
+
 
    if( theDomain->theFaces_1 ) free( theDomain->theFaces_1 );
    if( theDomain->theFaces_2 ) free( theDomain->theFaces_2 );

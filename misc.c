@@ -697,4 +697,3 @@ void print_welcome(){
     printf("CT_MODE: %d\n", CT_MODE);
     printf("\n");
 }
- 
