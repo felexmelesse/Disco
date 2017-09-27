@@ -58,7 +58,7 @@ void init_tracerList( struct domain *theDomain ){
 
    int N = Ntr;
    if( Nmc ){
-      printf("Using %g Monte Carlo Tracers per Cell", Nmc)
+      printf("Using %g Monte Carlo Tracers per Cell", Nmc);
       N = Ntr*Nmc;
    }
 
