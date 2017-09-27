@@ -75,7 +75,7 @@ struct param_list{
    int alpha_flag;
 
    int num_tracers;
-   int num_mc_trs;
+   int mc_flag;
    int tr_out_step;
    int tr_out_flag;
    int tr_init_type;
@@ -118,7 +118,7 @@ struct domain{
    int Ncells;
    int N_ftracks_r;
    int N_ftracks_z;
-   int Npl, Ntr, Nmc;	                  //number of planets and number of tracers
+   int Npl, Ntr;	                  //number of planets and number of tracers
    double * r_jph;
    double * z_kph;
    double r0, delr;
@@ -156,6 +156,7 @@ struct domain{
 
 struct cell{
 
+   double coords[3];
    double prim[NUM_Q];
    double cons[NUM_Q];
    double RKcons[NUM_Q];
@@ -172,6 +173,7 @@ struct cell{
    double RK_Phi[NUM_FACES];
    double tempDoub;
 
+   struct tracerList *myList;
    int real;
 };
 
@@ -242,7 +244,7 @@ struct tracer{
    //Pointers to neighbors in linked list of tracers
    struct tracer *next;
    //struct tracer *prev;
-   struct cell *myCell;       //not totally sure this is correct here
+   //struct cell *myCell;       //not totally sure this is correct here
 
    //Flag for removal from linked list
    int rmFlag;

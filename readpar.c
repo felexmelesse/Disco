@@ -127,6 +127,7 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Noise_Abs" , VAR_DOUB  , &(theList->noiseAbs));
          err += readvar( pfile , "Noise_Rel" , VAR_DOUB  , &(theList->noiseRel));
          err += readvar( pfile , "N_Tracers" , VAR_INT  , &(theList->num_tracers));
+         err += readvar( pfile , "MC_Flag"   , VAR_INT   ,&(theList->mc_flag));
          err += readvar( pfile , "Tracer_Init_Type", VAR_INT, &(theList->tr_init_type));
          err += readvar( pfile , "Tracer_Out_Step", VAR_INT, &(theList->tr_out_step));
          err += readvar( pfile , "Tracer_Out_Type", VAR_INT, &(theList->tr_out_flag));

@@ -9,6 +9,7 @@ BOUNDARY = polar
 OUTPUT   = h5out
 RESTART  = h5in
 PLANETS  = none
+# TRACERS   = vel_tracers
 HLLD     = hlld
 ANALYSIS = diag_euler
 

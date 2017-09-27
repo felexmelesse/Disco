@@ -35,7 +35,8 @@ double get_signed_dp( double , double );
 void visc_flux( double * , double * , double * , double * , double * );
 void flux_to_E( double * , double * , double * , double * , double * , double * , double * , int );
 
-void solve_riemann( double * , double * , double *, double * , double * , double * , double * , double * , double , double , int , double * , double * , double * , double * );
+//void solve_riemann( double * , double * , double *, double * , double * , double * , double * , double * , double , double , int , double * , double * , double * , double * );
+void solve_riemann( double *, double *, struct cell *  , struct cell * , double *, double *, double , double , int , double *, double *, double *, double * );
 
 void riemann_phi( struct cell * cL , struct cell * cR, double * x , double dAdt ){
 
@@ -58,7 +59,8 @@ void riemann_phi( struct cell * cL , struct cell * cR, double * x , double dAdt 
    }
 
    double Er,Ez,Br,Bz;
-   solve_riemann( primL , primR , cL->cons , cR->cons , cL->gradp , cR->gradp , x , n , r*cL->wiph , dAdt , 0 , &Ez , &Br , &Er , &Bz );
+   //solve_riemann( primL , primR , cL->cons , cR->cons , cL->gradp , cR->gradp , x , n , r*cL->wiph , dAdt , 0 , &Ez , &Br , &Er , &Bz );
+   solve_riemann( primL, primR, cL, cR, x, n, r*cL->wiph, dAdt, 0, &Ez, &Br, &Er, &Bz );
 
    if( NUM_EDGES == 4 ){
       cL->E[0] = .5*Ez;
@@ -136,7 +138,8 @@ void riemann_trans( struct face * F , double dt , int dim ){
    }
 
    double Erz,Brz,Ephi,buffer;
-   solve_riemann( primL , primR , cL->cons , cR->cons , cL->grad , cR->grad , F->cm , n , 0.0 , dAdt , dim , &Erz , &Brz , &Ephi , &buffer );
+   //solve_riemann( primL , primR , cL->cons , cR->cons , cL->grad , cR->grad , F->cm , n , 0.0 , dAdt , dim , &Erz , &Brz , &Ephi , &buffer );
+   solve_riemann( primL, primR, cL, cR, F->cm, n, 0.0, dAdt, dim, &Erz, &Brz, &Ephi, &buffer);
  
    double fracL = F->dphi / cL->dphi;
    double fracR = F->dphi / cR->dphi;
@@ -177,8 +180,11 @@ void riemann_trans( struct face * F , double dt , int dim ){
    }
 }
 
+tracerMC( double, struct cell *, struct cell * );
 
-void solve_riemann( double * primL , double * primR , double * consL , double * consR , double * gradL , double * gradR , double * x , double * n , double w , double dAdt , int dim , double * E1_riemann , double * B1_riemann , double * E2_riemann , double * B2_riemann ){
+//void solve_riemann( double * primL , double * primR , double * consL , double * consR , double * gradL , double * gradR , double * x , double * n , double w , double dAdt , int dim , double * E1_riemann , double * B1_riemann , double * E2_riemann , double * B2_riemann ){
+//
+void solve_riemann( double *primL, double *primR, struct cell * cL , struct cell * cR, double *x, double *n, double w, double dAdt, int dim, double *E1_riemann, double *B1_riemann, double *E2_riemann, double *B2_riemann ){
 
    int q;
    double r = x[0];
@@ -254,7 +260,8 @@ void solve_riemann( double * primL , double * primR , double * consL , double * 
       double gprim[NUM_Q];
       for( q=0 ; q<NUM_Q ; ++q ){
          prim[q] = .5*(primL[q]+primR[q]);
-         gprim[q] = .5*(gradL[q]+gradR[q]);
+         //gprim[q] = .5*(gradL[q]+gradR[q]);
+         gprim[q] = .5*(cL->grad[q]+cR->grad[q]);
          if( dim==0 ) gprim[q] /= r;
          vFlux[q] = 0.0;
       }
@@ -263,10 +270,14 @@ void solve_riemann( double * primL , double * primR , double * consL , double * 
    }
 
    for( q=0 ; q<NUM_Q ; ++q ){
-      consL[q] -= (Flux[q] - w*Ustr[q])*dAdt;
-      consR[q] += (Flux[q] - w*Ustr[q])*dAdt;
+      //consL[q] -= (Flux[q] - w*Ustr[q])*dAdt;
+      //consR[q] += (Flux[q] - w*Ustr[q])*dAdt;
+      cL->cons[q] -= (Flux[q] - w*Ustr[q])*dAdt;
+      cR->cons[q] += (Flux[q] - w*Ustr[q])*dAdt;
    }
 
+   tracerMC( Flux[0], cL, cR );
+   
    flux_to_E( Flux , Ustr , x , E1_riemann , B1_riemann , E2_riemann , B2_riemann , dim );
 /*
    if( use_B_fields && NUM_Q > BZZ ){

@@ -16,6 +16,7 @@ OPT_DEFS += -DBOUNDARY=\"$(BOUNDARY)\"
 OPT_DEFS += -DOUTPUT=\"$(OUTPUT)\"
 OPT_DEFS += -DRESTART=\"$(RESTART)\"
 OPT_DEFS += -DPLANETS=\"$(PLANETS)\"
+OPT_DEFS += -DTRACERS=\"$(TRACERS)\"
 OPT_DEFS += -DHLLD=\"$(HLLD)\"
 OPT_DEFS += -DANALYSIS=\"$(ANALYSIS)\"
 OPT_DEFS += -DMETRIC=\"$(METRIC)\"
@@ -29,7 +30,7 @@ FLAGS = -O3 -Wall -g $(OPT_DEFS)
 INC = -I$(H55)/include
 LIB = -L$(H55)/lib -lhdf5 -lm
 
-OBJ = main.o readpar.o timestep.o onestep.o riemann.o mpisetup.o gridsetup.o domain.o misc.o geometry.o faces_alt.o exchange.o exchange_tr.o plm.o report.o profiler.o planet.o tracer.o tracerList.o omega.o analysis.o bfields.o $(HLLD).o rotframe.o boundary_functions.o $(INITIAL).o $(OUTPUT).o $(HYDRO).o $(BOUNDARY).o $(RESTART).o $(PLANETS).o $(METRIC).o $(FRAME).o calc.o $(ANALYSIS).o  noise.o #snapshot.o
+OBJ = main.o readpar.o timestep.o onestep.o riemann.o mpisetup.o gridsetup.o domain.o misc.o geometry.o faces_alt.o exchange.o exchange_tr.o plm.o report.o profiler.o planet.o tracerList.o omega.o analysis.o bfields.o $(HLLD).o rotframe.o boundary_functions.o $(INITIAL).o $(OUTPUT).o $(HYDRO).o $(BOUNDARY).o $(RESTART).o $(PLANETS).o $(TRACERS).o $(METRIC).o $(FRAME).o calc.o $(ANALYSIS).o  noise.o #snapshot.o #$(TRACERS).o
 
 default: disco
 
@@ -58,6 +59,9 @@ $(HYDRO).o : Hydro/$(HYDRO).c paul.h
 
 $(PLANETS).o : Planets/$(PLANETS).c paul.h
 	$(CC) $(FLAGS) $(LOCAL_CFLAGS) $(INC) -c Planets/$(PLANETS).c
+
+$(TRACERS).o : Tracers/$(TRACERS).c paul.h
+	$(CC) $(FLAGS) $(LOCAL_CFLAGS) $(INC) -c Tracers/$(TRACERS).c
 
 $(BOUNDARY).o : Boundary/$(BOUNDARY).c paul.h
 	$(CC) $(FLAGS) $(LOCAL_CFLAGS) $(INC) -c Boundary/$(BOUNDARY).c

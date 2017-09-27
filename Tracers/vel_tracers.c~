@@ -1,4 +1,4 @@
-#include "paul.h"
+#include "../paul.h"
 
 double get_dV( double *, double * );
 
@@ -47,6 +47,26 @@ void setTracerParams( struct domain * theDomain){
 double getRandIn( double xmin, double dx){
 
   return xmin + ( (double)rand()/(double)RAND_MAX )*dx;
+}
+
+void addTracer( struct tracerList *theList );
+
+void init_tracerList( struct domain *theDomain ){
+
+   int Ntr = theDomain->Ntr;
+   struct tracerList *theList = theDomain->theTracers;
+   theList->head = NULL;
+   theList->size = 0;
+
+   int n;
+   for( n=0; n<Ntr; ++n){     //create linked list of Ntr tracers
+      addTracer( theList );
+   }
+
+   //printf("Trying to get list size (%d were added)\n", theList->size);
+   //int size = getListSize( theList );
+   //printf("List Size: %d\n", size);
+
 }
 
 void printTracerCoords( struct domain * );
@@ -365,3 +385,70 @@ void updateTracers(struct domain *theDomain, double dt){
    }
 
 }
+
+
+void tracerOutput( struct domain *theDomain ){
+
+   char filename[256];
+   sprintf(filename, "%s.xyz", "tracers_vel" );
+
+   int Ntr_tot = theDomain->Ntr;
+   int step = theDomain->mdStep;
+   int rank = theDomain->rank;
+   int size = theDomain->size;
+   double t = theDomain->t;
+
+   int outFlag = theDomain->theParList.tr_out_flag;
+
+   MPI_Allreduce( MPI_IN_PLACE, &Ntr_tot, 1, MPI_INT, MPI_SUM, theDomain->theComm );
+
+   if( rank==0 && step==0 ){
+	   FILE * pFile = fopen(filename, "w");
+      printf("Rewriting Tracer Out-File\n");
+	   fclose(pFile);
+   }
+   MPI_Barrier( theDomain->theComm);
+
+   int rk;
+   int count=0;
+   for( rk=0; rk<size; ++rk){
+      //MPI_Barrier( theDomain->theComm );
+      if( rank==rk ){
+         FILE * pFile = fopen(filename, "a");
+         if( rank==0 && outFlag==0 ){
+            fprintf(pFile, "%d \nAtoms. Timestep: %d\n", Ntr_tot+1, step);
+            //printf(" Ntr_tot from output: %d \n", Ntr_tot );
+            // step,time, id,tpe,  x, y, z, r, phi, vr, om, vz
+            fprintf(pFile, "%d %4.2f %d %d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f \n",
+                     step,t, 0,0, 0.0,0.0,0.0, 0.0,0.0 ,0.0,0.0,0.0);
+         }
+         struct tracer *tr = theDomain->theTracers->head;
+         while( tr != NULL){
+            int id   = tr->ID;
+   	      int type = tr->Type;
+   	      double r = tr->R;
+      	   double phi = tr->Phi;
+      	   double z = tr->Z;
+      	   double x = r*cos(phi);
+         	double y = r*sin(phi);
+         	double vr = tr->Vr;
+      	   double om = tr->Omega;
+         	double vz = tr->Vz;
+      	   fprintf(pFile, "%d %4.2f %d %d %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f \n",    
+                           step,t, 
+                           id,type, 
+                           x,y,z, 
+                           r,phi, 
+                           vr,om,vz);
+            tr = tr->next;
+            count++;
+         }
+         fclose(pFile);
+      }
+      MPI_Barrier( theDomain->theComm );
+   }
+
+}
+
+                                                                                       1
+

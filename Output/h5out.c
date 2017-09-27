@@ -530,9 +530,10 @@ void output( struct domain * theDomain , char * filestart ){
       MPI_Bcast( &thisTot , 1 , MPI_INT , nrk , theDomain->theComm );
       if( rank > nrk ) 
          runningTot += thisTot;
-      MPI_Bcast( &thisNtr, 1, MPI_INT, nrk, theDomain->theComm );
+/*      MPI_Bcast( &thisNtr, 1, MPI_INT, nrk, theDomain->theComm );
       if( rank > nrk ) 
          Ntr_b4 += thisNtr;
+*/
    }
 
    int jk;

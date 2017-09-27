@@ -48,30 +48,6 @@ void rmTracers( struct domain *theDomain ){
    }
 }
 
-void init_tracerList( struct domain *theDomain ){
-
-   int Ntr = theDomain->Ntr;
-   int Nmc = theDomain->Nmc;
-   struct tracerList *theList = theDomain->theTracers;
-   theList->head = NULL;
-   theList->size = 0;
-
-   int N = Ntr;
-   if( Nmc ){
-      printf("Using %g Monte Carlo Tracers per Cell", Nmc)
-      N = Ntr*Nmc;
-   }
-
-   int n;
-   for( n=0; n<N; ++n){     //create linked list of Ntr tracers
-      addTracer( theList );
-   }
-
-   //printf("Trying to get list size (%d were added)\n", theList->size);
-   //int size = getListSize( theList );
-   //printf("List Size: %d\n", size);
-
-}
 
 void printTracerCoords( struct domain *theDomain ){
 
