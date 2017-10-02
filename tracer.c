@@ -75,7 +75,7 @@ void initTracers_Rand( struct domain *theDomain ){  //randomly init tracers in s
      double z = getRandIn( zmin, dz );
      double phi = getRandIn( 0.0, phimax );
      tr->R = r; tr->Z = z; tr->Phi = phi;
-     tr->Type   = 0;
+     tr->Type   = 1;
      tr->rmFlag = 0;
      tr = tr->next;
    }
@@ -200,21 +200,21 @@ void test_cell_vel( struct tracer *tr, struct cell *c ){
 	   tr->Vr 	  = 0;
 	   tr->Omega = 0;
    	tr->Vz    = 0;
-	   tr->Type  = 3;
+	   //tr->Type  = 3;
    	check1 = 1;
    }
    if( isnan(c->prim[UPP]) ){
 	   tr->Vr    = 0;
       tr->Omega = 0;
       tr->Vz    = 0;
-      tr->Type  = 4;
+      //tr->Type  = 4;
    	check2 = 1;
    }
    if( isnan(c->prim[UZZ]) ){
 	   tr->Vr    = 0;
       tr->Omega = 0;
       tr->Vz    = 0;
-      tr->Type  = 5;
+      //tr->Type  = 5;
 	   check3 = 1;
    }
 
@@ -340,21 +340,21 @@ void moveTracers(struct domain *theDomain, struct tracer *tr, double dt){
    r += tr->Vr*dt;
    if( r > rmax ){
       r = 0.0/0.0;
-      tr->Type = 11;
+      //tr->Type = 11;
    }
    if( r < rmin ) {
       r = 0.0/0.0;
-      tr->Type = 11;
+      //tr->Type = 11;
    }
 
    z += tr->Vz*dt;
    if( z > zmax ){
       z = 0.0/0.0;
-      tr->Type = 21;
+      //tr->Type = 21;
    }
    if( z < zmin ){
       z = 0.0/0.0;
-      tr->Type = 21;
+      //tr->Type = 21;
    }
 
    tr->R = r;

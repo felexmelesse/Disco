@@ -28,7 +28,7 @@ int testTracerCoords( struct domain *theDomain ){
 
       if( isnan(r) && isnan(z) && isnan(phi) ){
          printf("Tracer was corrupted on rank %d\n", rank);
-         if(tr->Type==50) printf(" - It was passed\n");
+         //if(tr->Type==50) printf(" - It was passed\n");
          return 1;
       }
       tr = tr->next;
@@ -76,7 +76,7 @@ void copy_tr_to_lite( struct tracer *tr, struct tr_lite *trl ){
 void copy_lite_to_tr( struct tr_lite *trl, struct tracer *tr ){
 
    tr->ID    = trl->id;
-   tr->Type  = 50;   //trl->type;
+   tr->Type  = trl->type;
    tr->R     = trl->x[0];
    tr->Vr    = trl->v[0];
    tr->Phi   = trl->x[1];
