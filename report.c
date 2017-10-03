@@ -92,7 +92,7 @@ void report( struct domain * theDomain ){
             L1_isen += fabs(Pp/pow(rho,gamma_law)-1.)*dV;
             L1_rho  += fabs(rho/rho0-1.)*dV;
             L1_P    += fabs(Pp/pow(rho,5./3.)/0.01-1.)*dV;
-            if( NUM_Q > BRR ){
+            if( NUM_C > BZZ ){
                double Br = c->prim[BRR];
                double Bp = c->prim[BPP];
                double Bz = c->prim[BZZ];
