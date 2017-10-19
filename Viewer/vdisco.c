@@ -425,8 +425,8 @@ void DrawGLScene(){
             float rrr,ggg,bbb;
             get_rgb( val , &rrr , &ggg , &bbb , cmap );
 
-            //if( (!dim3d || (sin(phi)>0 || cos(phi+.25)<0.0)) && dim3d !=2 ){
-            if( dp < 1.5 && (!dim3d || (sin(phi)>0 && cos(phi)>0.0)) && dim3d !=2 ){
+            if( (!dim3d || (sin(phi)>0 || cos(phi+.25)<0.0)) && dim3d !=2 ){
+            //if( dp < 1.5 && (!dim3d || (sin(phi)>0 && cos(phi)>0.0)) && dim3d !=2 ){
                if( !draw_border_now ){ 
                   glColor3f( rrr , ggg , bbb );
                   glBegin(GL_POLYGON);
@@ -437,19 +437,31 @@ void DrawGLScene(){
                }
 
                double z0 = 0.0;
-               if( dim3d ) z0 = z_kph[Nz-1]/rescale;
+               if( dim3d ) z0 = z_kph[KK]/rescale;
      
                double c0 = rm*cos(phim);
                double c1 = rm*sin(phim);
                glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
 
+               int np = (int) (rp*(phip-phim) / (rp-rm)) + 1;
+               int nm = (int) (rm*(phip-phim) / (rp-rm)) + 1;
+
                c0 = rp*cos(phim);
                c1 = rp*sin(phim);
                glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
 
-               c0 = rp*cos(phi)/cos(.5*dp);
-               c1 = rp*sin(phi)/cos(.5*dp);
-               glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+               int p;
+               for(p=1; p<np; p++)
+               {
+                   double ph = phim + (p*(phip-phim))/np;
+                   c0 = rp*cos(ph)/cos(dp/np);
+                   c1 = rp*sin(ph)/cos(dp/np);
+                   glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+               }
+
+               //c0 = rp*cos(phi)/cos(.5*dp);
+               //c1 = rp*sin(phi)/cos(.5*dp);
+               //glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
 
                c0 = rp*cos(phip);
                c1 = rp*sin(phip);
@@ -458,6 +470,14 @@ void DrawGLScene(){
                c0 = rm*cos(phip);
                c1 = rm*sin(phip);
                glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+               
+               for(p=nm-1; p>0; p--)
+               {
+                   double ph = phim + (p*(phip-phim))/nm;
+                   c0 = rm*cos(ph);
+                   c1 = rm*sin(ph);
+                   glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+               }
 
                glEnd();
             }
