@@ -29,6 +29,8 @@
 #define CAM_BACKUP  1.5
 #define ZRORDER 1 // 1: checkpoints organized with faster index r (default,new)
                   // 0: checkpoints organized with slower index r (old)
+#define DIAGMODE 1 // 1: checkpoints store RZ diagnostics (default,new)
+                   // 0: checkpoints store R diagnostics (old)
 
 static int WindowWidth  = 600;
 static int WindowHeight = 600;
@@ -62,14 +64,14 @@ double offx, offy, rescale, maxval, minval;
 
 double t;
 int Nr,Nz,Nq,Npl,N1d,midz;
-int * Np;
-double * r_jph;
-double * z_kph;
-double ** p_iph;
-double *** theZones;
-double ** rzZones;
-double ** thePlanets;
-double ** theRadialData;
+int * Np = NULL;
+double * r_jph = NULL;
+double * z_kph = NULL;
+double ** p_iph = NULL;
+double *** theZones = NULL;
+double ** rzZones = NULL;
+double ** thePlanets = NULL;
+double ** theRadialData = NULL;
 
 double max_1d = 1.0;
 
@@ -323,21 +325,24 @@ void DrawGLScene(){
       glEnd();
       glLineWidth( 3.0f );
       glColor3f(0.0,0.0,0.0);
-      glBegin( GL_LINE_STRIP );
-      int j;
-//      for( j=0 ; j<Nr ; ++j ){
-      for( j=0 ; j<Nr ; ++j ){
-         //if(logscale) val = log(getval(theZones[i],q))/log(10.);
-         double rm = r_jph[j-1];
-         double rp = r_jph[j]; 
-         double val = theRadialData[j][q]/max_1d;//*pow(.5*(rp+rm),1.5);//2.*(theRadialData[j][q]-minval)/(maxval-minval) - 1.;//getval(theZones[i],q);
-         if( q==1 ) val *= 1e2;
-         val = 2.*val - 1.;
-         double c0 = 2.*((.5*(rp+rm)-r_jph[-1])/(r_jph[Nr-1]-r_jph[-1]) - .5)/rescale;
-         double c1 = val/rescale;
-         glVertex3f( c0-xoff, c1-yoff, camdist-zoff+.001 );
-      }    
-      glEnd();
+      if(theRadialData != NULL)
+      {
+          glBegin( GL_LINE_STRIP );
+          int j;
+    //      for( j=0 ; j<Nr ; ++j ){
+          for( j=0 ; j<Nr ; ++j ){
+             //if(logscale) val = log(getval(theZones[i],q))/log(10.);
+             double rm = r_jph[j-1];
+             double rp = r_jph[j]; 
+             double val = theRadialData[j][q]/max_1d;//*pow(.5*(rp+rm),1.5);//2.*(theRadialData[j][q]-minval)/(maxval-minval) - 1.;//getval(theZones[i],q);
+             if( q==1 ) val *= 1e2;
+             val = 2.*val - 1.;
+             double c0 = 2.*((.5*(rp+rm)-r_jph[-1])/(r_jph[Nr-1]-r_jph[-1]) - .5)/rescale;
+             double c1 = val/rescale;
+             glVertex3f( c0-xoff, c1-yoff, camdist-zoff+.001 );
+          }    
+          glEnd();
+      }
 /*
       glColor3f(0.5,0.5,0.5);
       glBegin( GL_LINE_STRIP );
@@ -848,11 +853,24 @@ int main(int argc, char **argv)
       thePlanets[p] = (double *) malloc( 2*sizeof(double) );
    }
 
-   getH5dims( filename , group2 , (char *)"Radial_Diagnostics" , dims );
-   N1d = dims[1];
-   theRadialData = (double **) malloc( Nr*sizeof(double *) );
-   for( j=0 ; j<Nr ; ++j ){
-      theRadialData[j] = (double *) malloc( N1d*sizeof(double) );
+   if(DIAGMODE == 0)
+   {
+       getH5dims( filename , group2 , (char *)"Radial_Diagnostics" , dims );
+       N1d = dims[1];
+       theRadialData = (double **) malloc( Nr*sizeof(double *) );
+       for( j=0 ; j<Nr ; ++j ){
+          theRadialData[j] = (double *) malloc( N1d*sizeof(double) );
+       }
+   }
+   else if(DIAGMODE == 1)
+   {
+       //Diagnostics are stored in an array Nz x Nr x Ndiag
+       getH5dims( filename , group2 , (char *)"Diagnostics" , dims );
+       N1d = dims[2];
+       theRadialData = (double **) malloc( Nr*sizeof(double *) );
+       for( j=0 ; j<Nr ; ++j ){
+          theRadialData[j] = (double *) malloc( N1d*sizeof(double) );
+       }
    }
 
    printf("Zones Allocated\n");
@@ -916,17 +934,35 @@ int main(int argc, char **argv)
       thePlanets[p][1] = thisPlanet[4];
    }
 
-   loc_size[0] = 1;
-   glo_size[0] = Nr;
-   loc_size[1] = N1d;
-   glo_size[1] = N1d;
-   start[1] = 0;
-   for( j=0 ; j<Nr ; ++j ){
-      start[0] = j;
-      double thisQ[N1d];
-      readPatch( filename , group2 , (char *)"Radial_Diagnostics" , thisQ , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
-      int nq;
-      for( nq = 0 ; nq < N1d ; ++nq ) theRadialData[j][nq] = thisQ[nq];
+   if(DIAGMODE == 0)
+   {
+       loc_size[0] = 1;
+       glo_size[0] = Nr;
+       loc_size[1] = N1d;
+       glo_size[1] = N1d;
+       start[1] = 0;
+       for( j=0 ; j<Nr ; ++j ){
+          start[0] = j;
+          double thisQ[N1d];
+          readPatch( filename , group2 , (char *)"Radial_Diagnostics" , thisQ , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
+          int nq;
+          for( nq = 0 ; nq < N1d ; ++nq ) theRadialData[j][nq] = thisQ[nq];
+       }
+   }
+   else if(DIAGMODE == 1)
+   {
+       int loc_size3[3] = {1,1,N1d};
+       int glo_size3[3] = {Nz,Nr,N1d};
+       //Use equatorial slice.
+       int k = Nz==1 ? 0 : Nz/2;
+       int start3[3] = {k,0,0};
+       for( j=0 ; j<Nr ; ++j ){
+          start[1] = j;
+          double thisQ[N1d];
+          readPatch( filename , group2 , (char *)"Diagnostics" , thisQ , H5T_NATIVE_DOUBLE , 3 , start3 , loc_size3 , glo_size3 );
+          int nq;
+          for( nq = 0 ; nq < N1d ; ++nq ) theRadialData[j][nq] = thisQ[nq];
+       }
    }
 
    r_jph++;
@@ -988,7 +1024,13 @@ int main(int argc, char **argv)
       free( theRadialData[j] );
    }
    free( p_iph );
-   free( theRadialData );
+   if(theRadialData != NULL)
+   {
+       for( j=0 ; j<Nr ; ++j ){
+          free( theRadialData[j] );
+       }
+       free( theRadialData );
+   }
    free( Np );
    r_jph--;
    free( r_jph );
