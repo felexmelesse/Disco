@@ -32,7 +32,7 @@
 #define DIAGMODE 1 // 1: checkpoints store RZ diagnostics (default,new)
                    // 0: checkpoints store R diagnostics (old)
 
-static int WindowWidth  = 600;
+static int WindowWidth  = 800;
 static int WindowHeight = 600;
  
 int CommandMode;
@@ -63,7 +63,7 @@ double rotate_angle = M_PI/2.;
 double offx, offy, rescale, maxval, minval;
 
 double t;
-int Nr,Nz,Nq,Npl,N1d,midz;
+int Nr,Nz,Nq,Npl,N1d,Nc,KK;
 int * Np = NULL;
 double * r_jph = NULL;
 double * z_kph = NULL;
@@ -72,6 +72,9 @@ double *** theZones = NULL;
 double ** rzZones = NULL;
 double ** thePlanets = NULL;
 double ** theRadialData = NULL;
+int *Np_All = NULL;
+int *Tindex_All = NULL;
+int *Id_phi0 = NULL;
 
 double max_1d = 1.0;
 
@@ -755,252 +758,9 @@ void specialKeyPressed(int key, int x, int y){
    if (key == GLUT_KEY_DOWN ) offy -= .1;
 }
 
-int main(int argc, char **argv) 
+void freeData()
 {
-   if( argc < 2 ){
-      printf("Please specify the input file.\n");
-      exit(1);
-   }
-   char filename[256];
-   if( argv[1] ){
-      strcpy( filename , argv[1] );
-   }
-   CommandMode=0;
-   if( argc>2 ){ CommandMode=1; FullScreenMode=1; }
-   char group1[256];
-   char group2[256];
-   strcpy( group1 , "Grid" );
-   strcpy( group2 , "Data" );
-
-   hsize_t dims[3];
-   
-   readSimple( filename , group1 , (char *)"T" , &t , H5T_NATIVE_DOUBLE );
-   getH5dims( filename , group1 , (char *)"r_jph" , dims );
-   Nr = dims[0]-1;
-   getH5dims( filename , group1 , (char *)"z_kph" , dims );
-   Nz = dims[0]-1;
-
-   Np = (int *) malloc( Nr*sizeof(int) );
-   r_jph = (double *) malloc( (Nr+1)*sizeof(double) );
-   z_kph = (double *) malloc( (Nz+1)*sizeof(double) );
-   int Tindex[Nr];
-   
-   printf("t = %.2f, Nr = %d Nz = %d\n",t,Nr,Nz);
-
-   readSimple( filename , group1 , (char *)"r_jph" , r_jph , H5T_NATIVE_DOUBLE );
-   readSimple( filename , group1 , (char *)"z_kph" , z_kph , H5T_NATIVE_DOUBLE );
-
-   //midz = Nz/2;
-   midz = Nz-1;
-
-   int start[2]    = {0,0};
-   int loc_size[2] = {Nz,Nr};
-   int glo_size[2] = {Nz,Nr};
-   if(!ZRORDER)
-   {
-       loc_size[0] = Nr; loc_size[1] = Nz;
-       glo_size[0] = Nr; glo_size[1] = Nz;
-   }
-
-   int Np_All[Nr*Nz];
-   int Tindex_All[Nr*Nz];
-   int Id_phi0[Nr*Nz];
-
-   readPatch( filename , group1 , (char *)"Np"      , Np_All     , H5T_NATIVE_INT , 2 , start , loc_size , glo_size);
-   readPatch( filename , group1 , (char *)"Index"   , Tindex_All , H5T_NATIVE_INT , 2 , start , loc_size , glo_size);
-   readPatch( filename , group1 , (char *)"Id_phi0" , Id_phi0    , H5T_NATIVE_INT , 2 , start , loc_size , glo_size);
-
-   int i,j,k;
-   for( j=0 ; j<Nr ; ++j ){
-      k = midz;
-      int jk = k*Nr+j;
-      if(!ZRORDER)
-          jk = j*Nz+k;
-      Np[j]     = Np_All[jk];
-      Tindex[j] = Tindex_All[jk];
-   }
-
-   getH5dims( filename , group2 , (char *)"Cells" , dims );
-   int Nc = dims[0];
-   Nq = dims[1]-1;
-
-   getH5dims( filename , group2 , (char *)"Planets" , dims );
-   Npl = dims[0];
-   int NpDat = dims[1];
-   printf("Nc = %d Nr = %d Nq=%d Npl=%d NpDat=%d\n",Nc,Nr,Nq,Npl,NpDat);
-
-   theZones = (double ***) malloc( Nr*sizeof(double **) );
-   int q;
-   for( j=0 ; j<Nr ; ++j ){
-      theZones[j] = (double **) malloc( Np[j]*sizeof( double * ) );
-      for( i=0 ; i<Np[j] ; ++i ){
-         theZones[j][i] = (double *) malloc( Nq*sizeof( double ) );
-      }
-   }
-
-   rzZones = (double **) malloc( Nr*Nz*sizeof(double *) );
-   for( j=0 ; j<Nr*Nz ; ++j ){
-      rzZones[j] = (double *) malloc( (Nq+1)*sizeof( double ) );
-   }
-
-   p_iph = (double **) malloc( Nr*sizeof( double * ) );
-   for( j=0 ; j<Nr ; ++j ){
-      p_iph[j] = (double *) malloc( Np[j]*sizeof( double ) );
-   }
-   thePlanets = (double **) malloc( Npl*sizeof(double *) );
-   int p;
-   for( p=0 ; p<Npl ; ++p ){ 
-      thePlanets[p] = (double *) malloc( 2*sizeof(double) );
-   }
-
-   if(DIAGMODE == 0)
-   {
-       getH5dims( filename , group2 , (char *)"Radial_Diagnostics" , dims );
-       N1d = dims[1];
-       theRadialData = (double **) malloc( Nr*sizeof(double *) );
-       for( j=0 ; j<Nr ; ++j ){
-          theRadialData[j] = (double *) malloc( N1d*sizeof(double) );
-       }
-   }
-   else if(DIAGMODE == 1)
-   {
-       //Diagnostics are stored in an array Nz x Nr x Ndiag
-       getH5dims( filename , group2 , (char *)"Diagnostics" , dims );
-       N1d = dims[2];
-       theRadialData = (double **) malloc( Nr*sizeof(double *) );
-       for( j=0 ; j<Nr ; ++j ){
-          theRadialData[j] = (double *) malloc( N1d*sizeof(double) );
-       }
-   }
-
-   printf("Zones Allocated\n");
-   loc_size[1] = Nq+1;
-   glo_size[0] = Nc;
-   glo_size[1] = Nq+1;
-
-   for( j=0 ; j<Nr ; ++j ){
-      loc_size[0] = Np[j];
-      start[0] = Tindex[j];
-
-      double TrackData[Np[j]*(Nq+1)];
-      readPatch( filename , group2 , (char *)"Cells" , TrackData , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size);
-      for( i=0 ; i<Np[j] ; ++i ){
-         p_iph[j][i] = TrackData[i*(Nq+1) + Nq];
-         for( q=0 ; q<Nq ; ++q ){
-            theZones[j][i][q] = TrackData[i*(Nq+1) + q];
-         }
-      }
-   }
-   printf("theZones built\n");
-/**/
-   loc_size[0] = 1;
-   if(ZRORDER)
-   {
-       for( k=0 ; k<Nz ; ++k ){
-          for( j=0 ; j<Nr ; ++j ){
-             int jk = k*Nr+j;
-             start[0] = Id_phi0[jk];
-             readPatch( filename , group2 , (char *)"Cells" , rzZones[jk] , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
-          }
-       }
-   }
-   else
-   {
-       for( j=0 ; j<Nr ; ++j ){
-          for( k=0 ; k<Nz ; ++k ){
-             int jk = j*Nz+k;
-             start[0] = Id_phi0[jk];
-             readPatch( filename , group2 , (char *)"Cells" , rzZones[jk] , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
-          }
-       }
-   }
-/**/
-   printf("rzZones built\n");
-
-   start[1] = 0;
-   loc_size[0] = 1;
-   glo_size[0] = Npl;
-   loc_size[1] = NpDat;
-   glo_size[1] = NpDat;
-   for( p=0 ; p<Npl ; ++p ){
-      start[0] = p;
-      double thisPlanet[6];
-      readPatch( filename , group2 , (char *)"Planets" , thisPlanet , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
-      int dp;
-      printf("Planet = ");
-      for( dp=0 ; dp<NpDat ; ++dp ) printf("%e ",thisPlanet[dp]);
-      printf("\n");
-      thePlanets[p][0] = thisPlanet[3];
-      thePlanets[p][1] = thisPlanet[4];
-   }
-
-   if(DIAGMODE == 0)
-   {
-       loc_size[0] = 1;
-       glo_size[0] = Nr;
-       loc_size[1] = N1d;
-       glo_size[1] = N1d;
-       start[1] = 0;
-       for( j=0 ; j<Nr ; ++j ){
-          start[0] = j;
-          double thisQ[N1d];
-          readPatch( filename , group2 , (char *)"Radial_Diagnostics" , thisQ , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
-          int nq;
-          for( nq = 0 ; nq < N1d ; ++nq ) theRadialData[j][nq] = thisQ[nq];
-       }
-   }
-   else if(DIAGMODE == 1)
-   {
-       int loc_size3[3] = {1,1,N1d};
-       int glo_size3[3] = {Nz,Nr,N1d};
-       //Use equatorial slice.
-       int k = Nz==1 ? 0 : Nz/2;
-       int start3[3] = {k,0,0};
-       for( j=0 ; j<Nr ; ++j ){
-          start[1] = j;
-          double thisQ[N1d];
-          readPatch( filename , group2 , (char *)"Diagnostics" , thisQ , H5T_NATIVE_DOUBLE , 3 , start3 , loc_size3 , glo_size3 );
-          int nq;
-          for( nq = 0 ; nq < N1d ; ++nq ) theRadialData[j][nq] = thisQ[nq];
-       }
-   }
-
-   r_jph++;
-   z_kph++;
-
-   //double RR = r_iph[0][Nr[0]-1];
-   //double r_max = .98*RR;
-   //double r_min = 0.0;//r_iph[0][0];
-   //double r_min = .82*RR;
-
-   //printf("Rmin = %.2e Rmax = %.2e\n",r_min,r_max);
-   //double thalf = .5*t_jph[Nt-1];
-   rescale = 1.7*r_jph[Nr-1];  //(r_max-r_min);
-   //offx = .5*(r_min+r_max)/rescale;
-   //offy = 0.5;//.5*(r_min+r_max)*sin(thalf)/rescale;
-   //offy = .5*(r_min+r_max)/rescale;
-   //rescale *= .5;
-   //rescale *= .4;
-   rescale *= 1.2;
-   //offy = 0.75/rescale;
-   //offx = 0.6/rescale;//0.0;//1.0/rescale;
-   offy = 0.0;
-   offx = 0.0;//2.5/rescale;//0.0;//1.0/rescale;
-
-//////////////////////////////
-   glutInit(&argc, argv);  
-   glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA | GLUT_DEPTH);  
-   glutInitWindowSize(WindowWidth, WindowHeight);
-   glutInitWindowPosition(0, 0);
-   window = glutCreateWindow("DISCO Viewer");
-   glutDisplayFunc(&DrawGLScene);  
-   if(FullScreenMode) glutFullScreen();
-   glutIdleFunc(&DrawGLScene);
-   glutReshapeFunc(&ReSizeGLScene);
-   glutKeyboardFunc(&keyPressed);
-   glutSpecialFunc(&specialKeyPressed);
-   InitGL(WindowWidth, WindowHeight);
-   glutMainLoop();  
+    int p, i, j;
 
    for( p=0 ; p<Npl ; ++p ){
       free(thePlanets[p]);
@@ -1037,6 +797,331 @@ int main(int argc, char **argv)
    z_kph--;
    free( z_kph );
 
-   return (0);
-
+   free(Np_All);
+   free(Tindex_All);
+   free(Id_phi0);
 }
+
+void loadGrid(char *filename)
+{
+   char group1[256];
+   char group2[256];
+   strcpy( group1 , "Grid" );
+   strcpy( group2 , "Data" );
+
+   hsize_t dims[3];
+   
+   readSimple( filename , group1 , (char *)"T" , &t , H5T_NATIVE_DOUBLE );
+   getH5dims( filename , group1 , (char *)"r_jph" , dims );
+   Nr = dims[0]-1;
+   getH5dims( filename , group1 , (char *)"z_kph" , dims );
+   Nz = dims[0]-1;
+
+   Np = (int *) malloc( Nr*sizeof(int) );
+   r_jph = (double *) malloc( (Nr+1)*sizeof(double) );
+   z_kph = (double *) malloc( (Nz+1)*sizeof(double) );
+   
+   printf("t = %.2f, Nr = %d Nz = %d\n",t,Nr,Nz);
+
+   readSimple( filename , group1 , (char *)"r_jph" , r_jph , H5T_NATIVE_DOUBLE );
+   readSimple( filename , group1 , (char *)"z_kph" , z_kph , H5T_NATIVE_DOUBLE );
+
+   r_jph++;
+   z_kph++;
+
+   int start[2]    = {0,0};
+   int loc_size[2] = {Nz,Nr};
+   int glo_size[2] = {Nz,Nr};
+   if(!ZRORDER)
+   {
+       loc_size[0] = Nr; loc_size[1] = Nz;
+       glo_size[0] = Nr; glo_size[1] = Nz;
+   }
+
+   Np_All = (int *) malloc(Nr*Nz * sizeof(int));
+   Tindex_All = (int *) malloc(Nr*Nz * sizeof(int));
+   Id_phi0 = (int *) malloc(Nr*Nz * sizeof(int));
+
+   readPatch( filename , group1 , (char *)"Np"      , Np_All     , H5T_NATIVE_INT , 2 , start , loc_size , glo_size);
+   readPatch( filename , group1 , (char *)"Index"   , Tindex_All , H5T_NATIVE_INT , 2 , start , loc_size , glo_size);
+   readPatch( filename , group1 , (char *)"Id_phi0" , Id_phi0    , H5T_NATIVE_INT , 2 , start , loc_size , glo_size);
+
+
+   getH5dims( filename , group2 , (char *)"Cells" , dims );
+   Nc = dims[0];
+   Nq = dims[1]-1;
+
+   getH5dims( filename , group2 , (char *)"Planets" , dims );
+   Npl = dims[0];
+   int NpDat = dims[1];
+   printf("Nc = %d Nr = %d Nq=%d Npl=%d NpDat=%d\n",Nc,Nr,Nq,Npl,NpDat);
+
+   thePlanets = (double **) malloc( Npl*sizeof(double *) );
+   int p;
+   for( p=0 ; p<Npl ; ++p ){ 
+      thePlanets[p] = (double *) malloc( 2*sizeof(double) );
+   }
+   
+   start[1] = 0;
+   loc_size[0] = 1;
+   glo_size[0] = Npl;
+   loc_size[1] = NpDat;
+   glo_size[1] = NpDat;
+   for( p=0 ; p<Npl ; ++p ){
+      start[0] = p;
+      double thisPlanet[6];
+      readPatch( filename , group2 , (char *)"Planets" , thisPlanet , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
+      int dp;
+      printf("Planet = ");
+      for( dp=0 ; dp<NpDat ; ++dp ) printf("%e ",thisPlanet[dp]);
+      printf("\n");
+      thePlanets[p][0] = thisPlanet[3];
+      thePlanets[p][1] = thisPlanet[4];
+   }
+}
+
+void loadSliceZ(char *filename, int k)
+{
+   char group1[256];
+   char group2[256];
+   strcpy( group1 , "Grid" );
+   strcpy( group2 , "Data" );
+
+   int Tindex[Nr];
+
+   printf("Zones:");
+
+   //Grab zone indices
+   int i,j;
+   for( j=0 ; j<Nr ; ++j ){
+      int jk = k*Nr+j;
+      if(!ZRORDER)
+          jk = j*Nz+k;
+      Np[j]     = Np_All[jk];
+      Tindex[j] = Tindex_All[jk];
+   }
+
+   //Free arrays if already allocated
+   if(theZones != NULL)
+   {
+       for( j=0 ; j<Nr ; ++j )
+       {
+           for( i=0 ; i<Np[j] ; ++i )
+               free(theZones[j][i]);
+           free(theZones[j]);
+       }
+       free(theZones);
+   }
+   if(p_iph != NULL)
+   {
+       for( j=0 ; j<Nr ; ++j )
+           free(p_iph[j]);
+       free(p_iph);
+   }
+
+   //Allocate arrays
+   theZones = (double ***) malloc( Nr*sizeof(double **) );
+   int q;
+   for( j=0 ; j<Nr ; ++j ){
+      theZones[j] = (double **) malloc( Np[j]*sizeof( double * ) );
+      for( i=0 ; i<Np[j] ; ++i ){
+         theZones[j][i] = (double *) malloc( Nq*sizeof( double ) );
+      }
+   }
+
+   p_iph = (double **) malloc( Nr*sizeof( double * ) );
+   for( j=0 ; j<Nr ; ++j ){
+      p_iph[j] = (double *) malloc( Np[j]*sizeof( double ) );
+   }
+
+   printf("  Allocated,");
+
+   //Load data
+   int start[2]    = {0,0};
+   int loc_size[2] = {0,Nq+1};
+   int glo_size[2] = {Nc,Nq+1};
+
+   for( j=0 ; j<Nr ; ++j ){
+      loc_size[0] = Np[j];
+      start[0] = Tindex[j];
+
+      double TrackData[Np[j]*(Nq+1)];
+      readPatch( filename , group2 , (char *)"Cells" , TrackData , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size);
+      for( i=0 ; i<Np[j] ; ++i ){
+         p_iph[j][i] = TrackData[i*(Nq+1) + Nq];
+         for( q=0 ; q<Nq ; ++q ){
+            theZones[j][i][q] = TrackData[i*(Nq+1) + q];
+         }
+      }
+   }
+
+   printf("  Initialized.\n");
+}
+
+void loadSlicePhi(char *filename)
+{
+    int j,k;
+    char group2[256];
+    strcpy( group2 , "Data" );
+
+    printf("rzZones:");
+
+    if(rzZones != NULL)
+    {
+        for(j=0; j<Nr*Nz; j++)
+            free(rzZones[j]);
+        free(rzZones);
+    }
+
+    rzZones = (double **) malloc( Nr*Nz*sizeof(double *) );
+    for( j=0 ; j<Nr*Nz ; ++j )
+        rzZones[j] = (double *) malloc( (Nq+1)*sizeof( double ) );
+
+    printf("  Allocated,");
+
+    int glo_size[2] = {Nc, Nq+1};
+    int loc_size[2] = {1, Nq+1};
+    int start[2] = {0, 0};
+   
+   if(ZRORDER)
+   {
+       for( k=0 ; k<Nz ; ++k ){
+          for( j=0 ; j<Nr ; ++j ){
+             int jk = k*Nr+j;
+             start[0] = Id_phi0[jk];
+             readPatch( filename , group2 , (char *)"Cells" , rzZones[jk] , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
+          }
+       }
+   }
+   else
+   {
+       for( j=0 ; j<Nr ; ++j ){
+          for( k=0 ; k<Nz ; ++k ){
+             int jk = j*Nz+k;
+             start[0] = Id_phi0[jk];
+             readPatch( filename , group2 , (char *)"Cells" , rzZones[jk] , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
+          }
+       }
+   }
+
+   printf("  Initialized.\n");
+}
+
+void loadDiagnostics(char *filename, int k)
+{
+    int j;
+    hsize_t dims[3];
+    char group2[256];
+    strcpy( group2 , "Data" );
+
+    printf("Diagnostics:");
+
+   if(DIAGMODE == 0)
+   {
+       getH5dims( filename , group2 , (char *)"Radial_Diagnostics" , dims );
+       N1d = dims[1];
+   }
+   else if(DIAGMODE == 1)
+   {
+       //Diagnostics are stored in an array Nz x Nr x Ndiag
+       getH5dims( filename , group2 , (char *)"Diagnostics" , dims );
+       N1d = dims[2];
+   }
+
+   theRadialData = (double **) malloc( Nr*sizeof(double *) );
+   for( j=0 ; j<Nr ; ++j )
+      theRadialData[j] = (double *) malloc( N1d*sizeof(double) );
+   
+    printf("  Allocated,");
+
+   if(DIAGMODE == 0)
+   {
+       int loc_size[2] = {1, N1d};
+       int glo_size[2] = {Nr, N1d};
+       int start[2] = {0, 0};
+       for( j=0 ; j<Nr ; ++j ){
+          start[0] = j;
+          double thisQ[N1d];
+          readPatch( filename , group2 , (char *)"Radial_Diagnostics" , thisQ , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
+          int nq;
+          for( nq = 0 ; nq < N1d ; ++nq ) theRadialData[j][nq] = thisQ[nq];
+       }
+   }
+   else if(DIAGMODE == 1)
+   {
+       int loc_size3[3] = {1,1,N1d};
+       int glo_size3[3] = {Nz,Nr,N1d};
+       int start3[3] = {k,0,0};
+       for( j=0 ; j<Nr ; ++j ){
+          start3[1] = j;
+          double thisQ[N1d];
+          readPatch( filename , group2 , (char *)"Diagnostics" , thisQ , H5T_NATIVE_DOUBLE , 3 , start3 , loc_size3 , glo_size3 );
+          int nq;
+          for( nq = 0 ; nq < N1d ; ++nq ) theRadialData[j][nq] = thisQ[nq];
+       }
+   }
+
+    printf("  Initialized.\n");
+}
+
+int main(int argc, char **argv) 
+{
+   if( argc < 2 ){
+      printf("Please specify the input file.\n");
+      exit(1);
+   }
+   char filename[256];
+   if( argv[1] ){
+      strcpy( filename , argv[1] );
+   }
+   CommandMode=0;
+   if( argc>2 ){ CommandMode=1; FullScreenMode=1; }
+
+   loadGrid(filename);
+
+   KK = Nz - 1;
+   loadSliceZ(filename, KK);
+   loadSlicePhi(filename);
+   loadDiagnostics(filename, KK);
+   
+
+   //double RR = r_iph[0][Nr[0]-1];
+   //double r_max = .98*RR;
+   //double r_min = 0.0;//r_iph[0][0];
+   //double r_min = .82*RR;
+
+   //printf("Rmin = %.2e Rmax = %.2e\n",r_min,r_max);
+   //double thalf = .5*t_jph[Nt-1];
+   rescale = 1.7*r_jph[Nr-1];  //(r_max-r_min);
+   //offx = .5*(r_min+r_max)/rescale;
+   //offy = 0.5;//.5*(r_min+r_max)*sin(thalf)/rescale;
+   //offy = .5*(r_min+r_max)/rescale;
+   //rescale *= .5;
+   //rescale *= .4;
+   rescale *= 1.2;
+   //offy = 0.75/rescale;
+   //offx = 0.6/rescale;//0.0;//1.0/rescale;
+   offy = 0.0;
+   offx = 0.0;//2.5/rescale;//0.0;//1.0/rescale;
+
+//////////////////////////////
+   glutInit(&argc, argv);  
+   glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA | GLUT_DEPTH);  
+   glutInitWindowSize(WindowWidth, WindowHeight);
+   glutInitWindowPosition(0, 0);
+   window = glutCreateWindow("DISCO Viewer");
+   glutDisplayFunc(&DrawGLScene);  
+   if(FullScreenMode) glutFullScreen();
+   glutIdleFunc(&DrawGLScene);
+   glutReshapeFunc(&ReSizeGLScene);
+   glutKeyboardFunc(&keyPressed);
+   glutSpecialFunc(&specialKeyPressed);
+   InitGL(WindowWidth, WindowHeight);
+   glutMainLoop();  
+//////////////////////////////
+
+   freeData();
+
+   return 0;
+}
+
