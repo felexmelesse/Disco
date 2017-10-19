@@ -513,6 +513,9 @@ void DrawGLScene(){
 
 
    if( draw_bar ){
+      glRotatef(-RotationAngleZ, 0, 0, 1);
+      glRotatef(-RotationAngleY, 0, 1, 0);
+      glRotatef(-RotationAngleX, 1, 0, 0);
       double xb = 0.6;
       double hb = 1.0;
       double wb = 0.02;
@@ -547,6 +550,10 @@ void DrawGLScene(){
          glEnd();
          glutPrint( xb+1.5*wb , y-.007 , camdist + .001 ,glutFonts[6] , valname , 0.0f, 0.0f , 0.0f , 0.5f );
       }
+
+      glRotatef(RotationAngleX, 1, 0, 0);
+      glRotatef(RotationAngleY, 0, 1, 0);
+      glRotatef(RotationAngleZ, 0, 0, 1);
    } 
 
    if( draw_planet ){
