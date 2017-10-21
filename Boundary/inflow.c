@@ -71,13 +71,17 @@ void boundary_trans( struct domain * theDomain , int dim ){
       for( j=0 ; j<Ng ; ++j ){
          rp = r_jph[j];
          rm = r_jph[j-1];
-         double r = .5*(rp+rm);
          for( k=0 ; k<Nz ; ++k ){
             int jk = j+Nr*k;
+            zp = z_kph[k];
+            zm = z_kph[k-1];
             for( i=0 ; i<Np[jk] ; ++i ){
                struct cell * c = &(theCells[jk][i]);
+               double xm[3] = {rm, c->piph-c->dphi, zm};
+               double xp[3] = {rp, c->piph, zp};
                double phi = c->piph - .5*c->dphi;
-               double x[3] = { .5*(r_jph[j]+r_jph[j-1]) , phi , .5*(z_kph[k]+z_kph[k-1]) };
+               double r = get_moment_arm(xp, xm);
+               double x[3] = {r , phi , .5*(zm+zp)};
                initial( c->prim , x ); 
                subtract_omega( c->prim );
                c->prim[RHO] = rho_in*pow(r/rg,-k0);

@@ -585,6 +585,9 @@ void DrawGLScene(){
    } 
 
    if( draw_planet ){
+      glRotatef(-RotationAngleZ, 0, 0, 1);
+      glRotatef(-RotationAngleY, 0, 1, 0);
+      glRotatef(-RotationAngleX, 1, 0, 0);
       double eps = 0.01;
       int p;
       for( p=0 ; p<Npl ; ++p ){
@@ -601,6 +604,9 @@ void DrawGLScene(){
          glVertex3f( r*cos(phi)-xoff+eps , r*sin(phi)-yoff-eps , camdist+.001 );
          glEnd();
       }
+      glRotatef(RotationAngleX, 1, 0, 0);
+      glRotatef(RotationAngleY, 0, 1, 0);
+      glRotatef(RotationAngleZ, 0, 0, 1);
    }
 
    if( draw_spiral ){

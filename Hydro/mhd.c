@@ -39,7 +39,7 @@ void prim2cons( double * prim , double * cons , double * x , double dV ){
    double vr  = prim[URR];
    double vp  = prim[UPP]*r;
    double vz  = prim[UZZ];
-   double om  = get_om( r );
+   double om  = get_om( x );
    double vp_off = vp - om*r;
 
    double Br = prim[BRR];
@@ -177,7 +177,7 @@ void cons2prim( double * cons , double * prim , double * x , double dV ){
    double Sp  = cons[LLL]/dV/r;
    double Sz  = cons[SZZ]/dV;
    double E   = cons[TAU]/dV;
-   double om  = get_om( r );
+   double om  = get_om( x );
    
    double vr = Sr/rho;
    double vp = Sp/rho;
@@ -195,7 +195,7 @@ void cons2prim( double * cons , double * prim , double * x , double dV ){
 
    if( Pp  < PRE_FLOOR*rho ) Pp = PRE_FLOOR*rho;
    if( isothermal ){
-      double cs2 = get_cs2( r );
+      double cs2 = get_cs2( x );
       Pp = cs2*rho/gamma_law;
    }
 
@@ -255,6 +255,7 @@ void flux( double * prim , double * flux , double * x , double * n ){
 }
 
 double get_dp( double , double );
+double get_moment_arm( double * xp , double * xm );
 
 void source( double * prim , double * cons , double * xp , double * xm , double dVdt ){
    
@@ -267,6 +268,8 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    double r2_3 = (rp*rp + rp*rm + rm*rm)/3.;
    double vr  = prim[URR];
    double omega = prim[UPP];
+   double r = get_moment_arm(xp, xm);
+   double x[3] = {r, 0.5*(xm[1]+xp[1]), 0.5*(xm[2]+xp[2])};
 
    double Br = prim[BRR];
    double Bp = prim[BPP];
@@ -281,8 +284,8 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
 
    cons[SRR] += dVdt*( centrifugal + press_bal );
 
-   double om  = get_om( r_1 );
-   double om1 = get_om1( r_1 );
+   double om  = get_om( x );
+   double om1 = get_om1( x );
 
    cons[TAU] += dVdt*rho*vr*( om*om*r2_3/r_1 - om1*(omega-om)*r2_3 );
  
@@ -301,7 +304,7 @@ void visc_flux( double * prim , double * gprim , double * flux , double * x , do
    double rho = prim[RHO];
    double vr  = prim[URR];
    double om  = prim[UPP];
-   double om_off = om - get_om(r);
+   double om_off = om - get_om(x);
    double vz  = prim[UZZ];
 
    double dnvr = gprim[URR];

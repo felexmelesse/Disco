@@ -96,7 +96,7 @@ void clear_w( struct domain * theDomain ){
 }*/
 
 double get_omega( double * , double * );
-double mesh_om( double );
+double mesh_om( double *);
 
 void set_wcell( struct domain * theDomain ){
    struct cell ** theCells = theDomain->theCells;
@@ -161,11 +161,20 @@ void set_wcell( struct domain * theDomain ){
    }
    if( mesh_motion == 4 ){
       for( j=0 ; j<Nr ; ++j ){
-         double r = .5*(r_jph[j]+r_jph[j-1]);
+         double rp = r_jph[j];
+         double rm = r_jph[j-1];
          for( k=0 ; k<Nz ; ++k ){
             int jk = j+Nr*k;
+            double zp = z_kph[k];
+            double zm = z_kph[k-1];
             for( i=0 ; i<Np[jk] ; ++i ){
-               theCells[jk][i].wiph = r*mesh_om(r); 
+               double phip = theCells[jk][i].piph;
+               double phim = phip-theCells[jk][i].dphi;
+               double xp[3] = {rp,phip,zp};
+               double xm[3] = {rm,phim,zm};
+               double r = get_moment_arm( xp , xm );
+               double x[3] = {r, 0.5*(phim+phip), 0.5*(zm+zp)};
+               theCells[jk][i].wiph = mesh_om(x); 
             }    
          }    
       } 

@@ -31,8 +31,9 @@ void setOmegaParams( struct domain * theDomain ){
    M = theDomain->theParList.metricPar2;
 }
 
-double mesh_om( double r )
+double mesh_om( double *x)
 {
+    double r = x[0];
     double omega;
     if(meshOmChoice == 1)
         omega = 1.0;
@@ -49,7 +50,8 @@ double mesh_om( double r )
    return( omega );
 }
 
-double get_om( double r ){
+double get_om( double *x ){
+    double r = x[0];
     double om;
 
     if(enOmChoice == 1)
@@ -73,7 +75,8 @@ double get_om( double r ){
     return om;
 }
   
-double get_om1( double r ){
+double get_om1( double *x ){
+    double r = x[0];
     double om1;
 
     if(enOmChoice == 1)
@@ -97,7 +100,8 @@ double get_om1( double r ){
     return om1;
 }
 
-double get_cs2( double r ){
+double get_cs2( double *x ){
+    double r = x[0];
     double cs2;
 
     if(cs2Choice == 1)
