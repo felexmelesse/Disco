@@ -281,7 +281,7 @@ double get_dL( double * , double * , int );
 
 double mindt(double * prim , double w , double * xp , double * xm ){
 
-   double r = .5*(xp[0]+xm[0]);
+   double r = get_moment_arm(xp, xm);
    double Pp  = prim[PPP];
    double rho = prim[RHO];
    double vp  = (prim[UPP]-w)*r;

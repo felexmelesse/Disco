@@ -11,6 +11,7 @@ void setRotFrameParams( struct domain * theDomain ){
 }
 
 double get_dp( double , double );
+double get_moment_arm( double *, double *);
 
 void subtract_omega( double * prim ){
    if( om_flag ) prim[UPP] -= Omega0;
@@ -38,7 +39,7 @@ void omega_src( double * prim , double * cons , double * xp , double * xm , doub
       double vr  = prim[URR];
       double omega = prim[UPP];
    
-      double r = 0.5*(rp+rm);
+      double r = get_moment_arm(xp, xm);
       double vp  = r*omega;
       double dphi = get_dp(xp[1],xm[1]);
       double phi = xm[1] + 0.5*dphi;

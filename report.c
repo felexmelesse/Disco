@@ -4,6 +4,7 @@
 void planetaryForce( struct planet * , double , double , double , double * , double * , double * , int );
 
 double get_dV( double * , double * );
+double get_moment_arm( double * , double * );
 
 void report( struct domain * theDomain ){
 
@@ -68,7 +69,6 @@ void report( struct domain * theDomain ){
    //for( j=0 ; j<10 ; ++j ){ T_cut[j]=0.;  P_cut[j]=0.; }
 
    for( j=jmin ; j<jmax ; ++j ){
-      double r = .5*(r_jph[j]+r_jph[j-1]);
       double rho0 = 1.0;//pow( r , -1.5 );
       double rho_avg = 0.0;
       double Vol_avg = 0.0;
@@ -85,6 +85,7 @@ void report( struct domain * theDomain ){
             double xp[3] = {r_jph[j]  ,phip,z_kph[k]  };
             double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
             double dV = get_dV( xp , xm );
+            double r = get_moment_arm( xp , xm );
 
             PsiR += rho*dV*cos(phi);
             PsiI += rho*dV*sin(phi);
