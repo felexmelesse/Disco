@@ -2,7 +2,7 @@
 #include "paul.h"
 #include <string.h>
 
-#define R_HOR 1.5
+#define R_HOR 1.0
 
 void initial( double * , double * );
 double get_dV( double * , double * );
