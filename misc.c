@@ -3,7 +3,7 @@
 
 double get_dA( double * , double * , int );
 double get_dV( double * , double * );
-double get_moment_arm( double * , double * );
+double get_centroid( double , double , int);
 
 void clean_pi( struct domain * theDomain ){
    
@@ -108,33 +108,24 @@ void set_wcell( struct domain * theDomain ){
    double * z_kph = theDomain->z_kph;
 
    int i,j,k;
-   for( j=0 ; j<Nr ; ++j ){
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=0 ; k<Nz ; ++k ){
+      double z = get_centroid(z_kph[k], z_kph[k-1], 2);
+      for( j=0 ; j<Nr ; ++j ){
          int jk = j+Nr*k;
-         double rm = r_jph[j-1];
-         double rp = r_jph[j];
-         double zm = z_kph[k-1];
-         double zp = z_kph[k];
+         double r = get_centroid(r_jph[j], r_jph[j-1], 1);
          for( i=0 ; i<Np[jk] ; ++i ){
-            struct cell * cL = &(theCells[jk][i ]);  
+            struct cell * cL = &(theCells[jk][i]);  
             double w = 0.0;
             if( mesh_motion ){
-               int ip = (i+1)%Np[jk];
                double phip = cL->piph;
                double phim = phip-cL->dphi;
-               double xp[3] = {rp,phip,zp};
-               double xm[3] = {rm,phim,zm};
-               double r = get_moment_arm( xp , xm );
-               double x[3] = {r, 0.5*(phim+phip), 0.5*(zm+zp)};
+               double x[3] = {r, 0.5*(phim+phip), z};
                double wL = get_omega( cL->prim , x );
 
+               int ip = (i+1)%Np[jk];
                struct cell * cR = &(theCells[jk][ip]);
                phip = cR->piph;
                phim = phip-cR->dphi;
-               xp[1] = phip;
-               xm[1] = phim;
-               r = get_moment_arm( xp , xm );
-               x[0] = r;
                x[1] = 0.5*(phim+phip);
                double wR = get_omega( cR->prim , x );
 
@@ -145,8 +136,8 @@ void set_wcell( struct domain * theDomain ){
       }    
    }
    if( mesh_motion == 3 ){
-      for( j=0 ; j<Nr ; ++j ){
-         for( k=0 ; k<Nz ; ++k ){
+      for( k=0 ; k<Nz ; ++k ){
+         for( j=0 ; j<Nr ; ++j ){
             int jk = j+Nr*k;
             double w = 0.0;
             for( i=0 ; i<Np[jk] ; ++i ){
@@ -160,26 +151,20 @@ void set_wcell( struct domain * theDomain ){
       } 
    }
    if( mesh_motion == 4 ){
-      for( j=0 ; j<Nr ; ++j ){
-         double rp = r_jph[j];
-         double rm = r_jph[j-1];
-         for( k=0 ; k<Nz ; ++k ){
+      for( k=0 ; k<Nz ; ++k ){
+         double z = get_centroid(z_kph[k], z_kph[k-1], 2);
+         for( j=0 ; j<Nr ; ++j ){
             int jk = j+Nr*k;
-            double zp = z_kph[k];
-            double zm = z_kph[k-1];
+            double r = get_centroid(r_jph[j], r_jph[j-1], 1);
             for( i=0 ; i<Np[jk] ; ++i ){
                double phip = theCells[jk][i].piph;
                double phim = phip-theCells[jk][i].dphi;
-               double xp[3] = {rp,phip,zp};
-               double xm[3] = {rm,phim,zm};
-               double r = get_moment_arm( xp , xm );
-               double x[3] = {r, 0.5*(phim+phip), 0.5*(zm+zp)};
+               double x[3] = {r, 0.5*(phim+phip), z};
                theCells[jk][i].wiph = mesh_om(x); 
             }    
          }    
       } 
    }
-
 }
 
 void initial( double * , double * );
@@ -314,20 +299,23 @@ void calc_prim( struct domain * theDomain ){
    double * z_kph = theDomain->z_kph;
 
    int i,j,k;
-   for( j=0 ; j<Nr ; ++j ){
-      double rm = r_jph[j-1];
-      double rp = r_jph[j];
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=0 ; k<Nz ; ++k ){
+      double zm = z_kph[k-1];
+      double zp = z_kph[k];
+      double z = get_centroid(zp, zm, 2);
+      for( j=0 ; j<Nr ; ++j ){
          int jk = j+Nr*k;
+         double rm = r_jph[j-1];
+         double rp = r_jph[j];
+         double r = get_centroid(rp, rm, 1);
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);
             double phip = c->piph;
             double phim = phip-c->dphi;
-            double xp[3] = {rp,phip,z_kph[k]  };
-            double xm[3] = {rm,phim,z_kph[k-1]};
-            double r = get_moment_arm( xp , xm );
+            double xp[3] = {rp, phip, zp};
+            double xm[3] = {rm, phim, zm};
             double dV = get_dV( xp , xm );
-            double x[3] = {r, 0.5*(phim+phip), 0.5*(z_kph[k]+z_kph[k-1])};
+            double x[3] = {r, 0.5*(phim+phip), z};
             cons2prim( c->cons , c->prim , x , dV );
          }
       }
@@ -344,20 +332,25 @@ void calc_cons( struct domain * theDomain ){
    double * z_kph = theDomain->z_kph;
 
    int i,j,k;
-   for( j=0 ; j<Nr ; ++j ){
-      double rm = r_jph[j-1];
-      double rp = r_jph[j];
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=0 ; k<Nz ; ++k ){
+      double zm = z_kph[k-1];
+      double zp = z_kph[k];
+      double z = get_centroid(zp, zm, 2);
+
+      for( j=0 ; j<Nr ; ++j ){
+         double rm = r_jph[j-1];
+         double rp = r_jph[j];
+         double r = get_centroid(rp, rm, 1);
+
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);
             double phip = c->piph;
             double phim = phip-c->dphi;
-            double xp[3] = {rp,phip,z_kph[k]  };
-            double xm[3] = {rm,phim,z_kph[k-1]};
-            double r = get_moment_arm( xp , xm );
+            double xp[3] = {rp, phip, zp};
+            double xm[3] = {rm, phim, zm};
             double dV = get_dV( xp , xm );
-            double x[3] = {r, 0.5*(phim+phip), 0.5*(z_kph[k]+z_kph[k-1])};
+            double x[3] = {r, 0.5*(phim+phip), z};
             prim2cons( c->prim , c->cons , x , dV );
          }
       }
@@ -377,18 +370,26 @@ void phi_flux( struct domain * theDomain , double dt ){
    double * z_kph = theDomain->z_kph;
    int i,j,k;
    plm_phi( theDomain );
-   for( j=0 ; j<Nr ; ++j ){
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=0 ; k<Nz ; ++k ){
+      double zp = z_kph[k];
+      double zm = z_kph[k-1];
+      double z = get_centroid(zp, zm, 2);
+
+      for( j=0 ; j<Nr ; ++j ){
+         double rp = r_jph[j];
+         double rm = r_jph[j-1];
+         double r = get_centroid(rp, rm, 1);
+         
          int jk = j+Nr*k;
+         struct cell * cp = theCells[jk];
+
          for( i=0 ; i<Np[jk] ; ++i ){
             int ip = (i+1)%Np[jk];
-            struct cell * cp = theCells[jk];
             double phi = cp[i].piph;
-            double xp[3] = {r_jph[j]  ,phi,z_kph[k]  };
-            double xm[3] = {r_jph[j-1],phi,z_kph[k-1]};
-            double r = get_moment_arm(xp,xm);
+            double xp[3] = {rp, phi, zp};
+            double xm[3] = {rm, phi, zm};
             double dA = get_dA(xp,xm,0); 
-            double x[3] = {r, phi, 0.5*(z_kph[k-1]+z_kph[k])};
+            double x[3] = {r, phi, z};
             riemann_phi( &(cp[i]) , &(cp[ip]) , x , dA*dt );
          }
       }
@@ -558,7 +559,7 @@ void AMRsweep( struct domain * theDomain , struct cell ** swptr , int jk ){
       double phim = phip - sweep[iS].dphi;
       double xp[3] = {r_jph[j]  ,phip,z_kph[k]  };
       double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
-      double r  = get_moment_arm( xp , xm );
+      double r  = get_centroid( xp[0] , xm[0], 1 );
       double dV = get_dV( xp , xm );
       double x[3] = {r, 0.5*(phim+phip), 0.5*(z_kph[k-1]+z_kph[k])};
       cons2prim( sweep[iS].cons , sweep[iS].prim , x , dV );
@@ -599,14 +600,14 @@ void AMRsweep( struct domain * theDomain , struct cell ** swptr , int jk ){
       double xp[3] = {r_jph[j]  ,phi0,z_kph[k]  };
       double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
       double dV = get_dV( xp , xm );
-      double r  = get_moment_arm( xp , xm );
+      double r  = get_centroid( xp[0] , xm[0], 1 );
       double x[3] = {r, 0.5*(xp[1]+xm[1]), 0.5*(xp[2]+xm[2])};
       cons2prim( sweep[iL].cons , sweep[iL].prim , x , dV );
 
       xp[1] = phip;
       xm[1] = phi0;
       dV = get_dV( xp , xm );
-      r  = get_moment_arm( xp , xm );
+      r  = get_centroid( xp[0] , xm[0], 1 );
       x[0] = r;
       x[1] = 0.5*(xp[1]+xm[1]);
       cons2prim( sweep[iL+1].cons , sweep[iL+1].prim , x , dV );

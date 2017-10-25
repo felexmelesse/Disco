@@ -2,7 +2,7 @@
 #include "paul.h"
 
 void initial( double * , double * ); 
-double get_moment_arm( double * , double * );
+double get_centroid( double , double , int);
 double get_dA( double * , double * , int );
 double get_dV( double * , double * );
 void setup_faces( struct domain * , int );
@@ -20,7 +20,9 @@ void set_B_fields( struct domain * theDomain ){
    double * z_kph = theDomain->z_kph;
 
    for( j=0 ; j<Nr ; ++j ){
+      double r = get_centroid(r_jph[j], r_jph[j-1], 1);
       for( k=0 ; k<Nz ; ++k ){
+         double z = get_centroid(z_kph[k], z_kph[k-1], 2);
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);
@@ -28,8 +30,7 @@ void set_B_fields( struct domain * theDomain ){
             double phim = phip-c->dphi;
             double xp[3] = { r_jph[j]   , phip , z_kph[k]   };
             double xm[3] = { r_jph[j-1] , phim , z_kph[k-1] };
-            double r = get_moment_arm( xp , xm );
-            double x[3] = { r , phip , .5*(z_kph[k]+z_kph[k-1])};
+            double x[3] = { r , phip , z};
             double prim[NUM_Q];
             initial( prim , x ); 
             double dA = get_dA( xp , xm , 0 );
@@ -154,7 +155,7 @@ void B_faces_to_cells( struct domain * theDomain , int type ){
 
                double xp[3] = { r_jph[j]   , c->piph  , z_kph[k]   };
                double xm[3] = { r_jph[j-1] , cm->piph , z_kph[k-1] };
-               double r = get_moment_arm( xp , xm );
+               double r = get_centroid( r_jph[j] , r_jph[j-1], 1 );
                double dA = get_dA( xp , xm , 0 );
                double dV = get_dV( xp , xm );
 

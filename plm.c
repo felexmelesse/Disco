@@ -51,7 +51,7 @@ void plm_phi( struct domain * theDomain ){
 }
 
 double get_dA( double * , double * , int );
-double get_moment_arm(double *xp, double *xm);
+double get_centroid(double , double , int );
 
 void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , int dim ){
 
@@ -164,21 +164,13 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
    if(dim == 1 && strcmp(BOUNDARY, "polar") == 0)
    {
        j = 0;
-       double rp = r_jph[j];
-       double rm = r_jph[j-1];
+       double r = get_centroid(r_jph[j], r_jph[j-1], 1);
        for(k=0; k<Nz; k++)
        {
            int jk = j+Nr*k;
-           double zp = z_kph[k];
-           double zm = z_kph[k-1];
            for(i=0; i < Np[jk]; i++)
            {
                struct cell * c = &(theCells[jk][i]);
-               double phip = c->piph;
-               double phim = phip - c->dphi;
-               double xp[3] = {rp, phip, zp};
-               double xm[3] = {rm, phim, zm};
-               double r = get_moment_arm(xp, xm);
 
                for(q = 0; q<NUM_Q; q++)
                {

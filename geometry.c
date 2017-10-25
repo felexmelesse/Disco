@@ -29,6 +29,14 @@ double get_moment_arm( double * xp , double * xm ){
    return 2.0 * (rp*rp+rm*rp+rm*rm) / (3.0*(rp+rm));
 }
 
+double get_centroid(double xp, double xm, int dim)
+{
+    if(dim == 1)
+        return 2.0*(xp*xp+xp*xm+xm*xm) / (3.0*(xp+xm));
+    else
+        return 0.5*(xp+xm);
+}
+
 double get_dL( double * xp , double * xm , int dim ){
    double r   = .5*(xp[0]+xm[0]);
    double dphi = xp[1]-xm[1];

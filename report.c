@@ -4,7 +4,7 @@
 void planetaryForce( struct planet * , double , double , double , double * , double * , double * , int );
 
 double get_dV( double * , double * );
-double get_moment_arm( double * , double * );
+double get_centroid( double , double , int);
 
 void report( struct domain * theDomain ){
 
@@ -85,7 +85,7 @@ void report( struct domain * theDomain ){
             double xp[3] = {r_jph[j]  ,phip,z_kph[k]  };
             double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
             double dV = get_dV( xp , xm );
-            double r = get_moment_arm( xp , xm );
+            double r = get_centroid( xp[0] , xm[0], 1 );
 
             PsiR += rho*dV*cos(phi);
             PsiI += rho*dV*sin(phi);

@@ -255,7 +255,7 @@ void flux( double * prim , double * flux , double * x , double * n ){
 }
 
 double get_dp( double , double );
-double get_moment_arm( double * xp , double * xm );
+double get_centroid( double , double , int);
 
 void source( double * prim , double * cons , double * xp , double * xm , double dVdt ){
    
@@ -268,8 +268,9 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    double r2_3 = (rp*rp + rp*rm + rm*rm)/3.;
    double vr  = prim[URR];
    double omega = prim[UPP];
-   double r = get_moment_arm(xp, xm);
-   double x[3] = {r, 0.5*(xm[1]+xp[1]), 0.5*(xm[2]+xp[2])};
+   double r = get_centroid(rp, rm, 1);
+   double z = get_centroid(xp[2], xm[2], 2);
+   double x[3] = {r, 0.5*(xm[1]+xp[1]), z};
 
    double Br = prim[BRR];
    double Bp = prim[BPP];
@@ -476,7 +477,7 @@ double get_dL( double * , double * , int );
 
 double mindt(double * prim , double w , double * xp , double * xm ){
 
-   double r = get_moment_arm(xp, xm);
+   double r = get_centroid(xp[0], xm[0], 1);
    double Pp  = prim[PPP];
    double rho = prim[RHO];
    double vp  = (prim[UPP]-w)*r;

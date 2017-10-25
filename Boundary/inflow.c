@@ -4,6 +4,7 @@
 
 void initial( double * , double * );
 double get_dV( double * , double * );
+double get_centroid( double , double , int );
 void cons2prim( double * , double * , double * , double );
 void prim2cons( double * , double * , double * , double );
 void subtract_omega( double * );
@@ -69,19 +70,14 @@ void boundary_trans( struct domain * theDomain , int dim ){
       double nu0 = 0.5;
 
       for( j=0 ; j<Ng ; ++j ){
-         rp = r_jph[j];
-         rm = r_jph[j-1];
+         double r = get_centroid(r_jph[j], r_jph[j-1], 1);
          for( k=0 ; k<Nz ; ++k ){
+            double z = get_centroid(z_kph[k], z_kph[k-1], 2);
             int jk = j+Nr*k;
-            zp = z_kph[k];
-            zm = z_kph[k-1];
             for( i=0 ; i<Np[jk] ; ++i ){
                struct cell * c = &(theCells[jk][i]);
-               double xm[3] = {rm, c->piph-c->dphi, zm};
-               double xp[3] = {rp, c->piph, zp};
                double phi = c->piph - .5*c->dphi;
-               double r = get_moment_arm(xp, xm);
-               double x[3] = {r , phi , .5*(zm+zp)};
+               double x[3] = {r , phi , z};
                initial( c->prim , x ); 
                subtract_omega( c->prim );
                c->prim[RHO] = rho_in*pow(r/rg,-k0);

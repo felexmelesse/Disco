@@ -9,7 +9,7 @@ double get_dV( double * , double * );
 double get_dA( double *, double *, int);
 void cons2prim( double * , double * , double * , double );
 void prim2cons( double * , double * , double * , double );
-double get_moment_arm(double *, double *);
+double get_centroid(double , double , int);
 void subtract_omega( double * );
 void reflect_prims(double *, double *, int);
 
@@ -17,9 +17,10 @@ void set_cell_init(struct cell *c, double *r_jph, double *z_kph, int j, int k)
 {
     double xm[3] = {r_jph[j-1], c->piph - c->dphi, z_kph[k-1]};
     double xp[3] = {r_jph[j  ], c->piph          , z_kph[k  ]};
-    double r = get_moment_arm(xp, xm);
+    double r = get_centroid(xp[0], xm[0], 1);
+    double z = get_centroid(xp[2], xm[2], 2);
     double phi = c->piph - 0.5*c->dphi;
-    double x[3] = {r, phi, 0.5*(z_kph[k]+z_kph[k-1])};
+    double x[3] = {r, phi, z};
     initial(c->prim, x);
     subtract_omega(c->prim);
     if(NUM_C > BZZ)
@@ -73,11 +74,10 @@ void set_cell_init(struct cell *c, double *r_jph, double *z_kph, int j, int k)
 void set_cell_init_q(struct cell *c, double *r_jph, double *z_kph, 
                         int j, int k, int *qarr, int nq)
 {
-    double xm[3] = {r_jph[j-1], c->piph - c->dphi, z_kph[k-1]};
-    double xp[3] = {r_jph[j  ], c->piph          , z_kph[k  ]};
-    double r = get_moment_arm(xp, xm);
+    double r = get_centroid(r_jph[j], r_jph[j-1], 1);
+    double z = get_centroid(z_kph[k], z_kph[k-1], 2);
     double phi = c->piph - 0.5*c->dphi;
-    double x[3] = {r, phi, 0.5*(z_kph[k]+z_kph[k-1])};
+    double x[3] = {r, phi, z};
     double temp_prim[NUM_Q];
     initial(temp_prim, x);
     subtract_omega(temp_prim);
@@ -488,6 +488,8 @@ void boundary_reflect_rinn( struct domain *theDomain)
     if(dim_rank[0] == 0 )
     {
         for(k=0; k<Nz; k++)
+        {
+            double z = get_centroid(z_kph[k], z_kph[k-1], 2);
             for(j=Ng-1; j>=0; j--)
             {
                 int jk = j+Nr*k;
@@ -497,18 +499,18 @@ void boundary_reflect_rinn( struct domain *theDomain)
                 
                 set_cells_copy_distant(theCells[jk], Np[jk], 
                                         theCells[jk1], Np[jk1]);
+                    
+                double r = get_centroid(r_jph[j], r_jph[j-1], 1);
 
                 for(i=0; i<Np[jk]; i++)
                 {
                     struct cell *c = &(theCells[jk][i]);
-                    double xm[3] = {r_jph[j-1], c->piph - c->dphi, z_kph[k-1]};
-                    double xp[3] = {r_jph[j  ], c->piph          , z_kph[k  ]};
-                    double r = get_moment_arm(xp, xm);
                     double phi = c->piph - 0.5*c->dphi;
-                    double x[3] = {r, phi, 0.5*(z_kph[k]+z_kph[k-1])};
+                    double x[3] = {r, phi, z};
                     reflect_prims(theCells[jk][i].prim, x, 0);
                 }
             }
+        }
     }
 }
 
@@ -531,6 +533,9 @@ void boundary_reflect_rout( struct domain *theDomain)
     if(dim_rank[0] == dim_size[0]-1)
     {
         for(k=0; k<Nz; k++)
+        {
+            double z = get_centroid(z_kph[k], z_kph[k-1], 2);
+
             for(j=Nr-Ng; j<Nr; j++)
             {
                 int jk = j+Nr*k;
@@ -540,18 +545,18 @@ void boundary_reflect_rout( struct domain *theDomain)
                 
                 set_cells_copy_distant(theCells[jk], Np[jk], 
                                         theCells[jk1], Np[jk1]);
+                
+                double r = get_centroid(r_jph[j], r_jph[j-1], 1);
 
                 for(i=0; i<Np[jk]; i++)
                 {
                     struct cell *c = &(theCells[jk][i]);
-                    double xm[3] = {r_jph[j-1], c->piph - c->dphi, z_kph[k-1]};
-                    double xp[3] = {r_jph[j  ], c->piph          , z_kph[k  ]};
-                    double r = get_moment_arm(xp, xm);
                     double phi = c->piph - 0.5*c->dphi;
-                    double x[3] = {r, phi, 0.5*(z_kph[k]+z_kph[k-1])};
+                    double x[3] = {r, phi, z};
                     reflect_prims(theCells[jk][i].prim, x, 0);
                 }
             }
+        }
     }
 }
 
@@ -572,6 +577,9 @@ void boundary_reflect_zbot( struct domain *theDomain)
     if(dim_rank[1] == 0)
     {
         for(k=Ng-1; k>=0; k--)
+        {
+            double z = get_centroid(z_kph[k], z_kph[k-1], 2);
+
             for(j=0; j<Nr; j++)
             {
                 int jk = j+Nr*k;
@@ -582,17 +590,17 @@ void boundary_reflect_zbot( struct domain *theDomain)
                 set_cells_copy_distant(theCells[jk], Np[jk], 
                                         theCells[jk1], Np[jk1]);
 
+                double r = get_centroid(r_jph[j], r_jph[j-1], 1);
+
                 for(i=0; i<Np[jk]; i++)
                 {
                     struct cell *c = &(theCells[jk][i]);
-                    double xm[3] = {r_jph[j-1], c->piph - c->dphi, z_kph[k-1]};
-                    double xp[3] = {r_jph[j  ], c->piph          , z_kph[k  ]};
-                    double r = get_moment_arm(xp, xm);
                     double phi = c->piph - 0.5*c->dphi;
-                    double x[3] = {r, phi, 0.5*(z_kph[k]+z_kph[k-1])};
+                    double x[3] = {r, phi, z};
                     reflect_prims(theCells[jk][i].prim, x, 2);
                 }
             }
+        }
     }
 }
 
@@ -615,6 +623,9 @@ void boundary_reflect_ztop( struct domain *theDomain)
     if(dim_rank[1] == dim_size[1]-1)
     {
         for(k=Nz-Ng; k<Nz; k++)
+        {
+            double z = get_centroid(z_kph[k], z_kph[k-1], 2);
+
             for(j=0; j<Nr; j++)
             {
                 int jk = j+Nr*k;
@@ -625,17 +636,17 @@ void boundary_reflect_ztop( struct domain *theDomain)
                 set_cells_copy_distant(theCells[jk], Np[jk], 
                                         theCells[jk1], Np[jk1]);
 
+                double r = get_centroid(r_jph[j], r_jph[j-1], 1);
+
                 for(i=0; i<Np[jk]; i++)
                 {
                     struct cell *c = &(theCells[jk][i]);
-                    double xm[3] = {r_jph[j-1], c->piph - c->dphi, z_kph[k-1]};
-                    double xp[3] = {r_jph[j  ], c->piph          , z_kph[k  ]};
-                    double r = get_moment_arm(xp, xm);
                     double phi = c->piph - 0.5*c->dphi;
-                    double x[3] = {r, phi, 0.5*(z_kph[k]+z_kph[k-1])};
+                    double x[3] = {r, phi, z};
                     reflect_prims(theCells[jk][i].prim, x, 2);
                 }
             }
+        }
     }
 }
 
