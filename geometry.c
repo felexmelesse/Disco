@@ -25,8 +25,7 @@ double get_moment_arm( double * xp , double * xm ){
    double rp = xp[0];
    double rm = xm[0];
    double r2 = .5*(rp*rp+rm*rm);
-   //return( sqrt(r2) );
-   return 2.0 * (rp*rp+rm*rp+rm*rm) / (3.0*(rp+rm));
+   return( sqrt(r2) );
 }
 
 double get_centroid(double xp, double xm, int dim)

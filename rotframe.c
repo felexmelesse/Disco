@@ -33,8 +33,6 @@ void omega_src( double * prim , double * cons , double * xp , double * xm , doub
 
    if( om_flag ){
 
-      double rp = xp[0];
-      double rm = xm[0];
       double rho = prim[RHO];
       double vr  = prim[URR];
       double omega = prim[UPP];
