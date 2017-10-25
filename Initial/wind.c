@@ -1,6 +1,8 @@
 
 #include "../paul.h"
 
+// To replicate Mignone, Journal of Computational Physics 270 (2014), 784-814
+
 static double gam = 0.0;
 static double csa = 0.0;
 static double csw = 0.0;
