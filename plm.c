@@ -181,14 +181,19 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
                double r = get_moment_arm(xp, xm);
 
                for(q = 0; q<NUM_Q; q++)
-                   if(q != URR)
+               {
+                   if(q == URR || (NUM_C>BZZ && q==BRR))
+                   {
+                       double SL = c->prim[q]/r;
+                       double S = c->grad[q];
+                       if( S*SL < 0.0 )
+                          c->grad[q] = 0.0; 
+                       else if( fabs(PLM*SL) < fabs(S) )
+                          c->grad[q] = PLM*SL;
+                   }
+                   else
                       c->grad[q] = 0.0;
-               double SL = c->prim[URR]/r;
-               double S = c->grad[URR];
-               if( S*SL < 0.0 )
-                  c->grad[URR] = 0.0; 
-               else if( fabs(PLM*SL) < fabs(S) )
-                  c->grad[URR] = PLM*SL;
+               }
            }
        }
    }
