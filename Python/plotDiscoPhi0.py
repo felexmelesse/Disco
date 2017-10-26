@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 import discoUtil as du
 import discoPlotUtil as dp
 
-def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
-                    bounds=None, rmax=None, planets=False, k=None):
+def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, bounds=None, 
+                    rmax=None, planets=False):
     
     print("Loading {0:s}...".format(file))
 
@@ -17,42 +17,16 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
     rjph = dat[0]
     zkph = dat[1]
     primPhi0 = dat[2]
-    piph = dat[3]
     pars = du.loadPars(file)
-
-    if k is None:
-        k = int(zkph.shape[0]/2-1)
-
-    zind = (z>zkph[k]) * (z<zkph[k+1])
-    r = r[zind]
-    phi = phi[zind]
-    prim = prim[zind,:]
-    primPhi0 = primPhi0[k,:]
-    piph = piph[zind]
-
 
     if planets:
         planetDat = dat[4]
     else:
         planetDat = None
 
-    if om is not None:
-        phi1 = phi - om*t
-        piph1 = piph - om*t
-        if planetDat is not None:
-            planetDat[:,4] -= om*t
-    else:
-        phi1 = phi
-        piph1 = piph
-
-
     varnames, vartex, num_c, num_n = du.getVarNames(file)
-    #nq = prim.shape[1]
     nq = num_c + num_n
 
-    Zs = np.unique(z)
-    z_eq = Zs[len(Zs)/2]
-    eq_ind = (z==z_eq)
     title = "DISCO t = {0:.1f}".format(t)
     name = file.split('/')[-1].split('.')[0].split('_')[-1]
 
@@ -77,11 +51,12 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
 
                 fig, ax = plt.subplots(1,1, figsize=(12,9))
 
-                dp.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], vartex[q],
-                                pars, vmin=vmin, vmax=vmax, rmax=rmax, 
+                dp.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:,:,q], 
+                                vartex[q], 
+                                pars, vmin=vmin, vmax=vmax, rmax=rmax,
                                 planets=planetDat)
                 fig.suptitle(title, fontsize=24)
-                plotname = "plot_eq_{0:s}_lin_{1:s}.png".format(name, varnames[q])
+                plotname = "plot_phi0_{0:s}_lin_{1:s}.png".format(name, varnames[q])
                 
                 print("   Saving {0:s}...".format(plotname))
                 fig.savefig(plotname, dpi=200)
@@ -90,11 +65,12 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
             if q in logvars:
                 fig, ax = plt.subplots(1,1, figsize=(12,9))
 
-                dp.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], vartex[q],
+                dp.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:,:,q], 
+                                vartex[q],
                                 pars, vmin=vmin, vmax=vmax, rmax=rmax, 
                                 planets=planetDat, log=True)
                 fig.suptitle(title, fontsize=24)
-                plotname = "plot_eq_{0:s}_log_{1:s}.png".format(name, varnames[q])
+                plotname = "plot_phi0_{0:s}_log_{1:s}.png".format(name, varnames[q])
 
                 print("   Saving {0:s}...".format(plotname))
                 fig.savefig(plotname, dpi=200)
@@ -121,7 +97,7 @@ def getBounds(use_bounds, names, files):
 
 if __name__ == "__main__":
 
-    parser = ag.ArgumentParser(description="Create 2D plots of Disco variables.")
+    parser = ag.ArgumentParser(description="Create 2D plots of Disco variables along phi = 0.")
     parser.add_argument('checkpoints', nargs='+', 
                             help="Checkpoint (.h5) files to plot.")
     parser.add_argument('-v', '--vars', nargs='+', type=int,
@@ -134,8 +110,6 @@ if __name__ == "__main__":
                             help="Use global max/min for bounds. Optional argument BOUNDS is a file. If it exists, it will be read for parameter bounds. If it does not exist the global max/min will be calculated and saved to the file.")
     parser.add_argument('-r', '--rmax', type=float, 
                             help="Set plot limits to RMAX.")
-    parser.add_argument('-o', '--omega', type=float, 
-                            help="Rotate frame at rate OMEGA.")
     parser.add_argument('--noghost', action='store_true', 
                             help="Do not plot ghost zones.")
 
@@ -143,7 +117,6 @@ if __name__ == "__main__":
 
     vars = args.vars
     logvars = args.logvars
-    om = args.omega
     rmax = args.rmax
     use_bounds = args.bounds
     planets = args.planets
@@ -156,6 +129,6 @@ if __name__ == "__main__":
     bounds = getBounds(use_bounds, names, files)
 
     for f in files:
-        plotCheckpoint(f, vars=vars, logvars=logvars, bounds=bounds, om=om, 
+        plotCheckpoint(f, vars=vars, logvars=logvars, bounds=bounds, 
                         rmax=rmax, noGhost=noghost, planets=planets)
 
