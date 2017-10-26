@@ -167,15 +167,19 @@ def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, vmin=None, vmax=None,
 
 def calcBounds(files):
 
+    print("Checking bounds...")
     f = files[0]
-    t, r, phi, z, prim, dat = du.loadCheckpoint(f)
+    
+    print("  Checking bounds for {0:s}...".format(f))
+    prim = du.loadCheckpointPrims(f)
 
     num_q = prim.shape[1]
     bounds = [[prim[:,q].min(), prim[:,q].max()] for q in range(num_q)]
     bounds = np.array(bounds)
 
     for f in files[1:]:
-        t, r, phi, z, prim, dat = du.loadCheckpoint(f)
+        print("  Checking bounds for {0:s}...".format(f))
+        prim = du.loadCheckpointPrims(f)
         for q in range(num_q):
             bounds[q,0] = min(bounds[q,0], prim[:,q].min())
             bounds[q,1] = max(bounds[q,1], prim[:,q].max())

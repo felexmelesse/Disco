@@ -28,6 +28,15 @@ def loadOpts(filename):
 
     return opts
 
+def loadCheckpointPrims(filename):
+   
+    f = h5.File(filename, "r")
+    NUM_C = f['Opts']['NUM_C'][0]
+    NUM_N = f['Opts']['NUM_N'][0]
+    NUM_Q = NUM_N + NUM_C
+    prim = f['Data']['Cells'][:,:NUM_Q][...]
+    f.close()
+    return prim
 
 def loadCheckpoint(filename):
 
