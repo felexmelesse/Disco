@@ -1,9 +1,9 @@
 
 #include "../paul.h"
 
-double get_om( double );
-double get_om1( double );
-double get_cs2( double );
+double get_om( double *);
+double get_om1( double *);
+double get_cs2( double *);
 
 static double gamma_law = 0.0; 
 static double RHO_FLOOR = 0.0; 

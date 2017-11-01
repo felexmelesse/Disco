@@ -4,11 +4,11 @@ Restart			0	//Restart from input.h5
 
 //Time Range//
 T_Start			0.0 //1.0
-T_End		    1.0e2
+T_End		    100.0
 T_Times_2pi		0
 
 //Output Frequency//
-Num_Reports		    4e4
+Num_Reports		    1e7
 Num_Snapshots		0
 Num_Checkpoints		100
 Use_Logtime		    0
@@ -28,7 +28,7 @@ Z_Max			20.0  //0.0625
 Z_Periodic		0
 Phi_Max			1.0
 P_Times_2pi		1
-Log_Zoning		1	//0=Uniform, 1=Log, 2=Hybrid
+Log_Zoning		0	//0=Uniform, 1=Log, 2=Hybrid
 Log_Radius		0.1	//Only for option 2 of Log_Zoning
 
 //Numerical Parameters
@@ -36,7 +36,7 @@ CFL			            0.2
 PLM			            1.5
 Max_DT                  0.0 //If > 0.0, the maximum allowed time step.
 Riemann_Solver		    0	//0=HLL, 1=HLLC, 2=HLLD
-Mesh_Motion		        3	//0=Fixed, 1=By Cell, 2=Riemann, 3=Avg, 4=Exact
+Mesh_Motion		        0	//0=Fixed, 1=By Cell, 2=Riemann, 3=Avg, 4=Exact
 Exact_Mesh_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep
 Exact_Mesh_Omega_Par    0.0 //unused so far
 Absorbing_BC		    0
@@ -52,8 +52,8 @@ Cs2_Profile         1   //0=Flat,1=FlatDiskMach,2=Visc,3=Sorathia
 Cs2_Par             0.0 //unused so far
 Energy_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep, 4=Gaussian
 Energy_Omega_Par    0.0 //unused so far
-Use_Viscosity		1
-Viscosity		    1.0
+Use_Viscosity		0
+Viscosity		    0.0
 Use_As_Alpha		0      
 
 //Planet Parameters	
@@ -73,16 +73,16 @@ Mach_Number		5.0
 Include_Atmos	0
 
 //Initial Condition Parameters
-Init_Par0       0      // int
+Init_Par0       1      // Field setup. 0:Vertical, 1:Poloidal Loop
 Init_Par1       6.0    // Rin
 Init_Par2       10.0   // Rmax
 Init_Par3       1.0e-5 // rho_atm
-Init_Par4       0.0    // B0
+Init_Par4       1.0e-2    // B0
 
 //Noise Parameters
-Noise_Type      0       // 0: No Noise, 1: URR and UPP 
+Noise_Type      2       // 0: No Noise, 1: URR and UPP , 2: PPP
 Noise_Abs       0.0     // Amplitude of Absolute Noise
-Noise_Rel       0.0     // Amplitude of Relative Noise
+Noise_Rel       0.02    // Amplitude of Relative Noise
 
 //Metric Parameters
 Metric_Par0     0    //(int)

@@ -4,7 +4,7 @@
 
 # Build options
 INITIAL  = torus_fm
-HYDRO    = euler
+HYDRO    = mhd
 BOUNDARY = fixed3d
 OUTPUT   = h5out
 RESTART  = h5in
@@ -15,6 +15,6 @@ ANALYSIS = diag_euler
 METRIC   = flat_rpz
 FRAME    = normal
 
-NUM_C	 = 5	# Number of conserved variables (Hydro: 5, MHD: 8)
+NUM_C	 = 8	# Number of conserved variables (Hydro: 5, MHD: 8)
 NUM_N	 = 1	# Number of passive variables   (>=0)
-CT_MODE	 = 0	# Constained Transport mode. None: 0, 2D: 1, 3D: 2.
+CT_MODE	 = 2	# Constained Transport mode. None: 0, 2D: 1, 3D: 2.

@@ -23,4 +23,12 @@ void addNoise(double *prim, double *x)
         prim[URR] = (1.0+x1*relMag)*prim[URR] + x2*absMag;
         prim[UPP] = (1.0+x3*relMag)*prim[UPP] + x4*absMag;
     }
+
+    else if(type == 2)
+    {
+        double x1 = 2 * ((double)rand() / (double)(RAND_MAX)) - 1;
+        double x2 = 2 * ((double)rand() / (double)(RAND_MAX)) - 1;
+
+        prim[PPP] = (1.0+x1*relMag)*prim[PPP] + x2*absMag;
+    }
 }

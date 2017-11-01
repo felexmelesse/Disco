@@ -11,12 +11,14 @@ static double Rin = 0.0;
 static double Rmax = 0.0;
 static double rho_atm = 0.0;
 static double B0 = 0.0;
+static int field_choice = 0;
 
 void setICparams( struct domain * theDomain ){
    gam = theDomain->theParList.Adiabatic_Index;
    //M = theDomain->theParList.metricPar2;
    M = 1.0;
    a = theDomain->theParList.metricPar3;
+   field_choice = theDomain->theParList.initPar0;
    Rin = theDomain->theParList.initPar1;
    Rmax = theDomain->theParList.initPar2;
    rho_atm = theDomain->theParList.initPar3;
@@ -54,6 +56,37 @@ void initial( double * prim , double * x ){
 
    double P = (gam-1)/gam * rho*h;
 
+   double Br, Bp, Bz;
+
+   if(NUM_C > BZZ)
+   {
+       if(field_choice == 0)
+       {
+           Br = 0.0;
+           Bp = 0.0;
+           Bz = B0;
+       }
+       else if(field_choice == 1 && rho > 0.2)
+       {
+           // A_phi ~ max(rho/rho_max - 0.2, 0)
+           // B^r   = -d_z A_phi
+           // B^z   =  d_r A_phi
+           // A^phi =          0
+           double dhdr = -M*r/(R*R*R) + M*Rmax/(r*r*r);
+           double dhdz = -M*z/(R*R*R);
+           
+           Br = -1.0/(gam-1.0) * rho/h * dhdz * B0;
+           Bp = 0.0;
+           Bz =  1.0/(gam-1.0) * rho/h * dhdr * B0;
+       }
+       else
+       {
+           Br = 0.0;
+           Bp = 0.0;
+           Bz = 0.0;
+       }
+   }
+
 
    prim[RHO] = rho;
    prim[PPP] = P;
@@ -63,13 +96,12 @@ void initial( double * prim , double * x ){
 
    if(NUM_C > BZZ)
    {
-       double Bz = B0;
-        prim[BRR] = 0.0;
-        prim[BPP] = 0.0;
+        prim[BRR] = Br;
+        prim[BPP] = Bp;
         prim[BZZ] = Bz;
    }
 
-   if( NUM_N>0 ) prim[NUM_C] = q;
-
+   if(NUM_N > 0)
+       prim[NUM_C] = q;
 }
 
