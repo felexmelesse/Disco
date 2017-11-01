@@ -27,6 +27,6 @@ Viewer/vdisco
 *.eps
 *.ppm
 test*
-out*
+out
 UnitTest
 disco.dSYM
