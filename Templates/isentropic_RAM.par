@@ -1,6 +1,6 @@
 
 //Disco Parameter File//
-Restart			1	//Restart from input.h5
+Restart			0	//Restart from input.h5
 
 //Time Range//
 T_Start			0.0 //1.0

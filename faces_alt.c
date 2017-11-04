@@ -4,6 +4,7 @@
 double get_dA( double * , double * , int );
 double get_dL( double * , double * , int );
 double get_dp( double , double );
+double get_centroid( double , double , int );
 
 int get_num_rzFaces( int Nr , int Nz , int dim ){
    if( dim==1 ) return( (Nr-1)*Nz );
@@ -11,20 +12,16 @@ int get_num_rzFaces( int Nr , int Nz , int dim ){
 }
 
 void addFace( struct face * theFaces , int n , struct cell * cL , struct cell * cR , double dxL , double dxR , double * xp , double * xm , int dim , int LRtype ){
-   int d;
-   for( d=0 ; d<3 ; ++d ) theFaces[n].cm[d] = .5*(xp[d]+xm[d]); //Consider calculating center of mass in geometry.c
    double dp = get_dp(xp[1],xm[1]);
    double phic = get_dp(xp[1],.5*dp);
-   double rp = xp[0];
-   double rm = xm[0];
-   double r2 = (rp*rp+rm*rm+rp*rm)/3.;
-   theFaces[n].cm[0] = r2/(.5*(rp+rm));
+   theFaces[n].cm[0] = get_centroid(xp[0], xm[0], 1);
    theFaces[n].cm[1] = phic;
+   theFaces[n].cm[2] = get_centroid(xp[2], xm[2], 2);
    theFaces[n].L   = cL;
    theFaces[n].R   = cR;
    theFaces[n].dxL = dxL;
    theFaces[n].dxR = dxR;
-   theFaces[n].dphi= dp;//get_dp(xp[1],xm[1]);
+   theFaces[n].dphi= dp;
    theFaces[n].dA  = get_dA(xp,xm,dim);
 
    int dim_trans = 3-dim;//4-2*dim;//3-dim;
@@ -114,11 +111,19 @@ void buildfaces( struct domain * theDomain , int dim , int mode ){
 
             double dxL,dxR;
             if( dim==1 ){
-               dxL = .5*(r_jph[j]  - r_jph[j-1]);
-               dxR = .5*(r_jph[jp] - r_jph[j]  );
+               double rm = get_centroid(r_jph[j], r_jph[j-1], 1);
+               double rp = get_centroid(r_jph[jp], r_jph[j], 1);
+               dxL = r_jph[j] - rm;
+               dxR = rp - r_jph[j];
+               //dxL = .5*(r_jph[j]  - r_jph[j-1]);
+               //dxR = .5*(r_jph[jp] - r_jph[j]  );
             }else{
-               dxL = .5*(z_kph[k]  - z_kph[k-1]);
-               dxR = .5*(z_kph[kp] - z_kph[k]  );
+               double zm = get_centroid(z_kph[k], z_kph[k-1], 2);
+               double zp = get_centroid(z_kph[kp], z_kph[k], 2);
+               dxL = z_kph[k] - zm;
+               dxR = zp - z_kph[k];
+               //dxL = .5*(z_kph[k]  - z_kph[k-1]);
+               //dxR = .5*(z_kph[kp] - z_kph[k]  );
             }
             double xp[3] = {r_jph[j],0.0,z_kph[k  ]};
             double xm[3] = {r_jph[j],0.0,z_kph[k-1]};
