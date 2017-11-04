@@ -78,7 +78,12 @@ int *Id_phi0 = NULL;
 
 double max_1d = 1.0;
 
+char filename[1024];
+
 void get_rgb( double , float * , float * , float * , int );
+void loadSliceZ(char *filename, int k);
+void loadSlicePhi(char *filename);
+void loadDiagnostics(char *filename, int k);
 
 double getval( double * thisZone , int q ){
    if( q!=-1 ) return( thisZone[q] );
@@ -772,6 +777,16 @@ void keyPressed(unsigned char key, int x, int y)
    if( key == 'p' ) draw_planet = !draw_planet;
    if( key == 's' ) draw_spiral = !draw_spiral;
    if( key == 'Z' ) fix_zero = !fix_zero;
+   if( key == 'q' )
+   {
+       if(KK == Nz-1)
+           KK = Nz/2;
+       else
+           KK = Nz - 1;
+       loadSliceZ(filename, KK);
+       loadDiagnostics(filename, KK);
+   }
+
    glutPostRedisplay();
 }
 
@@ -1096,7 +1111,6 @@ int main(int argc, char **argv)
       printf("Please specify the input file.\n");
       exit(1);
    }
-   char filename[256];
    if( argv[1] ){
       strcpy( filename , argv[1] );
    }
