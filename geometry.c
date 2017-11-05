@@ -66,3 +66,10 @@ double get_dV( double * xp , double * xm ){
 
    return( r*dr*dphi*dz );
 }
+
+double get_scale_factor( double * x, int dim)
+{
+    if(dim == 0)
+        return x[0];
+    return 1.0;
+}
