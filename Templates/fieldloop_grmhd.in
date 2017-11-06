@@ -6,6 +6,7 @@
 INITIAL  = floop_gr
 HYDRO    = grmhd2
 BOUNDARY = polar
+GEOMETRY = cylindrical
 OUTPUT   = h5out
 RESTART  = h5in
 PLANETS  = none

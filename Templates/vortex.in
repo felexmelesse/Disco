@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = vortex
 HYDRO    = euler
+GEOMETRY = cylindrical
 BOUNDARY = polar
 OUTPUT   = h5out
 RESTART  = h5in

@@ -1,5 +1,5 @@
 
-#include "paul.h"
+#include "../paul.h"
 
 static double phi_max = 0.0;
 

@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = wind
 HYDRO    = euler
+GEOMETRY = cylindrical
 BOUNDARY = horizon3d
 OUTPUT   = h5out
 RESTART  = h5in

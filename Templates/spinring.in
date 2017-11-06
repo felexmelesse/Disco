@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = spinring
 HYDRO    = mhd
+GEOMETRY = cylindrical
 BOUNDARY = polar
 OUTPUT   = h5out
 RESTART  = h5in

@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = kep_ring
 HYDRO    = euler
+GEOMETRY = cylindrical
 BOUNDARY = zerograd_omk
 OUTPUT   = h5out
 RESTART  = h5in

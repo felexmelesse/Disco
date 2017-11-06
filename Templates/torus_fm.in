@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = torus_fm
 HYDRO    = mhd
+GEOMETRY = cylindrical
 BOUNDARY = fixed3d
 OUTPUT   = h5out
 RESTART  = h5in

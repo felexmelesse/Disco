@@ -12,6 +12,7 @@ GIT_VERSION = $(shell git describe --dirty --always --tags)
 OPT_DEFS = -DGIT_VERSION=\"$(GIT_VERSION)\"
 OPT_DEFS += -DINITIAL=\"$(INITIAL)\"
 OPT_DEFS += -DHYDRO=\"$(HYDRO)\"
+OPT_DEFS += -DGEOMETRY=\"$(GEOMETRY)\"
 OPT_DEFS += -DBOUNDARY=\"$(BOUNDARY)\"
 OPT_DEFS += -DOUTPUT=\"$(OUTPUT)\"
 OPT_DEFS += -DRESTART=\"$(RESTART)\"
@@ -29,7 +30,7 @@ FLAGS = -O3 -Wall -g $(OPT_DEFS)
 INC = -I$(H55)/include
 LIB = -L$(H55)/lib -lhdf5 -lm
 
-OBJ = main.o readpar.o timestep.o onestep.o riemann.o mpisetup.o gridsetup.o domain.o misc.o geometry.o faces_alt.o exchange.o plm.o report.o profiler.o planet.o omega.o analysis.o bfields.o $(HLLD).o rotframe.o boundary_functions.o $(INITIAL).o $(OUTPUT).o $(HYDRO).o $(BOUNDARY).o $(RESTART).o $(PLANETS).o $(METRIC).o $(FRAME).o calc.o $(ANALYSIS).o  noise.o #snapshot.o
+OBJ = main.o readpar.o timestep.o onestep.o riemann.o mpisetup.o gridsetup.o domain.o misc.o $(GEOMETRY).o faces_alt.o exchange.o plm.o report.o profiler.o planet.o omega.o analysis.o bfields.o $(HLLD).o rotframe.o boundary_functions.o $(INITIAL).o $(OUTPUT).o $(HYDRO).o $(BOUNDARY).o $(RESTART).o $(PLANETS).o $(METRIC).o $(FRAME).o calc.o $(ANALYSIS).o  noise.o #snapshot.o
 
 default: disco
 
@@ -55,6 +56,9 @@ $(INITIAL).o : Initial/$(INITIAL).c paul.h
 
 $(HYDRO).o : Hydro/$(HYDRO).c paul.h
 	$(CC) $(FLAGS) $(LOCAL_CFLAGS) $(INC) -c Hydro/$(HYDRO).c
+
+$(GEOMETRY).o : Geometry/$(GEOMETRY).c paul.h
+	$(CC) $(FLAGS) $(LOCAL_CFLAGS) $(INC) -c Geometry/$(GEOMETRY).c
 
 $(PLANETS).o : Planets/$(PLANETS).c paul.h
 	$(CC) $(FLAGS) $(LOCAL_CFLAGS) $(INC) -c Planets/$(PLANETS).c

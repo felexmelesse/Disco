@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = shear
 HYDRO    = euler
+GEOMETRY = cylindrical
 BOUNDARY = fixed
 OUTPUT   = ascii
 RESTART  = h5in

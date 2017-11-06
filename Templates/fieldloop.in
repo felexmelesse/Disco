@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = floop
 HYDRO    = mhd
+GEOMETRY = cylindrical
 BOUNDARY = polar
 OUTPUT   = h5out
 RESTART  = h5in
