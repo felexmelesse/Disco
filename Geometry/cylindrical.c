@@ -73,3 +73,8 @@ double get_scale_factor( double * x, int dim)
         return x[0];
     return 1.0;
 }
+
+double get_vol_element(double *x)
+{
+    return x[0];
+}

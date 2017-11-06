@@ -14,6 +14,9 @@
 double get_cs2( double );
 double get_dp( double , double );
 double get_dL( double * , double * , int );
+double get_centroid(double, double, int);
+double get_vol_element(double *);
+double get_scale_factor(double *, int);
 
 //Local Functions
 void cons2prim_prep(double *cons, double *x);
@@ -62,7 +65,6 @@ double get_omega(double *prim, double *x)
 
 void prim2cons( double *prim, double *cons, double *x, double dV)
 {
-    double r = x[0];
     double rho = prim[RHO];
     double Pp  = prim[PPP];
     double l[3] = {prim[URR], prim[UPP], prim[UZZ]};
@@ -76,7 +78,7 @@ void prim2cons( double *prim, double *cons, double *x, double dV)
     lapse = metric_lapse(x);
     metric_shift(x, shift);
     metric_igam(x, igam);
-    jac = metric_jacobian(x) / r;
+    jac = metric_jacobian(x) / get_vol_element(x);
     frame_U(x, U);
     double w, u0, u2;
     double u[3];
@@ -123,13 +125,14 @@ void getUstar(double *prim, double *Ustar, double *x, double Sk, double Ss,
     a = metric_lapse(x);
     metric_shift(x, b);
     metric_igam(x, igam);
-    jac = metric_jacobian(x) / r;
+    jac = metric_jacobian(x) / get_vol_element(x);
     frame_U(x, U);
 
     double bn = n[0]*b[0] + n[1]*b[1] + n[2]*b[2];
     double ign = n[0]*igam[0] + n[1]*igam[4] + n[2]*igam[8];
     double Un = n[0]*U[1] + n[1]*U[2] + n[2]*U[3];
-    double hn = n[0] + r*n[1] + n[2];
+    double hn = get_scale_factor(x,1)*n[0] + get_scale_factor(x,0)*n[1]
+                + get_scale_factor(x,2)*n[2];
 
     double ss = Ss/hn;
     double sk = Sk/hn;
@@ -199,7 +202,6 @@ void cons2prim(double *cons, double *prim, double *x, double dV)
 
 void flux(double *prim, double *flux, double *x, double *n)
 {
-    double r = x[0];
     double rho = prim[RHO];
     double Pp  = prim[PPP];
     double l[3] = {prim[URR], prim[UPP], prim[UZZ]};
@@ -213,7 +215,7 @@ void flux(double *prim, double *flux, double *x, double *n)
     lapse = metric_lapse(x);
     metric_shift(x, shift);
     metric_igam(x, igam);
-    jac = metric_jacobian(x) / r;
+    jac = metric_jacobian(x) / get_vol_element(x);
     frame_U(x, U);
 
     double w, u0, u2;
@@ -238,7 +240,8 @@ void flux(double *prim, double *flux, double *x, double *n)
     //double Un = U[1]*n[0] + r*U[2]*n[1] + U[3]*n[2];
     double un = u[0]*n[0] + u[1]*n[1] + u[2]*n[2];
     double Un = U[1]*n[0] + U[2]*n[1] + U[3]*n[2];
-    double hn = n[0] + r*n[1] + n[2];
+    double hn = get_scale_factor(x,1)*n[0] + get_scale_factor(x,0)*n[1]
+                + get_scale_factor(x,2)*n[2];
     
     double rhoh = rho + gamma_law/(gamma_law-1.0)*Pp;
     double rhoe = Pp / (gamma_law-1.0);
@@ -279,7 +282,7 @@ void source(double *prim, double *cons, double *xp, double *xm, double dVdt)
     lapse = metric_lapse(x);
     metric_shift(x, shift);
     metric_igam(x, igam);
-    jac = metric_jacobian(x) / r;
+    jac = metric_jacobian(x) / get_vol_element(x);
     frame_U(x, U);
     frame_der_U(x, dU);
 
@@ -349,7 +352,6 @@ void flux_to_E(double *Flux, double *Ustr, double *x, double *E1_riemann,
 void vel(double *prim1, double *prim2, double *Sl, double *Sr, double *Ss, 
             double *n, double *x, double *Bpack)
 {
-    double r = x[0];
     double rho1 = prim1[RHO];
     double P1   = prim1[PPP];
     double l1[3]  = {prim1[URR], prim1[UPP], prim1[UZZ]};
@@ -399,7 +401,8 @@ void vel(double *prim1, double *prim2, double *Sl, double *Sr, double *Ss,
 
     double dv1 = sqrt(cs21*(ign - vSn1*vSn1 - cs21*(ign*v21-vSn1*vSn1))) / w1;
     double dv2 = sqrt(cs22*(ign - vSn2*vSn2 - cs22*(ign*v22-vSn2*vSn2))) / w2;
-    double hn = n[0] + r*n[1] + n[2];
+    double hn = get_scale_factor(x,1)*n[0] + get_scale_factor(x,0)*n[1]
+                + get_scale_factor(x,2)*n[2];
 
     double sl1 = hn * (a * (vSn1*(1.0-cs21) - dv1) / (1.0-v21*cs21) - bn);
     double sr1 = hn * (a * (vSn1*(1.0-cs21) + dv1) / (1.0-v21*cs21) - bn);
@@ -478,8 +481,8 @@ void vel(double *prim1, double *prim2, double *Sl, double *Sr, double *Ss,
 
 double mindt(double *prim, double wc, double *xp, double *xm)
 {
-    double x[3] = {0.5*(xm[0]+xp[0]), 0.5*(xm[1]+xp[1]), 0.5*(xm[2]+xp[2])};
-    double r = x[0];
+    double x[3] = {get_centroid(xp[0],xm[0],1), get_centroid(xp[1],xm[1],0),
+                    get_centroid(xp[2],xm[2],2)};
     double rho = prim[RHO];
     double Pp  = prim[PPP];
     double l[3] = {prim[URR], prim[UPP], prim[UZZ]};
@@ -508,20 +511,24 @@ double mindt(double *prim, double wc, double *xp, double *xm)
     for(i=0; i<3; i++)
         vS[i] = uS[i]/w;
     v2 = u2/(w*w);
+    
+    double hr = get_scale_factor(x,1);
+    double hp = get_scale_factor(x,0);
+    double hz = get_scale_factor(x,2);
 
     double sig = 1-cs*cs;
 
     double dvr = cs * sqrt(igam[0]*(1-cs*cs*v2) - sig*vS[0]*vS[0]) / w;
-    double vrl = fabs(a * (vS[0]*sig - dvr) / (1-v2*cs*cs) - b[0]);
-    double vrr = fabs(a * (vS[0]*sig + dvr) / (1-v2*cs*cs) - b[0]);
+    double vrl = fabs(hr * (a * (vS[0]*sig - dvr) / (1-v2*cs*cs) - b[0]));
+    double vrr = fabs(hr * (a * (vS[0]*sig + dvr) / (1-v2*cs*cs) - b[0]));
 
     double dvp = cs * sqrt(igam[4]*(1-cs*cs*v2) - sig*vS[1]*vS[1]) / w;
-    double vpl = fabs(r * (a * (vS[1]*sig - dvp) / (1-v2*cs*cs) - b[1] - wc));
-    double vpr = fabs(r * (a * (vS[1]*sig + dvp) / (1-v2*cs*cs) - b[1] - wc));
+    double vpl = fabs(hp * (a * (vS[1]*sig - dvp) / (1-v2*cs*cs) - b[1] - wc));
+    double vpr = fabs(hp * (a * (vS[1]*sig + dvp) / (1-v2*cs*cs) - b[1] - wc));
     
     double dvz = cs * sqrt(igam[8]*(1-cs*cs*v2) - sig*vS[2]*vS[2]) / w;
-    double vzl = fabs(a * (vS[2]*sig - dvz) / (1-v2*cs*cs) - b[2]);
-    double vzr = fabs(a * (vS[2]*sig + dvz) / (1-v2*cs*cs) - b[2]);
+    double vzl = fabs(hz * (a * (vS[2]*sig - dvz) / (1-v2*cs*cs) - b[2]));
+    double vzr = fabs(hz * (a * (vS[2]*sig + dvz) / (1-v2*cs*cs) - b[2]));
 
     double maxvr = vrr > vrl ? vrr : vrl;
     double maxvp = vpr > vpl ? vpr : vpl;
@@ -545,7 +552,6 @@ double getReynolds(double *prim, double w, double *x, double dx)
 
 void reflect_prims(double *prim, double *x, int dim)
 {
-    double r = x[0];
     double lapse;
     double shift[3];
     double igam[9];
@@ -614,9 +620,6 @@ void cons2prim_solve_isothermal(double *cons, double *prim, double *x)
     double max_iter = 30;
     double Nextra = 10;
 
-    double r = x[0];
-    double z = x[2];
-
     double D = cons[DDD];
     double S[3] = {cons[SRR], cons[LLL], cons[SZZ]};
     double tau = cons[TAU];
@@ -627,7 +630,7 @@ void cons2prim_solve_isothermal(double *cons, double *prim, double *x)
     metric_shift(x, be);
     metric_gam(x, gam);
     metric_igam(x, igam);
-    jac = metric_jacobian(x) / r;
+    jac = metric_jacobian(x) / get_vol_element(x);
     sqrtgam = jac / al;
     frame_U(x, U);
     
@@ -750,7 +753,7 @@ void cons2prim_solve_isothermal(double *cons, double *prim, double *x)
     for( q=NUM_C ; q<NUM_Q ; ++q )
         prim[q] = cons[q]/cons[DDD];
     
-    if(DEBUG3 && r < DEBUG_RMAX)
+    if(DEBUG3 && x[0] < DEBUG_RMAX)
     {
         FILE *f = fopen("c2p.out", "a");
         fprintf(f, "%.10lg %.10lg %.10lg %.10lg %.10lg %.10lg\n",
@@ -764,8 +767,6 @@ void cons2prim_solve_adiabatic(double *cons, double *prim, double *x)
     double prec = 1.0e-15;
     double max_iter = 100;
 
-    double r = x[0];
-
     double D = cons[DDD];
     double S[3] = {cons[SRR], cons[LLL], cons[SZZ]};
     double tau = cons[TAU];
@@ -778,7 +779,7 @@ void cons2prim_solve_adiabatic(double *cons, double *prim, double *x)
     lapse = metric_lapse(x);
     metric_shift(x, shift);
     metric_igam(x, igam);
-    jac = metric_jacobian(x) / r;
+    jac = metric_jacobian(x) / get_vol_element(x);
     frame_U(x, U);
 
     double s2 = 0.0;
@@ -800,7 +801,7 @@ void cons2prim_solve_adiabatic(double *cons, double *prim, double *x)
     if(e*e < s2 && DEBUG)
     {
         printf("Not enough thermal energy (r=%.12lg, e2=%.12lg, s2=%.12lg)\n",
-                r, e*e, s2);
+                x[0], e*e, s2);
 
         double cons0[NUM_Q];
         prim2cons(prim, cons0, x, 1.0);
