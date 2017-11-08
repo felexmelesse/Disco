@@ -60,8 +60,8 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
 
    double f1 = -fgrav( pl->M , script_r , pl->eps );
 
-   double cosa = dx/script_r;
-   double sina = dy/script_r;
+   double cosa = dx/script_r_perp;
+   double sina = dy/script_r_perp;
 
    double cosap = cosa*cosp+sina*sinp;
    double sinap = sina*cosp-cosa*sinp;
