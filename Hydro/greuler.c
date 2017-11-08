@@ -11,7 +11,7 @@
 #define ND 2
 
 //Global Functions
-double get_cs2( double );
+double get_cs2( double *);
 double get_dp( double , double );
 double get_dL( double * , double * , int );
 double get_centroid(double, double, int);
@@ -637,7 +637,7 @@ void cons2prim_solve_isothermal(double *cons, double *prim, double *x)
     double s2 = 0.0;
     double Us = 0.0;
 
-    double cs2N = get_cs2(r);
+    double cs2N = get_cs2(x);
     double P_o_rho = cs2N / gamma_law;
     double h = 1.0 + gamma_law * P_o_rho / (gamma_law-1.0);
     //double P_o_rhoh = cs2N / gamma_law;
@@ -665,7 +665,7 @@ void cons2prim_solve_isothermal(double *cons, double *prim, double *x)
     i = 0;
     int clean = -1;
     
-    if(DEBUG2 && r < DEBUG_RMAX)
+    if(DEBUG2 && x[0] < DEBUG_RMAX)
     {
         printf("H = %.12lg, s2 = %.12lg\n", D*h, s2);
         printf("0: (%.12lg)\n", wmo1);
@@ -702,7 +702,7 @@ void cons2prim_solve_isothermal(double *cons, double *prim, double *x)
         //if(err != err)
         //    printf("WHAT: v2=%.12lg, eta=%.12lg\n");
 
-        if(DEBUG2 && r < DEBUG_RMAX)
+        if(DEBUG2 && x[0] < DEBUG_RMAX)
         {
             printf("%d: (%.12lg) (%.12lg, %.12lg) %.12lg\n", 
                     i, wmo1, f, df, err);
@@ -716,8 +716,8 @@ void cons2prim_solve_isothermal(double *cons, double *prim, double *x)
             break;
     }
 
-    if(i == max_iter && (DEBUG || DEBUG2) && r < DEBUG_RMAX
-                && fabs(z)<DEBUG_ZMAX)
+    if(i == max_iter && (DEBUG || DEBUG2) && x[0] < DEBUG_RMAX
+                && fabs(x[2])<DEBUG_ZMAX)
     {
         printf("ERROR: NR failed to converge. x=(%g,%g,%g)  err = %.12lg\n", 
                 x[0], x[1], x[2], fabs(wmo1-wmo)/(1+wmo));

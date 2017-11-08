@@ -86,6 +86,8 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
 }
 
 double get_centroid( double , double , int);
+double get_rpz( double *, double *);
+double get_vec_from_rpz( double *, double *, double *);
 
 void planet_src( struct planet * pl , double * prim , double * cons , double * xp , double * xm , double dVdt ){
 
@@ -97,19 +99,29 @@ void planet_src( struct planet * pl , double * prim , double * cons , double * x
    //double rp = xp[0];
    //double rm = xm[0];
    //double r = 0.5*(rp+rm);
-   double r = get_centroid(xp[0], xm[0], 1);
-   double z = get_centroid(xp[2], xm[2], 2);
-   double vp  = r*omega;
+   
    double dphi = get_dp(xp[1],xm[1]);
    double phi = xm[1] + 0.5*dphi;
+   double x[3] = {get_centroid(xp[0],xm[0],1), phi, 
+                    get_centroid(xp[2],xm[2],2)};
+   double xcyl[3];
+   get_rpz(x, xcyl);
 
-   double Fr,Fp,Fz;
-   planetaryForce( pl , r , phi , z , &Fr , &Fp , &Fz , 0 );
+   //double Fr,Fp,Fz;
+   double Fcyl[3], F[3];
+   planetaryForce( pl, xcyl[0], xcyl[1], xcyl[2],
+                    &(Fcyl[0]), &(Fcyl[1]), &(Fcyl[2]), 0);
+   get_vec_from_rpz(x, Fcyl, F);
 
-   cons[SRR] += rho*Fr*dVdt;
-   cons[SZZ] += rho*Fz*dVdt;
-   cons[LLL] += rho*Fp*r*dVdt;
-   cons[TAU] += rho*( Fr*vr + Fz*vz + Fp*vp )*dVdt;
+   double hr = get_scale_factor(x, 1);
+   double hp = get_scale_factor(x, 0);
+   double hz = get_scale_factor(x, 2);
+
+
+   cons[SRR] += rho*hr*F[0]*dVdt;
+   cons[SZZ] += rho*hp*F[1]*dVdt;
+   cons[LLL] += rho*hz*F[2]*dVdt;
+   cons[TAU] += rho*( hr*F[0]*vr + hz*F[2]*vz + hp*F[1]*omega )*dVdt;
 
 }
 

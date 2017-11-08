@@ -75,7 +75,7 @@ double get_om( double *x ){
     return om;
 }
   
-double get_om1( double *x ){
+double get_om1( double *x){
     double r = x[0];
     double om1;
 

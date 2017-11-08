@@ -78,3 +78,31 @@ double get_vol_element(double *x)
 {
     return x[0];
 }
+
+void get_rpz(double *x, double *rpz)
+{
+    rpz[0] = x[0];
+    rpz[1] = x[1];
+    rpz[2] = x[2];
+}
+
+void get_coords(double *rpz, double *x)
+{
+    x[0] = rpz[0];
+    x[1] = rpz[1];
+    x[2] = rpz[2];
+}
+
+void get_vec_rpz(double *x, double *v, double *vrpz)
+{
+    vrpz[0] = v[0];
+    vrpz[1] = v[1];
+    vrpz[2] = v[2];
+}
+
+void get_vec_from_rpz(double *x, double *vrpz, double *v)
+{
+    v[0] = vrpz[0];
+    v[1] = vrpz[1];
+    v[2] = vrpz[2];
+}
