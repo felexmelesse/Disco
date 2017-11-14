@@ -456,7 +456,7 @@ void setup_faces( struct domain * theDomain , int dim ){
 
 }
 
-void source( double * , double * , double * , double * , double );
+void source( struct domain *, double * , double * , double * , double * , double, double );
 void planet_src( struct planet * , double * , double * , double * , double * , double );
 void omega_src( double * , double * , double * , double * , double );
 
@@ -483,7 +483,8 @@ void add_source( struct domain * theDomain , double dt ){
             double xp[3] = {r_jph[j]  ,phip,z_kph[k]  };
             double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
             double dV = get_dV(xp,xm);
-            source( c->prim , c->cons , xp , xm , dV*dt );
+            //density_sink( theDomain, c->prim, c->cons, xp, xm, dV );
+            source( theDomain, c->prim , c->cons , xp , xm , dV, dt );
             for( p=0 ; p<Npl ; ++p ){
                planet_src( thePlanets+p , c->prim , c->cons , xp , xm , dV*dt );
             }
@@ -493,6 +494,22 @@ void add_source( struct domain * theDomain , double dt ){
    }
 
 }
+
+/*
+void density_sink( struct domain *theDomain, double *prim, double *cons, double *xp, double *xm, double dV ){
+
+   double rp = x[0];
+   double rm = x[1];
+   double r  = 0.5*(rp+rm);
+   double dphi = get_dp(xp[1],xm[1]);
+   double phi  = xm[1] + 0.5*dphi;
+   double nearest_pl = nearest_planet_dist( theDomain, r, phi );
+   if( nearest_pl < r_sink ){
+      rho = 
+   }
+
+}
+*/
 
 void longandshort( struct domain * theDomain , double * L , double * S , int * iL , int * iS , struct cell * sweep , int j , int k ){
 

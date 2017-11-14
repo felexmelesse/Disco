@@ -87,6 +87,7 @@ void setupDomain( struct domain * theDomain ){
    theDomain->N_rpt = theDomain->theParList.NumRepts;
    theDomain->N_snp = theDomain->theParList.NumSnaps;
    theDomain->N_chk = theDomain->theParList.NumChecks;
+   theDomain->N_xyz = theDomain->theParList.tr_out_num;
 
    theDomain->count_steps = 0;
    theDomain->final_step  = 0;
@@ -95,6 +96,7 @@ void setupDomain( struct domain * theDomain ){
    theDomain->nrpt=-1;
    theDomain->nsnp=-1;
    theDomain->nchk=-1;
+   theDomain->nxyz=-1;
 
    theDomain->theFaces_1 = NULL;
    theDomain->theFaces_2 = NULL;
@@ -255,6 +257,7 @@ void report( struct domain * );
 void snapshot( struct domain * , char * );
 void output( struct domain * , char * );
 void tracerOutput( struct domain * );
+void tracerReport( struct domain * );
 
 void possiblyOutput( struct domain * theDomain , int override ){
 
@@ -264,6 +267,7 @@ void possiblyOutput( struct domain * theDomain , int override ){
    double Nrpt = theDomain->N_rpt;
    double Nsnp = theDomain->N_snp;
    double Nchk = theDomain->N_chk;
+   double Nxyz = theDomain->N_xyz;
    int LogOut = theDomain->theParList.Out_LogTime;
    int step = theDomain->mdStep;
    int n0;
@@ -308,6 +312,16 @@ void possiblyOutput( struct domain * theDomain , int override ){
       if(!override) sprintf( filename , "snapshot_%04d" , n0 );
       else sprintf( filename , "snapshot" );
       //snapshot( theDomain , filename );
+   }
+
+   //Tracer Outputting
+   n0 = (int)( t*Nxyz/t_fin );
+   if( LogOut ) 
+      n0 = (int)( Nsnp*log(t/t_min)/log(t_fin/t_min) );
+   if( (theDomain->nxyz < n0 && Nxyz>0) || override ){
+      theDomain->nxyz = n0;
+      tracerOutput( theDomain );
+      tracerReport( theDomain );
    }
 
 }
@@ -357,8 +371,8 @@ void tracerOutput( struct domain *theDomain ){
             fprintf(pFile, "%d \nAtoms. Timestep: %d\n", Ntr_tot+1, step);
             //printf(" Ntr_tot from output: %d \n", Ntr_tot );
             // step,time, id,tpe,  x, y, z, r, phi, vr, om, vz
-            fprintf(pFile, "%d %4.2f %d %d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f \n",
-                     step,t, 0,0, 0.0,0.0,0.0, 0.0,0.0 ,0.0,0.0,0.0);
+            fprintf(pFile, "%d %4.2f %d %d %.2f %.2f %.2f %.2f %.2f \n",
+                     step,t, 0,0, 0.0,0.0,0.0, 0.0,0.0 );
          }
          struct tracer *tr = theDomain->theTracers->head;
          while( tr != NULL){
@@ -369,15 +383,14 @@ void tracerOutput( struct domain *theDomain ){
       	   double z = tr->Z;
       	   double x = r*cos(phi);
          	double y = r*sin(phi);
-         	double vr = tr->Vr;
-      	   double om = tr->Omega;
-         	double vz = tr->Vz;
-      	   fprintf(pFile, "%d %4.2f %d %d %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f \n",    
+         	//double vr = tr->Vr;
+      	   //double om = tr->Omega;
+         	//double vz = tr->Vz;
+      	   fprintf(pFile, "%d %4.2f %d %d %4.4f %4.4f %4.4f %4.4f %4.4f \n",    
                            step,t, 
                            id,type, 
                            x,y,z, 
-                           r,phi, 
-                           vr,om,vz);
+                           r,phi);
             tr = tr->next;
             count++;
          }

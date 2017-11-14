@@ -129,7 +129,9 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "N_Tracers" , VAR_INT  , &(theList->num_tracers));
          err += readvar( pfile , "Tracer_Init_Type", VAR_INT, &(theList->tr_init_type));
          err += readvar( pfile , "Tracer_Out_Step", VAR_INT, &(theList->tr_out_step));
+         err += readvar( pfile , "Tracer_Out_Num" , VAR_INT, &(theList->tr_out_num ));
          err += readvar( pfile , "Tracer_Out_Type", VAR_INT, &(theList->tr_out_flag));
+          err += readvar( pfile , "R_Sink", VAR_INT, &(theList->r_sink));
       }
       MPI_Barrier(MPI_COMM_WORLD);
    }

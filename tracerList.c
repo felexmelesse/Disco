@@ -38,7 +38,6 @@ void rmTracers( struct domain *theDomain ){
          }
          del = tr;
          tr = tr->next;
-         int type = tr->Type;
          free(del);
       }
       else{
@@ -58,7 +57,7 @@ void init_tracerList( struct domain *theDomain ){
 
    int N = Ntr;
    if( Nmc ){
-      printf("Using %g Monte Carlo Tracers per Cell", Nmc);
+      printf("Using %d Monte Carlo Tracers per Cell", Nmc);
       N = Ntr*Nmc;
    }
 
@@ -90,7 +89,6 @@ void printTracerCoords( struct domain *theDomain ){
 void printTracerVels( struct domain *theDomain ){
 
    struct tracer *tr = theDomain->theTracers->head;
-   int type;
    double vr, vz, vp;
    printf("Vels: (vr, om, vz)\n");
    while( tr!=NULL ){

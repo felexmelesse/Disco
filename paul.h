@@ -44,6 +44,7 @@ struct param_list{
    double rmin, rmax;
    double zmin, zmax;
    double phimax;
+   double r_sink;
 
    int LogZoning, Z_Periodic;
    double LogRadius;
@@ -75,8 +76,9 @@ struct param_list{
    int alpha_flag;
 
    int num_tracers;
-   int num_mc_trs;
-   int tr_out_step;
+   int num_mc_trs;  //not used anymore?
+   int tr_out_step; //not used anymore?
+   int tr_out_num;
    int tr_out_flag;
    int tr_init_type;
 
@@ -148,6 +150,8 @@ struct domain{
    int N_snp;
    int nchk;
    int N_chk;
+   int nxyz;
+   int N_xyz;
 
    int final_step;
    int check_plz;

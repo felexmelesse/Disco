@@ -200,3 +200,57 @@ void report( struct domain * theDomain ){
    }
 
 }
+
+void tracerReport( struct domain *theDomain ){
+
+   char filename[256];
+   sprintf( filename, "%s.dat", "tracers" );
+
+   int step = theDomain->mdStep;
+   int rank = theDomain->rank;
+   int size = theDomain->size;
+
+   double gamma = theDomain->theParList.Adiabatic_Index;
+      
+   if( rank==0 && step==0 ){
+      FILE * pFile = fopen(filename, "w");
+      printf("Rewriting Tracer Report-File\n");
+      fclose(pFile);
+   }
+   MPI_Barrier( theDomain->theComm );
+   if( step==0 )
+      return;
+
+   int rk;
+   for( rk=0; rk<size; ++rk){
+      if( rank==rk ){
+         FILE * pFile = fopen(filename, "a");
+
+         struct tracer *tr = theDomain->theTracers->head;
+         while( tr!= NULL ){
+            struct cell *c = tr->myCell;
+            if( c!=NULL ){
+               //tr = tr->next;
+               //continue;
+               int id = tr->ID;
+               //int type = tr->Type;
+               double r = tr->R;
+               //double phi = tr->Phi;
+               //double z = tr->Z;
+               double rho = c->prim[RHO];
+               double Pp  = c->prim[PPP];
+               double om  = c->prim[UPP];
+               double Lp  = rho*om*r*r;
+               double ss  = log( Pp/pow(rho,gamma) );
+               //double ee  = Pp/(gamma-1.);
+               fprintf(pFile, "%d %d %4.4f %4.4f %4.4f \n",
+                           step, id, Lp, c->cons[LLL], ss);
+            }
+            tr = tr->next;
+         }
+         fclose(pFile);
+      }
+      MPI_Barrier( theDomain->theComm );
+   }
+
+}

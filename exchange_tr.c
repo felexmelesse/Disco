@@ -116,7 +116,7 @@ void generate_tr_number( struct domain *theDomain, int *numL, int *numR, int dim
 
    int iL = 0;
    int iR = 0;
-   double coord;
+   double coord = 1e5;
    struct tracer *tr = theDomain->theTracers->head;
    while( tr!=NULL ){
       if( dim==0 )
@@ -156,6 +156,7 @@ void fill_tr_list( struct tracerList *theList, int ntr, struct tr_lite *tr_recv,
       copy_lite_to_tr( (tr_recv + n) , tr );
       tracer_RK_copy( tr );
       tr->rmFlag = 0;
+      tr->myCell = NULL; //do a new cell search and find its new cell?....
       //printRecvMsg( rank, tr );
    }
 
@@ -171,13 +172,11 @@ void exchangeTracers( struct domain *theDomain, int dim ){
 
    MPI_Comm grid_comm = theDomain->theComm;
    int  rank = theDomain->rank;
-   int  size = theDomain->size;
    int *left_rank = theDomain->left_rank;
    int *right_rank = theDomain->right_rank;
 
    int tag = 0;
    MPI_Status status;
-   struct tracerList *theList = theDomain->theTracers;
 
    int numL, numR;
    int send_sizeL = 0;
