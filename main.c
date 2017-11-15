@@ -20,6 +20,7 @@ void freeDomain( struct domain * );
 void check_dt( struct domain * , double * );
 void possiblyOutput( struct domain * , int );
 void tracerOutput( struct domain *);
+void tracerReport( struct domain *);
 int  trOutStep( struct domain * );
 
 void start_clock( struct domain * );
@@ -66,12 +67,13 @@ int main( int argc , char * argv[] ){
       double dt = getmindt( &theDomain );
       check_dt( &theDomain , &dt );
       possiblyOutput( &theDomain , 0 );
-      //if( theDomain.rank==0 )
-      //   printf("dt = %.3g   ", dt );
       timestep( &theDomain , dt );
-      if( theDomain.Ntr && trOutStep(&theDomain) ){
+      /*
+       if( theDomain.Ntr && trOutStep(&theDomain) ){
          tracerOutput( &theDomain );
+         tracerReport( &theDomain );
       }
+      */
       theDomain.mdStep++;
    }
 

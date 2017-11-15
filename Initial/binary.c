@@ -26,8 +26,8 @@ void initial( double * prim , double * x ){
    double r = x[0];
    double z = x[2];
 
-   double d    = 10.0;
-   double r0   = 2.5; 
+   //double d    = 10.0;
+   //double r0   = 2.5; 
    double sint = z/sqrt(r*r+z*z);
    double cs2  = get_cs2( r );
 
@@ -58,6 +58,4 @@ void initial( double * prim , double * x ){
    prim[UZZ] = 0.0;
    if( NUM_N>0 ) prim[NUM_C] = X;
   
-   if( r<2 && r>-2)
-      printf("r, om: %g, %g\n", r,omega);
 }

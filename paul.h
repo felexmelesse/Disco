@@ -44,6 +44,7 @@ struct param_list{
    double rmin, rmax;
    double zmin, zmax;
    double phimax;
+   double r_sink;
 
    int LogZoning, Z_Periodic;
    double LogRadius;
@@ -75,7 +76,9 @@ struct param_list{
    int alpha_flag;
 
    int num_tracers;
-   int tr_out_step;
+   int num_mc_trs;  //not used anymore?
+   int tr_out_step; //not used anymore?
+   int tr_out_num;
    int tr_out_flag;
    int tr_init_type;
 
@@ -117,7 +120,7 @@ struct domain{
    int Ncells;
    int N_ftracks_r;
    int N_ftracks_z;
-   int Npl, Ntr;	                  //number of planets and number of tracers
+   int Npl, Ntr, Nmc;	                  //number of planets and number of tracers
    double * r_jph;
    double * z_kph;
    double r0, delr;
@@ -147,6 +150,8 @@ struct domain{
    int N_snp;
    int nchk;
    int N_chk;
+   int nxyz;
+   int N_xyz;
 
    int final_step;
    int check_plz;
@@ -241,6 +246,7 @@ struct tracer{
    //Pointers to neighbors in linked list of tracers
    struct tracer *next;
    //struct tracer *prev;
+   struct cell *myCell;       //not totally sure this is correct here
 
    //Flag for removal from linked list
    int rmFlag;
