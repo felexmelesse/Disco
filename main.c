@@ -62,7 +62,7 @@ int main( int argc , char * argv[] ){
    }
 
    while( !(theDomain.final_step) ){
-
+      
       double dt = getmindt( &theDomain );
       check_dt( &theDomain , &dt );
       possiblyOutput( &theDomain , 0 );

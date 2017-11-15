@@ -113,7 +113,6 @@ void buildTracerBuffers( struct domain *theDomain, int *trInt, double *trDubs, i
       tr = tr->next;
       count++;
    }
-
 }
 
 void dumpVal(char *filename, char *group, char *dset, void *val, 
