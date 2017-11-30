@@ -16,6 +16,16 @@ def getTracerTxtData( line ):
 
     return step, time, Id, Type, xxx, yyy, zzz, rrr, phi
 
+def getTracerRepData( line ):
+
+    arr  = line.split()
+    step = int( arr[0] )
+    Id   = int( arr[1] )
+    Lp   = float( arr[2] )
+    Ss   = float( arr[4] )
+
+    return step, Id, Lp, Ss
+
 def loadTrH5Data( filename ):
 
     f = h5.File(filename, 'r')
