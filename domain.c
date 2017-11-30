@@ -297,11 +297,9 @@ void possiblyOutput( struct domain * theDomain , int override ){
             theDomain->check_plz = 0;
          }
          output( theDomain , filename );
-         // tracerOutput( theDomain );
       }else{
          if(theDomain->rank==0) printf("Creating Final Checkpoint...\n");
          output( theDomain , "output" );
-	 // tracerOutput( theDomain );
       }
    }
    n0 = (int)( t*Nsnp/t_fin );
@@ -368,11 +366,11 @@ void tracerOutput( struct domain *theDomain ){
       if( rank==rk ){
          FILE * pFile = fopen(filename, "a");
          if( rank==0 && outFlag==0 ){
-            fprintf(pFile, "%d \nAtoms. Timestep: %d\n", Ntr_tot+1, step);
+            fprintf(pFile, "%d \nAtoms. Timestep: %d\n", Ntr_tot, step);
             //printf(" Ntr_tot from output: %d \n", Ntr_tot );
             // step,time, id,tpe,  x, y, z, r, phi, vr, om, vz
-            fprintf(pFile, "%d %4.2f %d %d %.2f %.2f %.2f %.2f %.2f \n",
-                     step,t, 0,0, 0.0,0.0,0.0, 0.0,0.0 );
+            //fprintf(pFile, "%d %4.2f %d %d %.2f %.2f %.2f %.2f %.2f \n",
+            //         step,t, 0,0, 0.0,0.0,0.0, 0.0,0.0 );
          }
          struct tracer *tr = theDomain->theTracers->head;
          while( tr != NULL){

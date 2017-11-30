@@ -68,7 +68,7 @@ int main( int argc , char * argv[] ){
       check_dt( &theDomain , &dt );
       possiblyOutput( &theDomain , 0 );
       timestep( &theDomain , dt );
-      /*
+   /*
        if( theDomain.Ntr && trOutStep(&theDomain) ){
          tracerOutput( &theDomain );
          tracerReport( &theDomain );
@@ -78,7 +78,7 @@ int main( int argc , char * argv[] ){
    }
 
    possiblyOutput( &theDomain , 1 );
-   tracerOutput( &theDomain );
+   //tracerOutput( &theDomain );
    generate_log( &theDomain );
    MPI_Barrier(theDomain.theComm);
    freeDomain( &theDomain );
