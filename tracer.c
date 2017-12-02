@@ -211,29 +211,30 @@ void test_cell_vel( struct tracer *tr, struct cell *c ){
 }
 
 
-void get_local_vel(struct tracer *tr, struct cell *c){
+void get_local_vel( struct tracer *tr ){
 
-   double vr, om, vz;
-   int type = 1;
+    struct cell *c = tr->myCell;
+    double vr, om, vz;
+    int type = 1;
 
-  if( c != NULL ){
-      vr = c->prim[URR];
-      om = c->prim[UPP];
-      vz = c->prim[UZZ];
-   } else{
-      vr = 0.0;
-      om = 0.0;
-      vz = 0.0;
-      type = 2;
-      tr->Type = type;
-   }
-   tr->Vr    = vr;
-   tr->Omega = om;
-   tr->Vz    = vz;
-   //tr->Type  = type;
-   //if( c != NULL ){
-   //  test_cell_vel( tr, c );
-   //}
+    if( c != NULL ){
+        vr = c->prim[URR];
+        om = c->prim[UPP];
+        vz = c->prim[UZZ];
+    } else{
+        vr = 0.0;
+        om = 0.0;
+        vz = 0.0;
+        type = 2;
+        tr->Type = type;
+    }
+    tr->Vr    = vr;
+    tr->Omega = om;
+    tr->Vz    = vz;
+    //tr->Type  = type;
+    //if( c != NULL ){
+    //  test_cell_vel( tr, c );
+    //}
 }
 
 void set_tracer_vel( struct tracer *tr ){
@@ -262,7 +263,7 @@ int binSearch(double target, double *arr, int size){
   return mid;
 }
 
-struct cell * get_tracer_cell(struct domain *theDomain, struct tracer *tr){
+void get_tracer_cell(struct domain *theDomain, struct tracer *tr){
 
    struct cell **theCells = theDomain->theCells;
    int Nr = theDomain->Nr;
@@ -280,7 +281,7 @@ struct cell * get_tracer_cell(struct domain *theDomain, struct tracer *tr){
      struct cell *c = &(theCells[jk][i]);
      if( check_phi( tr->Phi, c->piph, c->dphi, phi_max) ){
         tr->myCell = c;
-        return c;
+        return;
      }
    }
 /*
@@ -307,7 +308,8 @@ struct cell * get_tracer_cell(struct domain *theDomain, struct tracer *tr){
 	}
    }
 */
-   return NULL;
+   tr->myCell = NULL;
+   return;
 
 }
 
@@ -347,6 +349,24 @@ void moveTracers(struct domain *theDomain, struct tracer *tr, double dt){
 */
 }
 
+void updatePhysQuants( struct tracer * tr, double gamma ){
+    //Need to update (and treatment of tracer charactersitics
+    //overall) to be more general
+    struct cell *c = tr->myCell;
+    double r = tr->R;
+    double Lp = -1;
+    double Ss = -1;
+    if( c!=NULL ){
+        double rho = c->prim[RHO];
+        double Pp  = c->prim[PPP];
+        double om  = c->prim[UPP];
+        Lp = rho*om*r*r;
+        Ss = log( Pp/pow(rho,gamma) );
+    }
+    tr->Lp = Lp;
+    tr->Ss = Ss;
+}
+
 
 void tracer_RK_copy( struct tracer * tr ){
    tr->RK_r    = tr->R;
@@ -368,14 +388,17 @@ void tracer_RK_adjust( struct tracer * tr , double RK ){
 
 
 void updateTracers(struct domain *theDomain, double dt){
+    double gamma = theDomain->theParList.Adiabatic_Index; 
 
-   struct tracer *tr = theDomain->theTracers->head;
-   while( tr!=NULL ){
-   	struct cell   *c  = get_tracer_cell( theDomain , tr );
-	   get_local_vel( tr , c );
-      //set_tracer_vel( tr );
-      moveTracers( theDomain , tr , dt );
-      tr = tr->next;
+    struct tracer *tr = theDomain->theTracers->head;
+
+    while( tr!=NULL ){
+   	    get_tracer_cell( theDomain , tr );
+	    get_local_vel( tr );
+        //set_tracer_vel( tr );
+        updatePhysQuants( tr, gamma );
+        moveTracers( theDomain , tr , dt );
+        tr = tr->next;
    }
 
 }

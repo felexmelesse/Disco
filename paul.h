@@ -243,10 +243,11 @@ struct tracer{
    double RK_omega;
    double RK_vz;
 
-   //Pointers to neighbors in linked list of tracers
+   double Lp;
+   double Ss;
+
    struct tracer *next;
-   //struct tracer *prev;
-   struct cell *myCell;       //not totally sure this is correct here
+   struct cell *myCell;   
 
    //Flag for removal from linked list
    int rmFlag;

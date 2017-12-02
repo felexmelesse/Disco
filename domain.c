@@ -319,7 +319,7 @@ void possiblyOutput( struct domain * theDomain , int override ){
    if( (theDomain->nxyz < n0 && Nxyz>0) || override ){
       theDomain->nxyz = n0;
       tracerOutput( theDomain );
-      tracerReport( theDomain );
+      //tracerReport( theDomain );
    }
 
 }
@@ -375,20 +375,22 @@ void tracerOutput( struct domain *theDomain ){
          struct tracer *tr = theDomain->theTracers->head;
          while( tr != NULL){
             int id   = tr->ID;
-   	      int type = tr->Type;
-   	      double r = tr->R;
-      	   double phi = tr->Phi;
-      	   double z = tr->Z;
-      	   double x = r*cos(phi);
+   	        int type = tr->Type;
+   	        double r = tr->R;
+      	    double phi = tr->Phi;
+      	    double z = tr->Z;
+      	    double x = r*cos(phi);
          	double y = r*sin(phi);
          	//double vr = tr->Vr;
-      	   //double om = tr->Omega;
+      	    //double om = tr->Omega;
          	//double vz = tr->Vz;
-      	   fprintf(pFile, "%d %4.2f %d %d %4.4f %4.4f %4.4f %4.4f %4.4f \n",    
+            double Lp = tr->Lp;
+            double Ss = tr->Ss;
+      	    fprintf(pFile, "%d %4.2f %d %d %4.4f %4.4f %4.4f %4.4f %4.4f \n",    
                            step,t, 
                            id,type, 
                            x,y,z, 
-                           r,phi);
+                           Lp, Ss);
             tr = tr->next;
             count++;
          }
