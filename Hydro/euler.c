@@ -6,6 +6,8 @@ double get_om1( double );
 double get_cs2( double );
 
 static double gamma_law = 0.0; 
+static double R_SINK    = 0.0;
+static double TAU_SINK  = 5.27;
 static double RHO_FLOOR = 0.0; 
 static double PRE_FLOOR = 0.0; 
 static double explicit_viscosity = 0.0;
@@ -16,11 +18,13 @@ static int alpha_flag = 0;
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
    isothermal = theDomain->theParList.isothermal_flag;
+   R_SINK = theDomain->theParList.r_sink;
    RHO_FLOOR = theDomain->theParList.Density_Floor;
    PRE_FLOOR = theDomain->theParList.Pressure_Floor;
    explicit_viscosity = theDomain->theParList.viscosity;
    include_viscosity = theDomain->theParList.visc_flag;
    alpha_flag = theDomain->theParList.alpha_flag;
+
 }
 
 int set_B_flag(void){
@@ -166,9 +170,10 @@ void flux( double * prim , double * flux , double * x , double * n ){
    
 }
 
+int nearest_planet_dist( struct domain *, double, double );
 double get_dp( double , double );
 
-void source( double * prim , double * cons , double * xp , double * xm , double dVdt ){
+void source( struct domain *theDomain, double * prim , double * cons , double * xp , double * xm , double dV, double dt ){
    
    double rp = xp[0];
    double rm = xm[0];
@@ -179,6 +184,14 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    double r2_3 = (rp*rp + rp*rm + rm*rm)/3.;
    double vr  = prim[URR];
    double omega = prim[UPP];
+   double dVdt = dV*dt;
+
+   //Density Sink
+   if( nearest_planet_dist(theDomain, r_1, xm[1]+0.5*dphi) < R_SINK ){
+      rho = ( dt/TAU_SINK )*rho;
+      prim[RHO] = rho;
+      cons[DDD] = rho*dV;
+   }
  
    double centrifugal = rho*omega*omega*r2_3/r_1*sin(.5*dphi)/(.5*dphi);
    double press_bal   = Pp/r_1;
@@ -192,6 +205,12 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
  
    if( include_viscosity ){
       double nu = explicit_viscosity;
+      if( alpha_flag ){
+        double alpha = explicit_viscosity;
+        double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
+        double h = c*pow( r_1, 1.5 );
+        nu = alpha*c*h;
+      }
       cons[SRR] += -dVdt*nu*rho*vr/(r_1*r_1);
    }
 
