@@ -4,6 +4,8 @@
 #include <math.h>
 #include "paul.h"
 
+static int MAX_PHI = 512;
+
 int getN0( int drank , int dsize , int dnum ){
    int N0 = (dnum*drank)/dsize;
    return(N0);
@@ -83,6 +85,7 @@ void setupGrid( struct domain * theDomain ){
          double dp = dr/rp*aspect;
          int Np = (int)(Pmax/dp);
          if( Np<4 ) Np=4;
+         if( Np>MAX_PHI ) Np = MAX_PHI;  //To mimic Yike's inspiral paper
 //         if( Np<40 ) Np=40;
          theDomain->Np[jk] = Np;
          Ncells += Np;

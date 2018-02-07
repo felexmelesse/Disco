@@ -1,7 +1,9 @@
 #include "paul.h"
 
 double PHI_ORDER = 2.0;
+static double R_SCHWZ = 0.1/3.0;
 static int grav2D = 0;
+static int pw_flag = 1.0;
 
 double get_dp( double , double );
 
@@ -18,7 +20,15 @@ double phigrav( double M , double r , double eps ){
 
 double fgrav( double M , double r , double eps ){
    double n = PHI_ORDER;
-   return( M*pow(r,n-1.)/pow( pow(r,n) + pow(eps,n) ,1.+1./n) );
+   return( M*pow(r,n-1.)/pow( pow(r,n) + pow(eps,n),1.+1./n) );
+}
+
+double phigrav_pw( double M, double r ){
+    return( M/(r-R_SCHWZ) );
+}
+
+double fgrav_pw( double M, double r ){
+    return( M/pow(r-R_SCHWZ, 2) );
 }
 
 void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
@@ -34,7 +44,16 @@ void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
    double dy = r*sinp-rp*sin(pp);
    double script_r = sqrt(dx*dx+dy*dy);
 
-   double pot = phigrav( pl->M , script_r , pl->eps );
+   double pot = 0.0;
+   double r_cut = 1.5*R_SCHWZ;
+   if( pw_flag ){
+        if( script_r < r_cut )
+            script_r = r_cut;
+        pot = phigrav_pw( pl->M, script_r );
+   }
+   else{
+        pot = phigrav( pl->M , script_r , pl->eps );
+   }
 
    double c2 = gam*prim[PPP]/prim[RHO];
    double factor = 1. + (gam-1.)*pot/c2;
@@ -58,7 +77,18 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
    double script_r = sqrt(dx*dx+dy*dy+z*z);
    double script_r_perp = sqrt(dx*dx+dy*dy);
 
-   double f1 = -fgrav( pl->M , script_r , pl->eps );
+   double r_cut = 1.5*R_SCHWZ;
+   double f_cut = -fgrav_pw( pl->M, r_cut );
+
+   double f1 = 0.0;
+   if( pw_flag ){
+       f1 = -fgrav_pw( pl->M, script_r );
+       if( f1 < f_cut ) //if f(r) more negative than f(1.5r_s)
+            f1 = f_cut;
+   }
+   else{
+       f1 = -fgrav( pl->M, script_r, pl->eps );
+   }
 
    double cosa = dx/script_r;
    double sina = dy/script_r;
