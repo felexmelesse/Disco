@@ -170,7 +170,7 @@ void flux( double * prim , double * flux , double * x , double * n ){
    
 }
 
-int nearest_planet_dist( struct domain *, double, double );
+double nearest_planet_dist( struct domain *, double, double );
 double get_dp( double , double );
 
 void source( struct domain *theDomain, double * prim , double * cons , double * xp , double * xm , double dV, double dt ){
@@ -187,12 +187,14 @@ void source( struct domain *theDomain, double * prim , double * cons , double * 
    double dVdt = dV*dt;
 
    //Density Sink
-   if( nearest_planet_dist(theDomain, r_1, xm[1]+0.5*dphi) < R_SINK ){
+   double dist = nearest_planet_dist(theDomain, r_1, xm[1]+0.5*dphi);
+   if( dist < R_SINK ){
       //rho = RHO_FLOOR;
       if( rho > RHO_FLOOR )
            rho -= ( dt/TAU_SINK )*rho;
       if( rho < RHO_FLOOR )
            rho = RHO_FLOOR;
+
       prim[RHO] = rho;
       cons[DDD] = rho*dV;
    }

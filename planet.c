@@ -142,7 +142,7 @@ void planet_src( struct planet * pl , double * prim , double * cons , double * x
 }
 
 int nearest_planet_dist( struct domain *theDomain, double r, double phi ){
-   
+
    int Npl = theDomain->Npl;
    double rmax = theDomain->theParList.rmax;
    struct planet *thePlanets = theDomain->thePlanets;
@@ -151,10 +151,19 @@ int nearest_planet_dist( struct domain *theDomain, double r, double phi ){
    double nearest = 2*rmax;
    for( p=0; p<Npl; ++p ){
       struct planet *pl = thePlanets+p;
+      double rp = pl->r;
+      double pp = pl->phi;
+      double cosp = cos(phi);
+      double sinp = sin(phi);
+      double dx = r*cosp - rp*cos(pp);
+      double dy = r*sinp - rp*sin(pp);
+      double dist = sqrt(dx*dx+dy*dy);
+/*
       double dr   = r - pl->r;
       double dp   = cos( phi - pl->phi );
       double dl2  = dr*dr + 2*r*(pl->r)*dp*dp;
       double dist = sqrt( dl2 );
+*/
       if( dist < nearest )
          nearest = dist;
    }
