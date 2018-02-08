@@ -189,9 +189,10 @@ void source( struct domain *theDomain, double * prim , double * cons , double * 
    //Density Sink
    if( nearest_planet_dist(theDomain, r_1, xm[1]+0.5*dphi) < R_SINK ){
       //rho = RHO_FLOOR;
-      rho -= ( dt/TAU_SINK )*rho;
+      if( rho > RHO_FLOOR )
+           rho -= ( dt/TAU_SINK )*rho;
       if( rho < RHO_FLOOR )
-          rho = RHO_FLOOR;
+           rho = RHO_FLOOR;
       prim[RHO] = rho;
       cons[DDD] = rho*dV;
    }

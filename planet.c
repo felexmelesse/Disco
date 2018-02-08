@@ -82,9 +82,10 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
 
    double f1 = 0.0;
    if( pw_flag ){
-       f1 = -fgrav_pw( pl->M, script_r );
-       if( f1 < f_cut ) //if f(r) more negative than f(1.5r_s)
-            f1 = f_cut;
+       if( script_r < r_cut )
+           f1 = f_cut;
+       else
+           f1 = -fgrav_pw( pl->M, script_r );
    }
    else{
        f1 = -fgrav( pl->M, script_r, pl->eps );
