@@ -3,6 +3,7 @@
 double PHI_ORDER = 2.0;
 static int grav2D = 0;
 
+double get_scale_factor( double * , int );
 double get_dp( double , double );
 
 void setGravParams( struct domain * theDomain ){
