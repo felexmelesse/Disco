@@ -88,6 +88,10 @@ struct param_list{
    double initPar2;
    double initPar3;
    double initPar4;
+   double initPar5;
+   double initPar6;
+   double initPar7;
+   double initPar8;
 
    int noiseType;
    double noiseAbs;

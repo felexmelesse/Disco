@@ -78,6 +78,10 @@ Init_Par1       0.0   // doub
 Init_Par2       0.0   // doub
 Init_Par3       0.0   // doub
 Init_Par4       0.0   // doub
+Init_Par5       0.0   // doub
+Init_Par6       0.0   // doub
+Init_Par7       0.0   // doub
+Init_Par8       0.0   // doub
 
 //Noise Parameters
 Noise_Type      0       // 0: No Noise, 1: URR and UPP 
