@@ -124,7 +124,11 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
             if( (dim==1 && j==Nr-1) || (dim==2 && k==Nz-1) ) dAtot = dAm;
             for( q=0 ; q<NUM_Q ; ++q ){
                c->grad[q] /= dAtot;
-            }    
+            }
+            //Zero-out slopes at r=0
+            //if(dim==1 && j==0)
+            //    for(q=0; q<NUM_Q; q++)
+            //        c->grad[q] = 0.0;
          }    
       }    
    }

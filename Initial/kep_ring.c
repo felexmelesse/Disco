@@ -116,6 +116,7 @@ void initial( double * prim , double * x ){
            rho = sig0;
            drhodr = 0.0;
        }
+   }
    else if (prof == 4 || prof == -4)  //Top Hat with polynomial boundaries
    {
        double rm2 = rm - dr2;
@@ -160,6 +161,7 @@ void initial( double * prim , double * x ){
            rho = sig0;
            drhodr = 0.0;
        }
+   }
    else
    {
        rho = sig1;
