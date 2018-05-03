@@ -120,8 +120,8 @@ void planet_src( struct planet * pl , double * prim , double * cons , double * x
 
 
    cons[SRR] += rho*hr*F[0]*dVdt;
-   cons[SZZ] += rho*hp*F[1]*dVdt;
-   cons[LLL] += rho*hz*F[2]*dVdt;
+   cons[LLL] += rho*hp*F[1]*dVdt;
+   cons[SZZ] += rho*hz*F[2]*dVdt;
    cons[TAU] += rho*( hr*F[0]*vr + hz*F[2]*vz + hp*F[1]*omega )*dVdt;
 
 }

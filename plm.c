@@ -125,10 +125,6 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
             for( q=0 ; q<NUM_Q ; ++q ){
                c->grad[q] /= dAtot;
             }
-            //Zero-out slopes at r=0
-            //if(dim==1 && j==0)
-            //    for(q=0; q<NUM_Q; q++)
-            //        c->grad[q] = 0.0;
          }    
       }    
    }
@@ -167,6 +163,7 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
 
    if(dim == 1 && strcmp(BOUNDARY, "polar") == 0)
    {
+       // Reflecting boundary at r=0
        j = 0;
        double r = get_centroid(r_jph[j], r_jph[j-1], 1);
        for(k=0; k<Nz; k++)
