@@ -1,4 +1,3 @@
-
 //
 // This code was created by Jeff Molofee '99 (ported to Linux/GLUT by Richard Campbell '99)
 // If you've found this code useful, please let me know.
@@ -58,9 +57,14 @@ int help_screen=0;
 int print_vals=0;
 int fix_zero=0;
 
+double val_floor = VAL_FLOOR;
+double val_ceil = VAL_CEIL;
+
 double rotate_angle = M_PI/2.;
 
-double offx, offy, rescale, maxval, minval;
+double offx, offy, rescale;
+double maxval = -HUGE_VAL;
+double minval = HUGE_VAL;
 
 double t;
 int Nr,Nz,Nq,Npl,N1d,Nc,KK;
@@ -79,11 +83,15 @@ int *Id_phi0 = NULL;
 double max_1d = 1.0;
 
 char filename[1024];
+char **filenameList = NULL;
+int nfiles = 0;
+int currentFile = 0;
 
 void get_rgb( double , float * , float * , float * , int );
 void loadSliceZ(char *filename, int k);
 void loadSlicePhi(char *filename);
 void loadDiagnostics(char *filename, int k);
+void loadFile(int fileIndex, int zslice);
 
 double getval( double * thisZone , int q ){
    if( q!=-1 ) return( thisZone[q] );
@@ -127,16 +135,22 @@ void getMaxMin(void){
          }
       }
    }
-   if( floors ){
+   if( floors == 1){
       if( maxval > VAL_CEIL  ) maxval = VAL_CEIL;
       if( minval < VAL_FLOOR ) minval = VAL_FLOOR;
    }
-   if( FIXMAXMIN && floors ){
+   if( FIXMAXMIN && floors==1 ){
       maxval = VAL_CEIL;
       minval = VAL_FLOOR;
    }
+   if(floors == 2)
+    {
+       maxval = val_ceil; 
+       minval = val_floor;
+    }
    if( fix_zero ){
-      maxval = .5*(maxval-minval);
+      //maxval = .5*(maxval-minval);
+      if(-minval > maxval) maxval = -minval;
       minval = -maxval;
    }
    //if( floors ) minval = maxval-5.0;
@@ -740,7 +754,10 @@ void keyPressed(unsigned char key, int x, int y)
    if( key >= (int)'0' && key < (int)'1'+Nq ) valq = (int)key-(int)'1';
    if( key == 'b' ) draw_bar = !draw_bar;
    if( key == 'd' ) {++dim3d; if(dim3d==3) dim3d=0;}
-   if( key == 'f' ) floors = !floors;
+   if( key == 'f' ){
+       floors = (floors+1)%3;
+       print_vals = 0;
+   }
    if( key == 'g' ) draw_border = !draw_border;
    if( key == 'h' ) help_screen = !help_screen;
    if( key == 'l' ) logscale = !logscale;
@@ -785,6 +802,44 @@ void keyPressed(unsigned char key, int x, int y)
            KK = Nz - 1;
        loadSliceZ(filename, KK);
        loadDiagnostics(filename, KK);
+   }
+   if( key == ',')
+   {
+       currentFile--;
+       while(currentFile < 0)
+           currentFile += nfiles;
+       loadFile(currentFile, KK);
+   }
+   if( key == '.')
+   {
+       currentFile++;
+       while(currentFile >= nfiles)
+           currentFile -= nfiles;
+       loadFile(currentFile, KK);
+   }
+   if( key == '<')
+   {
+       currentFile -= 5;
+       while(currentFile < 0)
+           currentFile += nfiles;
+       loadFile(currentFile, KK);
+   }
+   if( key == '>')
+   {
+       currentFile += 5;
+       while(currentFile >= nfiles)
+           currentFile -= nfiles;
+       loadFile(currentFile, KK);
+   }
+   if(key == '/')
+   {
+       currentFile = 0;
+       loadFile(currentFile, KK);
+   }
+   if(key == 'm')
+   {
+       val_ceil = maxval;
+       val_floor = minval;
    }
 
    glutPostRedisplay();
@@ -919,6 +974,15 @@ void loadGrid(char *filename)
       thePlanets[p][0] = thisPlanet[3];
       thePlanets[p][1] = thisPlanet[4];
    }
+}
+
+void loadFile(int fileIndex, int zslice)
+{
+    printf("File %d of %d\n", fileIndex+1, nfiles);
+    strcpy(filename, filenameList[fileIndex]);
+    loadSliceZ(filenameList[fileIndex], zslice);
+    loadSlicePhi(filenameList[fileIndex]);
+    loadDiagnostics(filenameList[fileIndex], zslice);
 }
 
 void loadSliceZ(char *filename, int k)
@@ -1105,17 +1169,20 @@ void loadDiagnostics(char *filename, int k)
     printf("  Initialized.\n");
 }
 
-int main(int argc, char **argv) 
+int main(int argc, char *argv[]) 
 {
    if( argc < 2 ){
       printf("Please specify the input file.\n");
       exit(1);
    }
-   if( argv[1] ){
-      strcpy( filename , argv[1] );
-   }
+
+    filenameList = &(argv[1]);
+    nfiles = argc - 1;
+    currentFile = 0;
+
+    strcpy( filename , filenameList[0] );
    CommandMode=0;
-   if( argc>2 ){ CommandMode=1; FullScreenMode=1; }
+   //if( argc>2 ){ CommandMode=1; FullScreenMode=1; }
 
    loadGrid(filename);
 
