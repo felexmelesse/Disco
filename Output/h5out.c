@@ -197,6 +197,10 @@ void writePars(struct domain *theDomain, char filename[])
                     H5T_NATIVE_INT);
     dumpVal(filename, "Pars", "Z_Periodic", &(pars->Z_Periodic),
                     H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "NoBC_Rmin", &(pars->NoBC_Rmin), H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "NoBC_Rmax", &(pars->NoBC_Rmax), H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "NoBC_Zmin", &(pars->NoBC_Zmin), H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "NoBC_Zmax", &(pars->NoBC_Zmax), H5T_NATIVE_INT);
 
     dumpVal(filename, "Pars", "Log_Radius", &(pars->LogRadius),
                     H5T_NATIVE_DOUBLE);
@@ -323,6 +327,10 @@ void output( struct domain * theDomain , char * filestart ){
    int * Np = theDomain->Np;
    int Npl = theDomain->Npl;
    int Ng = theDomain->Ng;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int Nr_Tot = theDomain->theParList.Num_R;
    int Nz_Tot = theDomain->theParList.Num_Z;
    double * r_jph = theDomain->r_jph;
@@ -331,7 +339,6 @@ void output( struct domain * theDomain , char * filestart ){
    int size = theDomain->size;
    int * dim_rank = theDomain->dim_rank;
    int * dim_size = theDomain->dim_size;
-   int Z_Periodic = theDomain->theParList.Z_Periodic;
 
    int NpDat = 6;
    int Ntools = theDomain->num_tools;
@@ -339,21 +346,20 @@ void output( struct domain * theDomain , char * filestart ){
 
    char filename[256];
    sprintf(filename,"%s.h5",filestart);
-   int jmin = 0;
-   if( dim_rank[0] != 0 ) jmin = Ng;
-   int jmax = Nr;
-   if( dim_rank[0] != dim_size[0]-1 ) jmax = Nr-Ng;
-   int kmin = 0;
-   //if( dim_rank[1] != 0 || Z_Periodic ) kmin = Ng;
-   if( dim_rank[1] != 0 ) kmin = Ng;
-   int kmax = Nz;
-   //if( dim_rank[1] != dim_size[1]-1 || Z_Periodic ) kmax = Nz-Ng;
-   if( dim_rank[1] != dim_size[1]-1 ) kmax = Nz-Ng;
 
-   if(Z_Periodic)
-   {
-       Nz_Tot += 2*Ng;
-   }
+   int jmin = NgRa;
+   int jmax = Nr - NgRb;
+   int kmin = NgZa;
+   int kmax = Nz - NgZb;
+   if(dim_rank[0] == 0) jmin = 0;
+   if(dim_rank[0] == dim_size[0]-1) jmax = Nr;
+   if(dim_rank[1] == 0) kmin = 0;
+   if(dim_rank[1] == dim_size[1]-1) kmax = Nz;
+
+   if(!theDomain->theParList.NoBC_Rmin) Nr_Tot += Ng;
+   if(!theDomain->theParList.NoBC_Rmax) Nr_Tot += Ng;
+   if(Nz_Tot > 1 && !theDomain->theParList.NoBC_Zmin) Nz_Tot += Ng;
+   if(Nz_Tot > 1 && !theDomain->theParList.NoBC_Zmax) Nz_Tot += Ng;
 
    int Ntot = 0;
    int j,k;

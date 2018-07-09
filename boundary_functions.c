@@ -10,6 +10,7 @@ double get_dA( double *, double *, int);
 void cons2prim( double * , double * , double * , double );
 void prim2cons( double * , double * , double * , double );
 double get_centroid(double , double , int);
+double get_centroid_arr(double *, double *, double *);
 void subtract_omega( double * );
 void reflect_prims(double *, double *, int);
 
@@ -17,58 +18,10 @@ void set_cell_init(struct cell *c, double *r_jph, double *z_kph, int j, int k)
 {
     double xm[3] = {r_jph[j-1], c->piph - c->dphi, z_kph[k-1]};
     double xp[3] = {r_jph[j  ], c->piph          , z_kph[k  ]};
-    double r = get_centroid(xp[0], xm[0], 1);
-    double z = get_centroid(xp[2], xm[2], 2);
-    double phi = c->piph - 0.5*c->dphi;
-    double x[3] = {r, phi, z};
+    double x[3];
+    get_centroid_arr(xp, xm, x);
     initial(c->prim, x);
     subtract_omega(c->prim);
-    if(NUM_C > BZZ)
-    {
-        double prim[NUM_Q], dA;
-        if(NUM_FACES >= 1)
-        {
-            xm[1] = c->piph;
-            x[1] = c->piph;
-            dA = get_dA(xp, xm, 0);
-            initial(prim, x);
-            c->Phi[0] = prim[BPP]*dA;
-        }
-        if(NUM_FACES >= 3)
-        {
-            xm[1] = c->piph - c->dphi;
-            x[1] = phi;
-
-            xp[0] = r_jph[j-1];
-            x[0] = r_jph[j-1];
-            dA = get_dA(xp, xm, 1);
-            initial(prim, x);
-            c->Phi[1] = prim[BRR]*dA;
-            xp[0] = r_jph[j];
-            xm[0] = r_jph[j];
-            x[0] = r_jph[j];
-            dA = get_dA(xp, xm, 1);
-            initial(prim, x);
-            c->Phi[2] = prim[BRR]*dA;
-        }
-        if(NUM_FACES >= 5)
-        {
-            xm[0] = r_jph[j-1];
-            x[0] = r;
-
-            xp[2] = z_kph[j-1];
-            x[2] = z_kph[j-1];
-            dA = get_dA(xp, xm, 2);
-            initial(prim, x);
-            c->Phi[3] = prim[BZZ]*dA;
-            xp[2] = z_kph[j];
-            xm[2] = z_kph[j];
-            x[2] = z_kph[j];
-            dA = get_dA(xp, xm, 2);
-            initial(prim, x);
-            c->Phi[4] = prim[BZZ]*dA;
-        }
-    }
 }
 
 void set_cell_init_q(struct cell *c, double *r_jph, double *z_kph, 
@@ -210,7 +163,7 @@ void boundary_fixed_rinn( struct domain *theDomain)
     int Nr = theDomain->Nr;
     int Nz = theDomain->Nz;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgRa = theDomain->NgRa;
     double *r_jph = theDomain->r_jph;
     double *z_kph = theDomain->z_kph;
 
@@ -221,7 +174,7 @@ void boundary_fixed_rinn( struct domain *theDomain)
     if(dim_rank[0] == 0 )
     {
         for(k=0; k<Nz; k++)
-            for(j=0; j<Ng; j++)
+            for(j=0; j<NgRa; j++)
             {
                 int jk = j+Nr*k;
                 for(i=0; i<Np[jk]; i++)
@@ -237,7 +190,7 @@ void boundary_fixed_rout( struct domain *theDomain)
     int Nr = theDomain->Nr;
     int Nz = theDomain->Nz;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgRb = theDomain->NgRb;
     double *r_jph = theDomain->r_jph;
     double *z_kph = theDomain->z_kph;
 
@@ -249,7 +202,7 @@ void boundary_fixed_rout( struct domain *theDomain)
     if(dim_rank[0] == dim_size[0]-1)
     {
         for(k=0; k<Nz; k++)
-            for(j=Nr-Ng; j<Nr; j++)
+            for(j=Nr-NgRb; j<Nr; j++)
             {
                 int jk = j+Nr*k;
                 for(i=0; i<Np[jk]; i++)
@@ -264,7 +217,7 @@ void boundary_fixed_zbot( struct domain *theDomain)
 
     int Nr = theDomain->Nr;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgZa = theDomain->NgZa;
     double *r_jph = theDomain->r_jph;
     double *z_kph = theDomain->z_kph;
 
@@ -274,7 +227,7 @@ void boundary_fixed_zbot( struct domain *theDomain)
 
     if(dim_rank[1] == 0)
     {
-        for(k=0; k<Ng; k++)
+        for(k=0; k<NgZa; k++)
             for(j=0; j<Nr; j++)
             {
                 int jk = j+Nr*k;
@@ -290,7 +243,7 @@ void boundary_fixed_ztop( struct domain *theDomain)
     int Nr = theDomain->Nr;
     int Nz = theDomain->Nz;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgZb = theDomain->NgZb;
     double *r_jph = theDomain->r_jph;
     double *z_kph = theDomain->z_kph;
 
@@ -301,7 +254,7 @@ void boundary_fixed_ztop( struct domain *theDomain)
 
     if(dim_rank[1] == dim_size[1]-1)
     {
-        for(k=Nz-Ng; k<Nz; k++)
+        for(k=Nz-NgZb; k<Nz; k++)
             for(j=0; j<Nr; j++)
             {
                 int jk = j+Nr*k;
@@ -320,7 +273,7 @@ void boundary_zerograd_rinn( struct domain *theDomain, int diode)
     int Nr = theDomain->Nr;
     int Nz = theDomain->Nz;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgRa = theDomain->NgRa;
 
     int *dim_rank = theDomain->dim_rank;
 
@@ -329,7 +282,7 @@ void boundary_zerograd_rinn( struct domain *theDomain, int diode)
     if(dim_rank[0] == 0 )
     {
         for(k=0; k<Nz; k++)
-            for(j=Ng-1; j>=0; j--)
+            for(j=NgRa-1; j>=0; j--)
             {
                 int jk = j+Nr*k;
                 int JK = j+(Nr-1)*k;
@@ -360,7 +313,7 @@ void boundary_zerograd_rout( struct domain *theDomain, int diode)
     int Nr = theDomain->Nr;
     int Nz = theDomain->Nz;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgRb = theDomain->NgRb;
 
     int *dim_rank = theDomain->dim_rank;
     int *dim_size = theDomain->dim_size;
@@ -370,7 +323,7 @@ void boundary_zerograd_rout( struct domain *theDomain, int diode)
     if(dim_rank[0] == dim_size[0]-1)
     {
         for(k=0; k<Nz; k++)
-            for(j=Nr-Ng; j<Nr; j++)
+            for(j=Nr-NgRb; j<Nr; j++)
             {
                 int jk = j + Nr*k;
                 int JK = j-1 + (Nr-1)*k;
@@ -400,7 +353,7 @@ void boundary_zerograd_zbot( struct domain *theDomain, int diode)
 
     int Nr = theDomain->Nr;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgZa = theDomain->NgZa;
 
     int *dim_rank = theDomain->dim_rank;
 
@@ -409,7 +362,7 @@ void boundary_zerograd_zbot( struct domain *theDomain, int diode)
     if(dim_rank[1] == 0)
     {
         for(j=0; j<Nr; j++)
-            for(k=Ng-1; k>=0; k--)
+            for(k=NgZa-1; k>=0; k--)
             {
                 int jk = j+Nr*k;
                 int n0 = fIndex[jk];
@@ -439,7 +392,7 @@ void boundary_zerograd_ztop( struct domain *theDomain, int diode)
     int Nr = theDomain->Nr;
     int Nz = theDomain->Nz;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgZb = theDomain->NgZb;
 
     int *dim_rank = theDomain->dim_rank;
     int *dim_size = theDomain->dim_size;
@@ -449,7 +402,7 @@ void boundary_zerograd_ztop( struct domain *theDomain, int diode)
     if(dim_rank[1] == dim_size[1]-1)
     {
         for(j=0; j<Nr; j++)
-            for(k=Nz-Ng; k<Nz; k++)
+            for(k=Nz-NgZb; k<Nz; k++)
             {
                 int jk = j+Nr*k;
                 int n0 = fIndex[jk-Nr];
@@ -477,7 +430,7 @@ void boundary_reflect_rinn( struct domain *theDomain)
     int Nr = theDomain->Nr;
     int Nz = theDomain->Nz;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgRa = theDomain->NgRa;
     double *r_jph = theDomain->r_jph;
     double *z_kph = theDomain->z_kph;
 
@@ -490,11 +443,11 @@ void boundary_reflect_rinn( struct domain *theDomain)
         for(k=0; k<Nz; k++)
         {
             double z = get_centroid(z_kph[k], z_kph[k-1], 2);
-            for(j=Ng-1; j>=0; j--)
+            for(j=NgRa-1; j>=0; j--)
             {
                 int jk = j+Nr*k;
                 
-                int j1 = 2*Ng-j-1;
+                int j1 = 2*NgRa-j-1;
                 int jk1 = j1 + Nr*k;
                 
                 set_cells_copy_distant(theCells[jk], Np[jk], 
@@ -521,7 +474,7 @@ void boundary_reflect_rout( struct domain *theDomain)
     int Nr = theDomain->Nr;
     int Nz = theDomain->Nz;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgRb = theDomain->NgRb;
     double *r_jph = theDomain->r_jph;
     double *z_kph = theDomain->z_kph;
 
@@ -536,11 +489,11 @@ void boundary_reflect_rout( struct domain *theDomain)
         {
             double z = get_centroid(z_kph[k], z_kph[k-1], 2);
 
-            for(j=Nr-Ng; j<Nr; j++)
+            for(j=Nr-NgRb; j<Nr; j++)
             {
                 int jk = j+Nr*k;
                 
-                int j1 = 2*(Nr-Ng) - j - 1;
+                int j1 = 2*(Nr-NgRb) - j - 1;
                 int jk1 = j1 + Nr*k;
                 
                 set_cells_copy_distant(theCells[jk], Np[jk], 
@@ -566,7 +519,7 @@ void boundary_reflect_zbot( struct domain *theDomain)
 
     int Nr = theDomain->Nr;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgZa = theDomain->NgZa;
     double *r_jph = theDomain->r_jph;
     double *z_kph = theDomain->z_kph;
 
@@ -576,7 +529,7 @@ void boundary_reflect_zbot( struct domain *theDomain)
 
     if(dim_rank[1] == 0)
     {
-        for(k=Ng-1; k>=0; k--)
+        for(k=NgZa-1; k>=0; k--)
         {
             double z = get_centroid(z_kph[k], z_kph[k-1], 2);
 
@@ -584,7 +537,7 @@ void boundary_reflect_zbot( struct domain *theDomain)
             {
                 int jk = j+Nr*k;
                 
-                int k1 = 2*Ng-k-1;
+                int k1 = 2*NgZa-k-1;
                 int jk1 = j + Nr*k1;
                 
                 set_cells_copy_distant(theCells[jk], Np[jk], 
@@ -611,7 +564,7 @@ void boundary_reflect_ztop( struct domain *theDomain)
     int Nr = theDomain->Nr;
     int Nz = theDomain->Nz;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgZb = theDomain->NgZb;
     double *r_jph = theDomain->r_jph;
     double *z_kph = theDomain->z_kph;
 
@@ -622,7 +575,7 @@ void boundary_reflect_ztop( struct domain *theDomain)
 
     if(dim_rank[1] == dim_size[1]-1)
     {
-        for(k=Nz-Ng; k<Nz; k++)
+        for(k=Nz-NgZb; k<Nz; k++)
         {
             double z = get_centroid(z_kph[k], z_kph[k-1], 2);
 
@@ -630,7 +583,7 @@ void boundary_reflect_ztop( struct domain *theDomain)
             {
                 int jk = j+Nr*k;
                 
-                int k1 = 2*(Nz-Ng) - k - 1;
+                int k1 = 2*(Nz-NgZb) - k - 1;
                 int jk1 = j + Nr*k1;
                 
                 set_cells_copy_distant(theCells[jk], Np[jk], 
@@ -697,7 +650,7 @@ void boundary_fixed_q_rinn( struct domain *theDomain, int *q, int nq)
     int Nr = theDomain->Nr;
     int Nz = theDomain->Nz;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgRa = theDomain->NgRa;
     double *r_jph = theDomain->r_jph;
     double *z_kph = theDomain->z_kph;
 
@@ -708,7 +661,7 @@ void boundary_fixed_q_rinn( struct domain *theDomain, int *q, int nq)
     if(dim_rank[0] == 0 )
     {
         for(k=0; k<Nz; k++)
-            for(j=0; j<Ng; j++)
+            for(j=0; j<NgRa; j++)
             {
                 int jk = j+Nr*k;
                 for(i=0; i<Np[jk]; i++)
@@ -725,7 +678,7 @@ void boundary_fixed_q_rout( struct domain *theDomain, int *q, int nq)
     int Nr = theDomain->Nr;
     int Nz = theDomain->Nz;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgRb = theDomain->NgRb;
     double *r_jph = theDomain->r_jph;
     double *z_kph = theDomain->z_kph;
 
@@ -737,7 +690,7 @@ void boundary_fixed_q_rout( struct domain *theDomain, int *q, int nq)
     if(dim_rank[0] == dim_size[0]-1)
     {
         for(k=0; k<Nz; k++)
-            for(j=Nr-Ng; j<Nr; j++)
+            for(j=Nr-NgRb; j<Nr; j++)
             {
                 int jk = j+Nr*k;
                 for(i=0; i<Np[jk]; i++)
@@ -753,7 +706,7 @@ void boundary_fixed_q_zbot( struct domain *theDomain, int *q, int nq)
 
     int Nr = theDomain->Nr;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgZa = theDomain->NgZa;
     double *r_jph = theDomain->r_jph;
     double *z_kph = theDomain->z_kph;
 
@@ -763,7 +716,7 @@ void boundary_fixed_q_zbot( struct domain *theDomain, int *q, int nq)
 
     if(dim_rank[1] == 0)
     {
-        for(k=0; k<Ng; k++)
+        for(k=0; k<NgZa; k++)
             for(j=0; j<Nr; j++)
             {
                 int jk = j+Nr*k;
@@ -780,7 +733,7 @@ void boundary_fixed_q_ztop( struct domain *theDomain, int *q, int nq)
     int Nr = theDomain->Nr;
     int Nz = theDomain->Nz;
     int *Np = theDomain->Np;
-    int Ng = theDomain->Ng;
+    int NgZb = theDomain->NgZb;
     double *r_jph = theDomain->r_jph;
     double *z_kph = theDomain->z_kph;
 
@@ -791,7 +744,7 @@ void boundary_fixed_q_ztop( struct domain *theDomain, int *q, int nq)
 
     if(dim_rank[1] == dim_size[1]-1)
     {
-        for(k=Nz-Ng; k<Nz; k++)
+        for(k=Nz-NgZb; k<Nz; k++)
             for(j=0; j<Nr; j++)
             {
                 int jk = j+Nr*k;

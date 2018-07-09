@@ -45,6 +45,8 @@ struct param_list{
    double zmin, zmax;
    double phimax;
 
+   int NoBC_Rmin, NoBC_Rmax, NoBC_Zmin, NoBC_Zmax;
+
    int LogZoning, Z_Periodic;
    double LogRadius;
    double MaxShort, MaxLong;
@@ -111,6 +113,7 @@ struct domain{
    struct planet * thePlanets;
    int * Np;
    int Nr,Nz,Ng;
+   int NgRa, NgRb, NgZa, NgZb;
    int N_ftracks_r;
    int N_ftracks_z;
    int Npl;

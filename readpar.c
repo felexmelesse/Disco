@@ -77,6 +77,10 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Use_Logtime"           , VAR_INT  , &(theList->Out_LogTime)     );
          err += readvar( pfile , "Log_Zoning"            , VAR_INT  , &(theList->LogZoning)       );
          err += readvar( pfile , "Z_Periodic"            , VAR_INT  , &(theList->Z_Periodic)      );
+         err += readvar( pfile , "NoBC_Rmin"             , VAR_INT , &(theList->NoBC_Rmin)       );
+         err += readvar( pfile , "NoBC_Rmax"             , VAR_INT , &(theList->NoBC_Rmax)       );
+         err += readvar( pfile , "NoBC_Zmin"             , VAR_INT , &(theList->NoBC_Zmin)       );
+         err += readvar( pfile , "NoBC_Zmax"             , VAR_INT , &(theList->NoBC_Zmax)       );
          err += readvar( pfile , "Log_Radius"            , VAR_DOUB , &(theList->LogRadius)       );
          err += readvar( pfile , "Max_Aspect_Short"      , VAR_DOUB , &(theList->MaxShort)        );
          err += readvar( pfile , "Max_Aspect_Long"       , VAR_DOUB , &(theList->MaxLong)         );

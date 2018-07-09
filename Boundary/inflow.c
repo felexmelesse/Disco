@@ -18,7 +18,8 @@ void boundary_trans( struct domain * theDomain , int dim ){
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
    int * Np = theDomain->Np;
-   int Ng = theDomain->Ng;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
    int * dim_rank = theDomain->dim_rank;
@@ -26,7 +27,7 @@ void boundary_trans( struct domain * theDomain , int dim ){
 
    if( dim==1 && dim_rank[0] == dim_size[0]-1 ){
       int i,j,k;
-      for( j=Nr-1 ; j>Nr-1-Ng ; --j ){
+      for( j=Nr-1 ; j>Nr-1-NgRb ; --j ){
          for( k=0 ; k<Nz ; ++k ){
             int jk = j+Nr*k;
             for( i=0 ; i<Np[jk] ; ++i ){
@@ -69,7 +70,7 @@ void boundary_trans( struct domain * theDomain , int dim ){
       double k0 = 0.5;
       double nu0 = 0.5;
 
-      for( j=0 ; j<Ng ; ++j ){
+      for( j=0 ; j<NgRa ; ++j ){
          double r = get_centroid(r_jph[j], r_jph[j-1], 1);
          for( k=0 ; k<Nz ; ++k ){
             double z = get_centroid(z_kph[k], z_kph[k-1], 2);

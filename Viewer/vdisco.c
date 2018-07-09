@@ -989,8 +989,10 @@ void loadSliceZ(char *filename, int k)
 {
    char group1[256];
    char group2[256];
+   char group3[256];
    strcpy( group1 , "Grid" );
    strcpy( group2 , "Data" );
+   strcpy( group3 , "Pars" );
 
    int Tindex[Nr];
 
@@ -1042,6 +1044,8 @@ void loadSliceZ(char *filename, int k)
    printf("  Allocated,");
 
    //Load data
+   readPatch(); 
+
    int start[2]    = {0,0};
    int loc_size[2] = {0,Nq+1};
    int glo_size[2] = {Nc,Nq+1};

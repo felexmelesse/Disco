@@ -15,7 +15,10 @@ void boundary_trans( struct domain * theDomain , int dim ){
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
    int * Np = theDomain->Np;
-   int Ng = theDomain->Ng;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
    int * dim_rank = theDomain->dim_rank;
@@ -23,7 +26,7 @@ void boundary_trans( struct domain * theDomain , int dim ){
 
    if( dim==1 && dim_rank[0] == dim_size[0]-1 ){
       int j;
-      for( j=Nr-1 ; j>Nr-1-Ng ; --j ){
+      for( j=Nr-1 ; j>Nr-1-NgRb ; --j ){
          int i,k;
          for( k=0 ; k<Nz ; ++k ){
             int jk = j+Nr*k;
@@ -39,7 +42,7 @@ void boundary_trans( struct domain * theDomain , int dim ){
    }
    if( dim==1 && dim_rank[0] == 0 ){
       int j;
-      for( j=0 ; j<Ng ; ++j ){
+      for( j=0 ; j<NgRa ; ++j ){
          int i,k;
          for( k=0 ; k<Nz ; ++k ){
             int jk = j+Nr*k;

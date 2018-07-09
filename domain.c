@@ -126,14 +126,31 @@ void setupCells( struct domain * theDomain ){
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
    int * Np = theDomain->Np;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int Npl = theDomain->Npl;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
    int atmos = theDomain->theParList.include_atmos;
 
-   for( k=0 ; k<Nz ; ++k ){
+   //Null setup for all cells
+   for(k=0; k<Nz; k++){
+      for(j=0; j<Nr; j++){
+         int jk = j+Nr*k;
+         for(i=0; i<Np[jk]; i++){
+            struct cell * c = &(theCells[jk][i]);
+            c->wiph = 0.0; 
+            c->real = 0;
+         }
+      }
+   }
+
+   //Setup real cells.
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
       double z = get_centroid( z_kph[k], z_kph[k-1], 2);
-      for( j=0 ; j<Nr ; ++j ){
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
          double r = get_centroid( r_jph[j], r_jph[j-1], 1);
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
@@ -159,7 +176,7 @@ void setupCells( struct domain * theDomain ){
                }
             }
             if(noiseType != 0)
-                addNoise(c->prim, x);            
+                addNoise(c->prim, x);
             prim2cons( c->prim , c->cons , x , dV );
             cons2prim( c->cons , c->prim , x , dV );
             c->real = 1;
@@ -168,7 +185,6 @@ void setupCells( struct domain * theDomain ){
    }
 
    set_wcell( theDomain );
-
 }
 
 

@@ -7,22 +7,19 @@ void start_clock( struct domain * theDomain ){
  
 int count_cells( struct domain * theDomain ){
 
-   int Ng = theDomain->Ng;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
    int * Np = theDomain->Np;
-   int * dim_rank = theDomain->dim_rank;
-   int * dim_size = theDomain->dim_size;
 
    int Nc=0;
-   int jmin = Ng;
-   int jmax = Nr-Ng;
-   if( dim_rank[0] == 0 ) jmin = 0; 
-   if( dim_rank[0] == dim_size[0]-1 ) jmax = Nr;
-   int kmin = Ng;
-   int kmax = Nz-Ng;
-   if( dim_rank[1] == 0 ) kmin = 0; 
-   if( dim_rank[1] == dim_size[1]-1 ) kmax = Nz;
+   int jmin = NgRa;
+   int jmax = Nr-NgRb;
+   int kmin = NgZa;
+   int kmax = Nz-NgZb;
 
    int j,k;
    for( j=jmin ; j<jmax ; ++j ){

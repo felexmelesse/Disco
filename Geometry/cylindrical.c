@@ -37,34 +37,36 @@ double get_centroid(double xp, double xm, int dim)
 }
 
 double get_dL( double * xp , double * xm , int dim ){
-   double r   = .5*(xp[0]+xm[0]);
-   double dphi = xp[1]-xm[1];
-   while( dphi < 0.0 ) dphi += phi_max;
-   while( dphi > phi_max ) dphi -= phi_max;
-   if( dim==0 ) return( r*dphi );
-   else if( dim==1 ) return( xp[0]-xm[0] );
-   else return( xp[2]-xm[2] );
+    double r = .5*(xp[0]+xm[0]);
+    double dphi = get_dp(xp[1], xm[1]);
+    if(dim == 0)
+        return r*dphi;
+    else if(dim == 1)
+        return xp[0]-xm[0];
+    else
+        return xp[2]-xm[2];
 }
 
 double get_dA( double * xp , double * xm , int dim ){
-   double r  = .5*(xp[0]+xm[0]);
-   double dr   = xp[0]-xm[0];
-   double dphi = xp[1]-xm[1];
-   while( dphi < 0.0 ) dphi += phi_max;
-   while( dphi > phi_max ) dphi -= phi_max;
-   double dz   = xp[2]-xm[2];
-   if( dim==0 ) return( dr*dz );
-   else if( dim==1 ) return( r*dphi*dz );
-   else return( r*dr*dphi );
+    double r  = .5*(xp[0]+xm[0]);
+    double dr   = xp[0]-xm[0];
+    double dphi = get_dp(xp[1], xm[1]);
+    double dz   = xp[2]-xm[2];
+    if(dim == 0)
+        return dr*dz;
+    else if(dim == 1)
+        return r*dphi*dz;
+    else
+        return r*dr*dphi;
 }
 
 double get_dV( double * xp , double * xm ){
-   double r  = .5*(xp[0]+xm[0]);
-   double dr   = xp[0]-xm[0];
-   double dphi = get_dp(xp[1],xm[1]);
-   double dz   = xp[2]-xm[2];
+    double r  = .5*(xp[0]+xm[0]);
+    double dr   = xp[0]-xm[0];
+    double dphi = get_dp(xp[1],xm[1]);
+    double dz   = xp[2]-xm[2];
 
-   return( r*dr*dphi*dz );
+    return( r*dr*dphi*dz );
 }
 
 double get_scale_factor( double * x, int dim)
@@ -79,6 +81,13 @@ double get_vol_element(double *x)
     return x[0];
 }
 
+void get_xyz(double *x, double *xyz)
+{
+    xyz[0] = x[0] * cos(x[1]);
+    xyz[1] = x[0] * sin(x[1]);
+    xyz[2] = x[2];
+}
+
 void get_rpz(double *x, double *rpz)
 {
     rpz[0] = x[0];
@@ -86,7 +95,14 @@ void get_rpz(double *x, double *rpz)
     rpz[2] = x[2];
 }
 
-void get_coords(double *rpz, double *x)
+void get_coords_from_xyz(double *xyz, double *x)
+{
+    x[0] = sqrt(xyz[0]*xyz[0]+xyz[1]*xyz[1]);
+    x[1] = atan2(xyz[1],xyz[0]);
+    x[2] = xyz[2];
+}
+
+void get_coords_from_rpz(double *rpz, double *x)
 {
     x[0] = rpz[0];
     x[1] = rpz[1];
@@ -105,4 +121,26 @@ void get_vec_from_rpz(double *x, double *vrpz, double *v)
     v[0] = vrpz[0];
     v[1] = vrpz[1];
     v[2] = vrpz[2];
+}
+
+void get_vec_xyz(double *x, double *v, double *vxyz)
+{
+    double phi = x[1];
+    double cp = cos(phi);
+    double sp = sin(phi);
+
+    vxyz[0] = cp*v[0] - sp*v[1];
+    vxyz[1] = sp*v[0] + cp*v[1];
+    vxyz[2] = v[2];
+}
+
+void get_vec_from_xyz(double *x, double *vxyz, double *v)
+{
+    double phi = x[1];
+    double cp = cos(phi);
+    double sp = sin(phi);
+
+    v[0] =  cp*vxyz[0] + sp*v[1];
+    v[1] = -sp*vxyz[0] + cp*v[1];
+    v[2] = vxyz[2];
 }

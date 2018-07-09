@@ -6,6 +6,7 @@ void setupGrid( struct domain * );
 void timestep( struct domain * , double );
 void setupCells( struct domain * );
 void regrid( struct domain * );
+void boundary_trans( struct domain * , int );
 void exchangeData( struct domain * , int );
 double getmindt( struct domain * );
 void calc_prim( struct domain * );
@@ -47,8 +48,15 @@ int main( int argc , char * argv[] ){
 /*
    if( theDomain.theParList.Initial_Regrid && !(theDomain.theParList.restart_flag) ) regrid( &theDomain );
 */
-   if( theDomain.Nr > 1 ) exchangeData( &theDomain , 0 );
-   if( theDomain.Nz > 1 ) exchangeData( &theDomain , 1 );
+   if( theDomain.Nr > 1 ){
+      exchangeData( &theDomain , 0 );
+      boundary_trans( &theDomain , 1);
+   }
+   if( theDomain.Nz > 1 ){
+      exchangeData( &theDomain , 1 );
+      if( !theDomain.theParList.Z_Periodic)
+         boundary_trans( &theDomain , 2);
+   }
 
    int restart_flag = theDomain.theParList.restart_flag;
    if( set_B_flag() && NUM_FACES >= 3 && !restart_flag) 

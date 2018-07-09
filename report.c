@@ -13,10 +13,11 @@ void report( struct domain * theDomain ){
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
    int * Np = theDomain->Np;
-   int Ng = theDomain->Ng;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int rank = theDomain->rank;
-   int * dim_rank = theDomain->dim_rank;
-   int * dim_size = theDomain->dim_size;
    MPI_Comm grid_comm = theDomain->theComm;
 
    double gamma_law = theDomain->theParList.Adiabatic_Index;
@@ -30,14 +31,10 @@ void report( struct domain * theDomain ){
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
 
-   int jmin = Ng;
-   int jmax = Nr-Ng;
-   if( dim_rank[0]==0             ) jmin = 0;
-   if( dim_rank[0]==dim_size[0]-1 ) jmax = Nr;
-   int kmin = Ng;
-   int kmax = Nz-Ng;
-   if( dim_rank[1]==0             ) kmin = 0;
-   if( dim_rank[1]==dim_size[1]-1 ) kmax = Nz;
+   int jmin = NgRa;
+   int jmax = Nr-NgRb;
+   int kmin = NgZa;
+   int kmax = Nz-NgZb;
 
    int j,k,i;
    double L1_isen = 0.0;

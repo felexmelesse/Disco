@@ -91,7 +91,6 @@ void restart( struct domain * theDomain ){
    freeDomain( theDomain );
 
    int Ng = theDomain->Ng;
-   int Z_Periodic = theDomain->theParList.Z_Periodic;
    int rank = theDomain->rank;
    int size = theDomain->size;
    int * dim_rank = theDomain->dim_rank;
@@ -110,7 +109,7 @@ void restart( struct domain * theDomain ){
 
    if( rank==0 ) printf("Restarting from file...\n");
 
-   int NUM_R,NUM_Z,NUM_Z_Tot;
+   int NUM_R,NUM_Z,NUM_R_Tot,NUM_Z_Tot;
    double tstart;
    //Read the time from "T" and get Nt and Np from 
    //the dimensions of "Index".  Broadcast to all ranks.
@@ -118,14 +117,20 @@ void restart( struct domain * theDomain ){
       readSimple( filename , group1 ,"T", &tstart , H5T_NATIVE_DOUBLE );
       getH5dims( filename , group1 ,"Index", dims );
       NUM_Z_Tot = dims[0];
-      NUM_R = dims[1];
+      NUM_R_Tot = dims[1];
    }
-   MPI_Bcast( &NUM_R  , 1 , MPI_INT    , 0 , theDomain->theComm );
+   MPI_Bcast( &NUM_R_Tot  , 1 , MPI_INT    , 0 , theDomain->theComm );
    MPI_Bcast( &NUM_Z_Tot  , 1 , MPI_INT    , 0 , theDomain->theComm );
    MPI_Bcast( &tstart , 1 , MPI_DOUBLE , 0 , theDomain->theComm );
+
+
+   NUM_R = NUM_R_Tot;
    NUM_Z = NUM_Z_Tot;
-   if(Z_Periodic)
-       NUM_Z -= 2*Ng;
+   if(!theDomain->theParList.NoBC_Rmin)  NUM_R -= Ng;
+   if(!theDomain->theParList.NoBC_Rmax)  NUM_R -= Ng;
+   if(NUM_Z_Tot > 1 && !theDomain->theParList.NoBC_Zmin)  NUM_Z -= Ng;
+   if(NUM_Z_Tot > 1 && !theDomain->theParList.NoBC_Zmax)  NUM_Z -= Ng;
+   
    theDomain->theParList.Num_R = NUM_R;
    theDomain->theParList.Num_Z = NUM_Z;
    theDomain->t = tstart;
@@ -135,25 +140,43 @@ void restart( struct domain * theDomain ){
    //from file. 
    int N0r = getN0( dim_rank[0]   , dim_size[0] , NUM_R );
    int N1r = getN0( dim_rank[0]+1 , dim_size[0] , NUM_R );
-   if( dim_rank[0] != 0 ) N0r -= Ng;
-   if( dim_rank[0] != dim_size[0]-1 ) N1r += Ng;
+   int NgRa = Ng;
+   int NgRb = Ng;
+   if( dim_rank[0] == 0 && theDomain->theParList.NoBC_Rmin)
+       NgRa = 0;
+   if( dim_rank[0] == dim_size[0]-1 && theDomain->theParList.NoBC_Rmax)
+       NgRb = 0;
+   N0r -= NgRa;
+   N1r += NgRb;
+   if(!theDomain->theParList.NoBC_Rmin) {
+       N0r += Ng;
+       N1r += Ng;
+   }
    int Nr = N1r-N0r;
 
    int N0z = getN0( dim_rank[1]   , dim_size[1] , NUM_Z );
    int N1z = getN0( dim_rank[1]+1 , dim_size[1] , NUM_Z );
-   if( NUM_Z > 1 ){
-      if( dim_rank[1] != 0 || Z_Periodic ) N0z -= Ng;
-      if( dim_rank[1] != dim_size[1]-1 || Z_Periodic ) N1z += Ng;
-      if(Z_Periodic)
-      {
-          N0z += Ng;
-          N1z += Ng;
-      }
+   int NgZa = Ng;
+   int NgZb = Ng;
+   if( NUM_Z == 1 || (dim_rank[1] == 0 && theDomain->theParList.NoBC_Zmin))
+       NgZa = 0;
+   if( NUM_Z == 1 || (dim_rank[1] == dim_size[1]-1
+                        && theDomain->theParList.NoBC_Zmax))
+       NgZb = 0;
+   N0z -= NgZa;
+   N1z += NgZb;
+   if(NUM_Z > 1 && !theDomain->theParList.NoBC_Zmin) {
+       N0z += Ng;
+       N1z += Ng;
    }
    int Nz = N1z-N0z;
-
+   
    theDomain->Nr = Nr;
    theDomain->Nz = Nz;
+   theDomain->NgRa = NgRa;
+   theDomain->NgRb = NgRb;
+   theDomain->NgZa = NgZa;
+   theDomain->NgZb = NgZb;
 
    theDomain->Np    = (int *)    malloc( Nr*Nz*sizeof(int) );
    theDomain->r_jph = (double *) malloc( (Nr+1)*sizeof(double) );
@@ -175,7 +198,7 @@ void restart( struct domain * theDomain ){
       //Read the R values of the grid...
       int start1[1] = {N0r};
       int loc_size1[1] = {Nr+1};
-      int glo_size1[1] = {NUM_R+1};
+      int glo_size1[1] = {NUM_R_Tot+1};
       double r_jph[Nr+1];
       readPatch( filename , group1 ,"r_jph", r_jph , H5T_NATIVE_DOUBLE , 1 , start1 , loc_size1 , glo_size1 ); 
       memcpy( theDomain->r_jph , r_jph , (Nr+1)*sizeof(double) );
@@ -195,11 +218,12 @@ void restart( struct domain * theDomain ){
       //The radial tracks of data which are coming up...
       int start2[2]   = {N0z,N0r};
       int loc_size2[2] = {Nz,Nr};
-      int glo_size2[2] = {NUM_Z_Tot,NUM_R};
+      int glo_size2[2] = {NUM_Z_Tot,NUM_R_Tot};
       int Np[Nr*Nz];
       int Index[Nr*Nz];
 
       printf("%d %d\n", NUM_Z, NUM_R);
+      printf("%d %d\n", NUM_Z_Tot, NUM_R_Tot);
       printf("%d %d\n", Nz, Nr);
       printf("%d %d\n", N0z, N0r);
 
