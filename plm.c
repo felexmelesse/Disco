@@ -20,8 +20,8 @@ void plm_phi( struct domain * theDomain ){
    int * Np = theDomain->Np;
    double PLM = theDomain->theParList.PLM;
    int i,j,k,q;
-   for( j=0 ; j<Nr ; ++j ){
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=0 ; k<Nz ; ++k ){
+      for( j=0 ; j<Nr ; ++j ){
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
             int im = i-1;
@@ -62,6 +62,8 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
    double PLM = theDomain->theParList.PLM;
+   int *dim_rank = theDomain->dim_rank;
+   
    int i,j,k,q;
 
    //Clear gradients
@@ -161,7 +163,7 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
       }    
    }
 
-   if(dim == 1 && strcmp(BOUNDARY, "polar") == 0)
+   if(dim == 1 && dim_rank[0] == 0 && strcmp(BOUNDARY, "polar") == 0)
    {
        // Reflecting boundary at r=0
        j = 0;
