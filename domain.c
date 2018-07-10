@@ -9,7 +9,6 @@ void initializePlanets( struct planet * );
 
 void setICparams( struct domain * );
 void setHydroParams( struct domain * );
-void setGeometryParams( struct domain * );
 void setRiemannParams( struct domain * );
 void setGravParams( struct domain * );
 void setPlanetParams( struct domain * );
@@ -50,7 +49,7 @@ void setupDomain( struct domain * theDomain ){
    int i;
    for( i=0 ; i<Nr*Nz*num_tools ; ++i ) theDomain->theTools.Qrz[i] = 0.0;
 
-   double Pmax = theDomain->theParList.phimax;
+   double Pmax = theDomain->phi_max;
    for( jk=0 ; jk<Nr*Nz ; ++jk ){
       double p0 = Pmax*(double)rand()/(double)RAND_MAX;
       double dp = Pmax/(double)Np[jk];
@@ -65,7 +64,6 @@ void setupDomain( struct domain * theDomain ){
    theDomain->t       = theDomain->theParList.t_min;
    theDomain->t_init  = theDomain->theParList.t_min;
    theDomain->t_fin   = theDomain->theParList.t_max;
-   theDomain->phi_max = theDomain->theParList.phimax;
 
    theDomain->N_rpt = theDomain->theParList.NumRepts;
    theDomain->N_snp = theDomain->theParList.NumSnaps;
@@ -89,7 +87,6 @@ void setupDomain( struct domain * theDomain ){
 
    setICparams( theDomain );
    setHydroParams( theDomain );
-   setGeometryParams( theDomain );
    setRiemannParams( theDomain );
    setHlldParams( theDomain );
    setOmegaParams( theDomain );
@@ -111,6 +108,7 @@ void adjust_gas( struct planet * , double * , double * , double );
 void set_B_fields( struct domain * );
 void subtract_omega( double * );
 void addNoise(double *prim, double *x);
+void get_centroid_arr(double *, double *, double *);
 
 void setupCells( struct domain * theDomain ){
 
@@ -136,11 +134,20 @@ void setupCells( struct domain * theDomain ){
    int atmos = theDomain->theParList.include_atmos;
 
    //Null setup for all cells
+   int count=0;
+   printf("Null cell setup.\n");
    for(k=0; k<Nz; k++){
       for(j=0; j<Nr; j++){
          int jk = j+Nr*k;
+         printf("j:%02d k:%02d jk:%04d Np: %02d (%06d - %06d)\n", j, k, jk, Np[jk], count, count+Np[jk]-1);
+         count += Np[jk];
          for(i=0; i<Np[jk]; i++){
             struct cell * c = &(theCells[jk][i]);
+            //double xp[3] = {r_jph[j  ],c->piph,z_kph[k  ]};
+            //double xm[3] = {r_jph[j-1],c->piph-c->dphi,z_kph[k-1]};
+            //double x[3];
+            //get_centroid_arr(xp, xm, x);
+            //initial(c->prim, x);
             c->wiph = 0.0; 
             c->real = 0;
          }
@@ -148,11 +155,16 @@ void setupCells( struct domain * theDomain ){
    }
 
    //Setup real cells.
+   printf("Real cell setup.\n");
+   count=0;
    for( k=NgZa ; k<Nz-NgZb ; ++k ){
       double z = get_centroid( z_kph[k], z_kph[k-1], 2);
       for( j=NgRa ; j<Nr-NgRb ; ++j ){
          double r = get_centroid( r_jph[j], r_jph[j-1], 1);
          int jk = j+Nr*k;
+         printf("j:%02d k:%02d jk:%04d Np: %02d (%06d - %06d)\n", j, k, jk, Np[jk], count, count+Np[jk]-1);
+         printf("  rm=%lf r=%lf rp=%lf\n", r_jph[j-1], r, r_jph[j]);
+         count += Np[jk];
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);
             double phip = c->piph;
@@ -163,6 +175,9 @@ void setupCells( struct domain * theDomain ){
             double dV = get_dV( xp , xm );
             double phi = c->piph-.5*c->dphi;
             double x[3] = {r, phi, z};
+
+            if(j==0)
+                printf("    i:%d piph=%lf dphi=%lf\n", i, c->piph, c->dphi);
             if( !restart_flag )
             {
                initial( c->prim , x );
@@ -246,8 +261,10 @@ void check_dt( struct domain * theDomain , double * dt ){
       if( latest ){ check = 1; fclose(latest); remove("latest");}
    }
 
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , &final , 1 , MPI_INT , MPI_SUM , theDomain->theComm );
    MPI_Allreduce( MPI_IN_PLACE , &check , 1 , MPI_INT , MPI_SUM , theDomain->theComm );
+#endif
    if( final ) theDomain->final_step = 1;
    if( check ) theDomain->check_plz = 1;
 

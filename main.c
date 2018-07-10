@@ -28,7 +28,9 @@ void print_welcome();
 
 int main( int argc , char * argv[] ){
  
+#if USE_MPI
    MPI_Init(&argc,&argv);
+#endif
    struct domain theDomain = {0};
    start_clock( &theDomain ); 
    read_par_file( &theDomain );
@@ -78,9 +80,13 @@ int main( int argc , char * argv[] ){
 
    possiblyOutput( &theDomain , 1 );
    generate_log( &theDomain );
+#if USE_MPI
    MPI_Barrier(theDomain.theComm);
+#endif
    freeDomain( &theDomain );
+#if USE_MPI
    MPI_Finalize();
+#endif
 
    return(0);
 

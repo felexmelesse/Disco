@@ -73,7 +73,9 @@ double getmindt( struct domain * theDomain ){
       }
    }
    dt *= theDomain->theParList.CFL; 
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , &dt , 1 , MPI_DOUBLE , MPI_MIN , theDomain->theComm );
+#endif
 
    return( dt );
 }
@@ -383,7 +385,15 @@ void phi_flux( struct domain * theDomain , double dt ){
          int jk = j+Nr*k;
          struct cell * cp = theCells[jk];
 
+         printf("Phi Flux j:%d k:%d jk:%d Np:%d\n", j, k, jk, Np[jk]);
+
          for( i=0 ; i<Np[jk] ; ++i ){
+             /*
+             if(j==0)
+                 printf("    i:%d %lf %lf %lf %lf %lf\n", i,cp[i].prim[RHO],
+                            cp[i].prim[PPP],cp[i].prim[URR],cp[i].prim[UPP],
+                            cp[i].prim[UZZ]);
+                            */
             int ip = (i+1)%Np[jk];
             double phi = cp[i].piph;
             double xp[3] = {rp, phi, zp};

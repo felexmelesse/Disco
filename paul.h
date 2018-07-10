@@ -1,7 +1,9 @@
 enum{RHO,PPP,URR,UPP,UZZ,BRR,BPP,BZZ};
 enum{DDD,TAU,SRR,LLL,SZZ};
 
+#if USE_MPI
 #include <mpi.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -129,7 +131,9 @@ struct domain{
    int dim_size[2];
    int left_rank[2];
    int right_rank[2];
+#if USE_MPI
    MPI_Comm theComm;
+#endif
 
    struct param_list theParList;
    int num_tools;

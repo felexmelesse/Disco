@@ -25,7 +25,9 @@ OPT_DEFS += -DNUM_C=$(NUM_C)
 OPT_DEFS += -DNUM_N=$(NUM_N)
 OPT_DEFS += -DCT_MODE=$(CT_MODE)
 
-FLAGS = -O3 -Wall -g $(OPT_DEFS)
+DIR_DEFS = -DUSE_MPI=$(USE_MPI)
+
+FLAGS = -O3 -Wall -g $(OPT_DEFS) $(DIR_DEFS)
 
 INC = -I$(H55)/include
 LIB = -L$(H55)/lib -lhdf5 -lm

@@ -20,6 +20,10 @@ void set_cell_init(struct cell *c, double *r_jph, double *z_kph, int j, int k)
     double xp[3] = {r_jph[j  ], c->piph          , z_kph[k  ]};
     double x[3];
     get_centroid_arr(xp, xm, x);
+
+    //printf("xm: %.3f %.3f %.3f\n", xm[0], xm[1], xm[2]);
+    //printf("x:  %.3f %.3f %.3f\n", x[0], x[1], x[2]);
+    //printf("xp: %.3f %.3f %.3f\n", xp[0], xp[1], xp[2]);
     initial(c->prim, x);
     subtract_omega(c->prim);
 }
@@ -201,13 +205,16 @@ void boundary_fixed_rout( struct domain *theDomain)
 
     if(dim_rank[0] == dim_size[0]-1)
     {
+        int count = 0;
         for(k=0; k<Nz; k++)
             for(j=Nr-NgRb; j<Nr; j++)
             {
                 int jk = j+Nr*k;
                 for(i=0; i<Np[jk]; i++)
                     set_cell_init(&(theCells[jk][i]), r_jph, z_kph, j, k);
+                count += Np[jk];
             }  
+        printf("BC_fixed_Rout applied on %d cells\n", count);
     }
 }
 

@@ -370,7 +370,9 @@ void output( struct domain * theDomain , char * filestart ){
       }
    }
    int myNtot = Ntot;
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , &Ntot  , 1 , MPI_INT , MPI_SUM , theDomain->theComm );
+#endif
 
    int Ndoub = Cell2Doub(NULL,NULL,0);
 
@@ -405,7 +407,9 @@ void output( struct domain * theDomain , char * filestart ){
       hsize_t fdims3[3] = {Nz_Tot, Nr_Tot, Ntools};
       createDataset(filename,"Data","Diagnostics",3,fdims3,H5T_NATIVE_DOUBLE);
    }
+#if USE_MPI
    MPI_Barrier( theDomain->theComm );
+#endif
    if( rank==0 ){
       writeSimple(filename,"Grid","T",&(theDomain->t),H5T_NATIVE_DOUBLE);
       writePars(theDomain, filename);
@@ -435,7 +439,9 @@ void output( struct domain * theDomain , char * filestart ){
          j0 = jSum;
          if( dim_rank[1] == 0 ) jSum += jSize;
       }
+#if USE_MPI
       MPI_Allreduce( MPI_IN_PLACE , &jSum , 1 , MPI_INT , MPI_MAX , theDomain->theComm );
+#endif
    }
    int kSum = 0;
    for( nrk=0 ; nrk < dim_size[1] ; ++nrk ){
@@ -443,7 +449,9 @@ void output( struct domain * theDomain , char * filestart ){
          k0 = kSum;
          if( dim_rank[0] == 0 ) kSum += kSize;
       }
+#if USE_MPI
       MPI_Allreduce( MPI_IN_PLACE , &kSum , 1 , MPI_INT , MPI_MAX , theDomain->theComm );
+#endif
    }
 
 
@@ -456,6 +464,7 @@ void output( struct domain * theDomain , char * filestart ){
    int * Id_phi0 = (int *) malloc( jSize*kSize*sizeof(int) );
    double * diagRZwrite = (double *) malloc( jSize*kSize*Ntools*sizeof(double) );
    double * Qwrite = (double *) malloc( myNtot*Ndoub*sizeof(double) );
+   printf("Qwrite address: %p\n", (void *) Qwrite);
 
    double *Qrz = theDomain->theTools.Qrz;
 
@@ -473,6 +482,7 @@ void output( struct domain * theDomain , char * filestart ){
          double phi0 = M_PI;
          int Id = 0;
          int i;
+         printf("%d %d %d %d\n", j, k, j+Nr*k, jk);
          for( i=0 ; i<Np[j+Nr*k] ; ++i ){
             struct cell * c = &(theCells[j+Nr*k][i]);
             Cell2Doub( c , Qwrite+index*Ndoub , 1 );
@@ -485,11 +495,13 @@ void output( struct domain * theDomain , char * filestart ){
    }
 
    int runningTot = 0;
+#if USE_MPI
    for( nrk=0 ; nrk < size ; ++nrk ){
       int thisTot = myNtot;
       MPI_Bcast( &thisTot , 1 , MPI_INT , nrk , theDomain->theComm );
       if( rank > nrk ) runningTot += thisTot;
    }
+#endif
 
    int jk;
    for( jk=0 ; jk<jSize*kSize ; ++jk ){
@@ -503,6 +515,7 @@ void output( struct domain * theDomain , char * filestart ){
          int start2[2]    = {runningTot,0};
          int loc_size2[2] = {myNtot,Ndoub};
          int glo_size2[2] = {Ntot,Ndoub};
+         printf("%d %d %d %d\n", runningTot, myNtot, Ntot, Ndoub);
          writePatch( filename , "Data" , "Cells" , Qwrite , H5T_NATIVE_DOUBLE , 2 , start2 , loc_size2 , glo_size2 );
          //Write Indices and Sizes for each radial track
          start2[0] = k0;
@@ -511,6 +524,7 @@ void output( struct domain * theDomain , char * filestart ){
          loc_size2[1] = jSize;
          glo_size2[0] = Nz_Tot;
          glo_size2[1] = Nr_Tot;
+         printf("%d %d %d %d %d %d %d %d\n", k0, j0, kSize, jSize, Nz_Tot, Nr_Tot, Nz, Nr);
          writePatch( filename , "Grid" , "Index"   , Index   , H5T_NATIVE_INT , 2 , start2 , loc_size2 , glo_size2 );
          writePatch( filename , "Grid" , "Np"      , Size    , H5T_NATIVE_INT , 2 , start2 , loc_size2 , glo_size2 );
          writePatch( filename , "Grid" , "Id_phi0" , Id_phi0 , H5T_NATIVE_INT , 2 , start2 , loc_size2 , glo_size2 );
@@ -541,7 +555,9 @@ void output( struct domain * theDomain , char * filestart ){
             writePatch( filename , "Grid" , "z_kph" , z_kph-1+offset , H5T_NATIVE_DOUBLE , 1 , start1 , loc_size1 , glo_size1 );
          }
       }
+#if USE_MPI
       MPI_Barrier( theDomain->theComm );
+#endif
    }
    zero_diagnostics( theDomain );
 
@@ -550,7 +566,9 @@ void output( struct domain * theDomain , char * filestart ){
    free(Id_phi0);
    free(Qwrite);
    free(diagRZwrite);
+#if USE_MPI
    MPI_Barrier(theDomain->theComm);
+#endif
 }
 
 

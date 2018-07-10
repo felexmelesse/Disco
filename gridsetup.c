@@ -13,6 +13,9 @@ int getN0( int drank , int dsize , int dnum ){
    return(N0);
 }
 
+
+void setGeometryParams( struct domain * );
+
 void setupGrid( struct domain * theDomain ){
 
    int Ng = NUM_G;
@@ -88,6 +91,9 @@ void setupGrid( struct domain * theDomain ){
    for( k=-1 ; k<Nz ; ++k ){
       theDomain->z_kph[k] = z0 + ((double)k+1.)*dz;
    }
+
+   theDomain->phi_max = theDomain->theParList.phimax;
+   setGeometryParams( theDomain );
 
    for( k=0 ; k<Nz ; ++k ){
       double zp = theDomain->z_kph[k];

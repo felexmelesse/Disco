@@ -43,8 +43,13 @@ int readvar( char * filename , char * varname , int vartype , void * ptr ){
 
 int read_par_file( struct domain * theDomain ){
 
+#if USE_MPI
    MPI_Comm_rank(MPI_COMM_WORLD,&(theDomain->rank));
    MPI_Comm_size(MPI_COMM_WORLD,&(theDomain->size));
+#else
+   theDomain->rank = 0;
+   theDomain->size = 1;
+#endif
 
    int rank = theDomain->rank;
    int size = theDomain->size;
@@ -135,7 +140,9 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Noise_Abs" , VAR_DOUB  , &(theList->noiseAbs));
          err += readvar( pfile , "Noise_Rel" , VAR_DOUB  , &(theList->noiseRel));
       }
+#if USE_MPI
       MPI_Barrier(MPI_COMM_WORLD);
+#endif
    }
 
    if( tTimes_2pi ){
@@ -147,7 +154,11 @@ int read_par_file( struct domain * theDomain ){
    }
 
    int errtot;
+#if USE_MPI
    MPI_Allreduce( &err , &errtot , 1 , MPI_INT , MPI_SUM , MPI_COMM_WORLD );
+#else
+   errtot = err;
+#endif
 
    if( errtot > 0 ){
       printf("Read Failed\n");

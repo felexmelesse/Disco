@@ -27,7 +27,9 @@ int count_cells( struct domain * theDomain ){
          Nc += Np[j+Nr*k];
       }
    }
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , &Nc ,  1 , MPI_INT    , MPI_SUM , theDomain->theComm );
+#endif
    return(Nc);
 }
 
@@ -44,9 +46,13 @@ void generate_log( struct domain * theDomain ){
 
    if( theDomain->rank==0 ){
       FILE * logfile = fopen("times.log","w");
+#if USE_MPI
       fprintf(logfile,"Run using %d MPI process",size);
       if( theDomain->size > 1 ) fprintf(logfile,"es");
       fprintf(logfile,".\n");
+#else
+      fprintf(logfile,"Running in serial mode. No MPI.");
+#endif
       fprintf(logfile,"Total time = %d sec\n",seconds);
       fprintf(logfile,"Number of cells = %d\n",Nc);
       fprintf(logfile,"Number of timesteps = %d (x%d)\n",Nt,2);

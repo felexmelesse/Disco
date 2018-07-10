@@ -13,9 +13,7 @@ I posted this code because I believe in transparency in science, not because I a
 
 Having said that, here is how you set up the code:
 
-
-This code is parallel, and uses mpich2.  The code should compile so long as "mpicc" works.  If you don't have MPI, it is straightforward to get.  Look for "mpich2" using macports or homebrew.
-
+This code is parallel and uses the MPI library. It has been run using the MPICH2, OpenMPI, and Intel MPI implementations amongst others. For testing/debugging purposes it may be compiled in a pure serial mode, completely independent of MPI, but performance will obviously suffer.
 
 The only other important dependency is HDF5.  It is possible to compile without HDF5 (ascii output) but the default assumes you have HDF5.
 
@@ -36,9 +34,9 @@ cp Templates/isentropic.in ./Makefile_opt.in
 
 cp Templates/isentropic.par ./in.par
 
-"Makefile_dir.in" currently just includes the directory where HDF5 is located.  If you are compiling with HDF5, just modify this file so it points to the right place.
+"Makefile_dir.in" sets the C compiler to use (default: mpicc), the directory where HDF5 is located, and other machine-level flags.  If you are compiling with HDF5, just modify this file so it points to the right place. To compile without MPI set USE_MPI = 0.
 
-After that, so long as "mpicc" works, all you have to do is type "make" and it should compile.
+After that, so long as your C compiler works, all you have to do is type "make" and it should compile.
 
 
 COMPILING WITHOUT HDF5:

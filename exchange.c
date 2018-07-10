@@ -14,6 +14,7 @@ struct cell_lite{
    double RK_Phi[NUM_FACES];
 };
 
+#if USE_MPI
 void generate_mpi_cell( MPI_Datatype * cell_mpi ){
 
    struct cell_lite test;
@@ -157,9 +158,10 @@ void generate_intbuffer( struct domain * theDomain , int rnum , int znum , int d
    *indexR = iR;
 
 }
+#endif
 
 void exchangeData( struct domain * theDomain , int dim ){
-
+#if USE_MPI
    MPI_Datatype cell_mpi = {0}; 
    generate_mpi_cell( &cell_mpi );
 
@@ -263,5 +265,6 @@ void exchangeData( struct domain * theDomain , int dim ){
    free(pr_recv);
 
    MPI_Type_free( &cell_mpi );
+#endif
 }
 

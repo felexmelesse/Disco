@@ -18,7 +18,9 @@ void report( struct domain * theDomain ){
    int NgZa = theDomain->NgZa;
    int NgZb = theDomain->NgZb;
    int rank = theDomain->rank;
+#if USE_MPI
    MPI_Comm grid_comm = theDomain->theComm;
+#endif
 
    double gamma_law = theDomain->theParList.Adiabatic_Index;
 
@@ -151,6 +153,7 @@ void report( struct domain * theDomain ){
       if( rhoavg_min > rho_avg/rho0 ) rhoavg_min = rho_avg/rho0;
    }
 
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , &L1_isen , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    MPI_Allreduce( MPI_IN_PLACE , &L1_rho  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    MPI_Allreduce( MPI_IN_PLACE , &L1_P    , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
@@ -175,6 +178,7 @@ void report( struct domain * theDomain ){
 
 //   MPI_Allreduce( MPI_IN_PLACE , T_cut  , 10 , MPI_DOUBLE , MPI_SUM , grid_comm );
 //   MPI_Allreduce( MPI_IN_PLACE , P_cut  , 10 , MPI_DOUBLE , MPI_SUM , grid_comm );
+#endif
 
    L1_isen /= Vol;
    L1_rho  /= Vol;
@@ -187,14 +191,16 @@ void report( struct domain * theDomain ){
    double bM = PdV/B2;
 
    if( rank==0 ){
+       /*
       FILE * rFile = fopen("report.dat","a");
-      fprintf(rFile,"%e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n",
+      fprintf(rFile,"%le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le\n",
                 t,Torque,Power,Fr,rho_min,rhoavg_min,PsiR,PsiI,Mass,Mdot,S_R,
                 L1_rho,L1_isen,L1_B,Br2,aM,bM);
       //fprintf(rFile,"%e %e %e ",t,Torque,Power);
       //for( j=0 ; j<10 ; ++j ) fprintf(rFile,"%e %e ",T_cut[j],P_cut[j]);
       //fprintf(rFile,"\n");
       fclose(rFile);
+      */
    }
 
 }

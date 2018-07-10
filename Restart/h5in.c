@@ -113,15 +113,23 @@ void restart( struct domain * theDomain ){
    double tstart;
    //Read the time from "T" and get Nt and Np from 
    //the dimensions of "Index".  Broadcast to all ranks.
+#if USE_MPI
    if(rank==0){
+#endif
       readSimple( filename , group1 ,"T", &tstart , H5T_NATIVE_DOUBLE );
       getH5dims( filename , group1 ,"Index", dims );
       NUM_Z_Tot = dims[0];
       NUM_R_Tot = dims[1];
+
+#if USE_MPI
    }
+#endif
+
+#if USE_MPI
    MPI_Bcast( &NUM_R_Tot  , 1 , MPI_INT    , 0 , theDomain->theComm );
    MPI_Bcast( &NUM_Z_Tot  , 1 , MPI_INT    , 0 , theDomain->theComm );
    MPI_Bcast( &tstart , 1 , MPI_DOUBLE , 0 , theDomain->theComm );
+#endif
 
 
    NUM_R = NUM_R_Tot;
@@ -286,7 +294,9 @@ void restart( struct domain * theDomain ){
          pl->eps   = PlanetData[NpDat*p + 5];
       }
    }
+#if USE_MPI
    MPI_Barrier(theDomain->theComm);
+#endif
    }
    if( Nq != NUM_Q+NUM_FACES+1 ){ if(rank==0)printf("Ummm, I got an hdf5 read error. Check NUM_Q.\n"); exit(1); }
 
