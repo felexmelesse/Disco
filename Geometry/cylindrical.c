@@ -133,7 +133,7 @@ void get_vec_from_xyz(double *x, double *vxyz, double *v)
     double cp = cos(phi);
     double sp = sin(phi);
 
-    v[0] =  cp*vxyz[0] + sp*v[1];
-    v[1] = -sp*vxyz[0] + cp*v[1];
+    v[0] =  cp*vxyz[0] + sp*vxyz[1];
+    v[1] = -sp*vxyz[0] + cp*vxyz[1];
     v[2] = vxyz[2];
 }

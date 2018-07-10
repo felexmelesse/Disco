@@ -9,7 +9,7 @@ static double L = 0.0;
 static double a = 0.0;
 static double x0 = 0.0;
 static double costheta0 = 0.0;
-static double sinhphi0 = 0.0;
+static double phi0_o_pi = 0.0;
     
 void get_xyz(double *, double *);
 void get_vec_from_xyz(double *, double *, double *);
@@ -22,7 +22,7 @@ void setICparams( struct domain * theDomain )
     a = theDomain->theParList.initPar2;     //1.0 in RAM
     x0 = theDomain->theParList.initPar3;  
     L = theDomain->theParList.initPar4;     //0.3 in RAM
-    sinhphi0 = theDomain->theParList.initPar5;
+    phi0_o_pi = theDomain->theParList.initPar5;
     costheta0 = theDomain->theParList.initPar6;
 }
 
@@ -31,7 +31,7 @@ void initial(double *prim, double *x)
     double xyz[3];
     get_xyz(x, xyz);
 
-    double phi0 = 2*asin(sinhphi0);
+    double phi0 = phi0_o_pi * M_PI;
     double sintheta0 = sqrt(1.0-costheta0*costheta0);
 
     double kx = cos(phi0)*sintheta0;

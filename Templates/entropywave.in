@@ -6,7 +6,7 @@
 INITIAL  = entropywave
 HYDRO    = euler
 GEOMETRY = cylindrical
-BOUNDARY = polar
+BOUNDARY = fixed
 OUTPUT   = h5out
 RESTART  = h5in
 PLANETS  = none

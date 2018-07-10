@@ -48,7 +48,6 @@ int draw_spiral = 0;
 int draw_jet = 0;
 int draw_planet = 0;
 int draw_scale = 0;
-int reflect  = 0;
 int valq=0;
 int draw_border = 0;
 int logscale = 0;
@@ -56,6 +55,7 @@ int floors=0;
 int help_screen=0;
 int print_vals=0;
 int fix_zero=0;
+int geometry = 0;
 
 double val_floor = VAL_FLOOR;
 double val_ceil = VAL_CEIL;
@@ -72,6 +72,7 @@ int * Np = NULL;
 double * r_jph = NULL;
 double * z_kph = NULL;
 double ** p_iph = NULL;
+double phimax;
 double *** theZones = NULL;
 double ** rzZones = NULL;
 double ** thePlanets = NULL;
@@ -181,6 +182,33 @@ void readSimple( char * file , char * group , char * dset , void * data , hid_t 
    H5Dclose( h5dst );
    H5Gclose( h5grp );
    H5Fclose( h5fil );
+}
+
+void readString(char *file, char *group, char *dset, char *buf, int len)
+{
+   hid_t strtype = H5Tcopy(H5T_C_S1);
+   H5Tset_size(strtype, H5T_VARIABLE);
+
+   hid_t h5fil = H5Fopen( file , H5F_ACC_RDWR , H5P_DEFAULT );
+   hid_t h5grp = H5Gopen1( h5fil , group );
+   hid_t h5dst = H5Dopen1( h5grp , dset );
+
+   hid_t space = H5Dget_space(h5dst);
+   hsize_t dims[1];
+   H5Sget_simple_extent_dims(space, dims, NULL);
+
+   char **rdata = (char **)malloc(dims[0] * sizeof(char *));
+   H5Dread(h5dst, strtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, rdata);
+   strncpy(buf, rdata[0], len-1);
+   buf[len-1] = '\0';
+
+   H5Dvlen_reclaim(strtype, space, H5P_DEFAULT, rdata);
+   free(rdata);
+   H5Dclose(h5dst);
+   H5Sclose(space);
+   H5Tclose(strtype);
+   H5Gclose(h5grp);
+   H5Fclose(h5fil);
 }
 
 void readPatch( char * file , char * group , char * dset , void * data , hid_t type , int dim , int * start , int * loc_size , int * glo_size){
@@ -305,7 +333,528 @@ void TakeScreenshot(const char *useless){
    printf("done!\n");
 }
 
-/* The main drawing function. */
+void draw1dBackground(double RotationAngleX, double RotationAngleY,
+                        double RotationAngleZ, double camdist, double xoff,
+                        double yoff, double zoff, int q)
+{
+      glColor3f(1.0,1.0,1.0);
+      glBegin(GL_QUADS);
+      glVertex3f(-1./rescale-xoff,-1./rescale-yoff, camdist + zoff );
+      glVertex3f( 1./rescale-xoff,-1./rescale-yoff, camdist + zoff );
+      glVertex3f( 1./rescale-xoff, 1./rescale-yoff, camdist + zoff );
+      glVertex3f(-1./rescale-xoff, 1./rescale-yoff, camdist + zoff );
+      glEnd();
+      glLineWidth( 3.0f );
+      glColor3f(0.0,0.0,0.0);
+}
+void draw1dRadialData(double RotationAngleX, double RotationAngleY, 
+                        double RotationAngleZ, double camdist, double xoff, 
+                        double yoff, double zoff, int q)
+{
+    glBegin( GL_LINE_STRIP );
+    int j;
+    //      for( j=0 ; j<Nr ; ++j ){
+    for( j=0 ; j<Nr ; ++j )
+    {
+        //if(logscale) val = log(getval(theZones[i],q))/log(10.);
+        double rm = r_jph[j-1];
+        double rp = r_jph[j]; 
+        double val = theRadialData[j][q]/max_1d;//*pow(.5*(rp+rm),1.5);//2.*(theRadialData[j][q]-minval)/(maxval-minval) - 1.;//getval(theZones[i],q);
+        if( q==1 ) val *= 1e2;
+        val = 2.*val - 1.;
+        double c0 = 2.*((.5*(rp+rm)-r_jph[-1])/(r_jph[Nr-1]-r_jph[-1]) - .5)/rescale;
+        double c1 = val/rescale;
+        glVertex3f( c0-xoff, c1-yoff, camdist-zoff+.001 );
+    }    
+    glEnd();
+    /*
+    glColor3f(0.5,0.5,0.5);
+    glBegin( GL_LINE_STRIP );
+
+    for( j=0 ; j<Nr ; ++j )
+    {
+        //if(logscale) val = log(getval(theZones[i],q))/log(10.);
+        double rm = r_jph[j-1];
+        double rp = r_jph[j];
+        double r = .5*(rp+rm); 
+        double val = pow(r,-1.5)/max_1d;// *pow(.5*(rp+rm),1.5);//2.*(theRadialData[j][q]-minval)/(maxval-minval) - 1.;//getval(theZones[i],q);         if( q==1 ) val *= 1e2;
+        val = 2.*val - 1.;
+        double c0 = 2.*((.5*(rp+rm)-r_jph[-1])/(r_jph[Nr-1]-r_jph[-1]) - .5)/rescale;                 double c1 = val/rescale;
+        glVertex3f( c0-xoff, c1-yoff, camdist-zoff+.001 );
+    }       
+    glEnd();
+    */
+}
+
+void draw1dPlanet(double RotationAngleX, double RotationAngleY,
+                double RotationAngleZ, double camdist, double xoff,
+                double yoff, double zoff, int q)
+{
+    double eps = 0.01;
+    int p;
+    for( p=0 ; p<Npl ; ++p )
+    {
+        double r   = thePlanets[p][0];
+        double x = 2.*(( r - r_jph[-1] )/( r_jph[Nr-1]-r_jph[-1] ) - .5)/rescale;
+        glColor3f(0.0,0.0,0.0);
+        glLineWidth(2.0);
+        glBegin(GL_LINE_LOOP);
+        glVertex3f( x-xoff+eps , 1./rescale-yoff+eps , camdist+.001 );
+        glVertex3f( x-xoff-eps , 1./rescale-yoff+eps , camdist+.001 );
+        glVertex3f( x-xoff-eps , 1./rescale-yoff-eps , camdist+.001 );
+        glVertex3f( x-xoff+eps , 1./rescale-yoff-eps , camdist+.001 );
+        glEnd();
+    }
+}
+
+void drawZCell(double x1p, double x1m, double x2p, double x2m, double x3,
+                double camdist, double xoff, double yoff, double zoff)
+{
+    if(geometry == 1)
+    {
+        double rp = x1p/rescale;
+        double rm = x1m/rescale;
+        double phip = x2p;
+        double phim = x2m;
+        double dp = phip-phim;
+        double z0 = x3/rescale;
+
+        double c0 = rm*cos(phim);
+        double c1 = rm*sin(phim);
+        glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+
+        int np = (int) (rp*(phip-phim) / (rp-rm)) + 1;
+        int nm = (int) (rm*(phip-phim) / (rp-rm)) + 1;
+
+        c0 = rp*cos(phim);
+        c1 = rp*sin(phim);
+        glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+
+        int p;
+        for(p=1; p<np; p++)
+        {
+            double ph = phim + (p*(phip-phim))/np;
+            c0 = rp*cos(ph)/cos(dp/np);
+            c1 = rp*sin(ph)/cos(dp/np);
+            glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+        }
+
+        c0 = rp*cos(phip);
+        c1 = rp*sin(phip);
+        glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+
+        c0 = rm*cos(phip);
+        c1 = rm*sin(phip);
+        glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+
+        for(p=nm-1; p>0; p--)
+        {
+            double ph = phim + (p*(phip-phim))/nm;
+            c0 = rm*cos(ph);
+            c1 = rm*sin(ph);
+            glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+        }
+    }
+    else
+    {
+        double xm = x1m/rescale;
+        double xp = x1p/rescale;
+        double ym = x2m/rescale;
+        double yp = x2p/rescale;
+        double z = x3/rescale;
+        glVertex3f( xm-xoff, ym-yoff, camdist-zoff+z );
+        glVertex3f( xp-xoff, ym-yoff, camdist-zoff+z );
+        glVertex3f( xp-xoff, yp-yoff, camdist-zoff+z );
+        glVertex3f( xm-xoff, yp-yoff, camdist-zoff+z );
+    }
+}
+
+void drawZSlice(double camdist, double xoff, double yoff, double zoff, int q,
+                 int draw_border_now)
+{
+    if( draw_border_now )
+        zoff -= .0001;
+    int i,j;
+
+    for( j=0 ; j<Nr ; ++j )
+    {
+        double rm = r_jph[j-1];
+        double rp = r_jph[j];
+        double rc = .5*(rp+rm);
+        double dr = rp-rm;
+
+        if( !draw_border )
+        {
+            rm = rc-.55*dr;
+            rp = rc+.55*dr;
+        }
+        for( i=0 ; i<Np[j] ; ++i )
+        {
+            double phip = p_iph[j][i];
+            double phim;
+            if( i==0 ) 
+                phim = p_iph[j][Np[j]-1]; 
+            else 
+                phim = p_iph[j][i-1];
+
+            if( t_off && !p_off )
+            {
+                phip -= t;
+                phim -= t;
+            }
+            if( p_off )
+            { 
+                phip -= thePlanets[1][1]; 
+                phim -= thePlanets[1][1];
+            }
+
+            double dp   = phip-phim;
+            while( dp < 0.0 ) dp += phimax;
+            while( dp > phimax ) dp -= phimax;
+            double phi = phip - 0.5*dp;
+            phim = phip - dp;
+
+            if( !draw_border )
+            {
+                phip = phi+.55*dp;
+                phim = phi-.55*dp;
+            }
+
+            double val = (getval(theZones[j][i],q)-minval)/(maxval-minval);
+            if(logscale) 
+                val = (log(getval(theZones[j][i],q))/log(10.)-minval)
+                        /(maxval-minval);
+            if( val > 1.0 ) val = 1.0;
+            if( val < 0.0 ) val = 0.0;
+            //double u = getval( theZones[j][i] , 2 );
+            //if( uMax < u ) uMax = u;
+
+            float rrr,ggg,bbb;
+            get_rgb( val , &rrr , &ggg , &bbb , cmap );
+
+            if( (!dim3d || (sin(phi)>0 || cos(phi+.25)<0.0)) && dim3d !=2 )
+            {
+                //if( dp < 1.5 && (!dim3d || (sin(phi)>0 && cos(phi)>0.0)) && dim3d !=2 ){
+                if( !draw_border_now )
+                { 
+                    glColor3f( rrr , ggg , bbb );
+                    glBegin(GL_POLYGON);
+                }
+                else
+                {
+                    glLineWidth(3.0f);
+                    glColor3f(0.0,0.0,0.0);
+                    glBegin(GL_LINE_LOOP);
+                }
+
+                double z0 = 0.0;
+                if( dim3d ) 
+                    z0 = z_kph[KK];
+
+                drawZCell(rp, rm, phip, phim, z0, camdist, xoff, yoff, zoff);
+
+                glEnd();
+            }
+        }
+    }
+    
+    if( draw_border_now )
+        zoff += .0001;
+}
+
+void drawPhiSlice(double camdist, double xoff, double yoff, double zoff, int q,
+                    int draw_border_now)
+{
+    if( draw_border_now )
+        zoff -= .0001;
+
+    int j, k;
+    for( j=0 ; j<Nr ; ++j )
+    {
+        for( k=0 ; k<Nz ; ++k )
+        {
+            int jk;
+            if(ZRORDER)
+                jk = k*Nr+j;
+            else
+                jk = j*Nz+k;
+            double rp = r_jph[j]/rescale;
+            double rm = r_jph[j-1]/rescale;
+            double zp = z_kph[k]/rescale;
+            double zm = z_kph[k-1]/rescale;
+
+            double phi = 0.0;//rzZones[jk][Nq];
+            double sphi = sin(phi);
+            double cphi = cos(phi);
+
+            double val = (getval(rzZones[jk],q)-minval)/(maxval-minval);
+            if(logscale)
+                val = (log(getval(rzZones[jk],q))/log(10.)-minval)
+                            /(maxval-minval);
+            if( val > 1.0 ) 
+                val = 1.0;
+            if( val < 0.0 ) 
+                val = 0.0;
+            float rrr,ggg,bbb;
+            get_rgb( val , &rrr , &ggg , &bbb , cmap );
+            if( !draw_border_now )
+            { 
+                glColor3f( rrr , ggg , bbb );
+                glBegin(GL_POLYGON);
+            }
+            else
+            {
+                glLineWidth(2.0f);
+                glColor3f(0.0,0.0,0.0);
+                glBegin(GL_LINE_LOOP);
+            } 
+                  
+            glVertex3f( rp*cphi - xoff, rp*sphi - yoff + zoff, zp );
+            glVertex3f( rm*cphi - xoff, rm*sphi - yoff + zoff, zp );
+            glVertex3f( rm*cphi - xoff, rm*sphi - yoff + zoff, zm );
+            glVertex3f( rp*cphi - xoff, rp*sphi - yoff + zoff, zm );
+            glEnd();
+        }
+
+        if( draw_border_now || dim3d == 1 )
+        {
+            glLineWidth(2.0f);
+            glColor3f(0.0,0.0,0.0);
+            glBegin(GL_LINE_LOOP);
+
+            double rp = r_jph[Nr-1]/rescale;
+            //double rm =-r_jph[Nr-1]/rescale;
+            double rm = r_jph[-1]/rescale;
+            double zp = z_kph[Nz-1]/rescale;
+            double zm = z_kph[  -1]/rescale;
+
+            glVertex3f( rp-xoff , -yoff+zoff , zp );
+            glVertex3f( rm-xoff , -yoff+zoff , zp );
+            glVertex3f( rm-xoff , -yoff+zoff , zm );
+            glVertex3f( rp-xoff , -yoff+zoff , zm );
+            glEnd();
+        }
+    }
+    
+    if( draw_border_now )
+        zoff += .0001;
+}
+
+void drawData(double RotationAngleX, double RotationAngleY,
+                    double RotationAngleZ, double camdist, double xoff,
+                    double yoff, double zoff, int q)
+{
+    if(dim3d < 2)
+    {
+        drawZSlice(camdist, xoff, yoff, zoff, q, 0);
+        if(draw_border)
+            drawZSlice(camdist, xoff, yoff, zoff, q, 1);
+    }
+    if(dim3d)
+    {
+        drawPhiSlice(camdist, xoff, yoff, zoff, q, 0);
+        if(draw_border)
+            drawPhiSlice(camdist, xoff, yoff, zoff, q, 1);
+    }
+}
+
+// Draw a color bar.
+void drawColorBar(double RotationAngleX, double RotationAngleY,
+                    double RotationAngleZ, double camdist, double xoff,
+                    double yoff, double zoff, int q)
+{
+    glRotatef(-RotationAngleZ, 0, 0, 1);
+    glRotatef(-RotationAngleY, 0, 1, 0);
+    glRotatef(-RotationAngleX, 1, 0, 0);
+    double xb = 0.6;
+    double hb = 1.0;
+    double wb = 0.02;
+    int Nb = 1000;
+    double dy = hb/(double)Nb;
+    int k;
+    for( k=0 ; k<Nb ; ++k )
+    {
+        double y = (double)k*dy - .5*hb;
+        double val = (double)k/(double)Nb;
+        float rrr,ggg,bbb;
+        get_rgb( val , &rrr , &ggg , &bbb , cmap );
+        glLineWidth(0.0f);
+        glColor3f( rrr , ggg , bbb );
+        glBegin(GL_POLYGON);
+        glVertex3f( xb    , y    , camdist + .001 ); 
+        glVertex3f( xb+wb , y    , camdist + .001 ); 
+        glVertex3f( xb+wb , y+dy , camdist + .001 ); 
+        glVertex3f( xb    , y+dy , camdist + .001 ); 
+        glEnd();
+    }
+
+    int Nv = 8;
+    for( k=0 ; k<Nv ; ++k )
+    {
+        double y = (double)k*hb/(double)(Nv-1) - .5*hb;
+        double val = (double)k/(double)(Nv-1)*(maxval-minval) + minval;
+        char valname[256];
+        sprintf(valname,"%+.2e",val);
+        glLineWidth(1.0f);
+        glColor3f(0.0,0.0,0.0);
+        glBegin(GL_LINE_LOOP);
+        glVertex3f( xb    , y , camdist + .0011 );
+        glVertex3f( xb+wb , y , camdist + .0011 );
+        glEnd();
+        glutPrint( xb+1.5*wb , y-.007 , camdist + .001 ,glutFonts[6] , valname , 0.0f, 0.0f , 0.0f , 0.5f );
+    }
+
+    glRotatef(RotationAngleX, 1, 0, 0);
+    glRotatef(RotationAngleY, 0, 1, 0);
+    glRotatef(RotationAngleZ, 0, 0, 1);
+}
+
+void drawPlanet(double RotationAngleX, double RotationAngleY,
+                    double RotationAngleZ, double camdist, double xoff,
+                    double yoff, double zoff)
+{
+    glRotatef(-RotationAngleZ, 0, 0, 1);
+    glRotatef(-RotationAngleY, 0, 1, 0);
+    glRotatef(-RotationAngleX, 1, 0, 0);
+    double eps = 0.01;
+    int p;
+    for( p=0 ; p<Npl ; ++p )
+    {
+        double r   = thePlanets[p][0]/rescale;
+        double phi = thePlanets[p][1];
+        if( t_off && !p_off ) phi -= t;
+        if( p_off ) phi -= thePlanets[1][1];
+
+        glColor3f(0.0,0.0,0.0);
+        glLineWidth(2.0);
+
+        glBegin(GL_LINE_LOOP);
+        glVertex3f( r*cos(phi)-xoff+eps , r*sin(phi)-yoff+eps , camdist+.001 );
+        glVertex3f( r*cos(phi)-xoff-eps , r*sin(phi)-yoff+eps , camdist+.001 );
+        glVertex3f( r*cos(phi)-xoff-eps , r*sin(phi)-yoff-eps , camdist+.001 );
+        glVertex3f( r*cos(phi)-xoff+eps , r*sin(phi)-yoff-eps , camdist+.001 );
+        glEnd();
+    }
+    glRotatef(RotationAngleX, 1, 0, 0);
+    glRotatef(RotationAngleY, 0, 1, 0);
+    glRotatef(RotationAngleZ, 0, 0, 1);
+}
+
+void drawSpiral(double RotationAngleX, double RotationAngleY,
+                    double RotationAngleZ, double camdist, double xoff,
+                    double yoff, double zoff)
+{
+
+    double rp   = 5.0;//thePlanets[1][0];
+    double Mach = 3.65;
+    double p0 = 1.2;
+    double dr = .07;
+    int Nr = 200;
+    double Rmin = 0.5;
+    double Rmax = 1.1;
+    int k;
+    
+    glLineWidth(3.0f);
+    glColor3f(0.0,0.0,0.0);
+    //glColor3f(1.0,1.0,1.0);
+    glBegin(GL_LINE_LOOP);
+    
+    for( k=0 ; k<Nr ; ++k )
+    {
+        //double phi0 = ((double)k+.5)/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
+        double x = ((double)k+.5)/(double)Nr;
+        double r = .001*pow(.5/.001,x);
+        //double r = .5*pow(1.5/.5,x);
+        double phi0 = p0-log(r/0.001)*Mach;//(3.-2.*sqrt(1./r)-r)*5.;
+        //double phi0 = (3.-2.*sqrt(1./r)-r)*20.;
+        //if( r<1. ) phi0 = -phi0;
+
+        //         double x0 = rp + dr*cos(phi0);
+        //         double y0 = dr*sin(phi0);
+
+        double phi = phi0;
+        //         double r = rp;       
+
+        //         double phi = atan2(y0,x0);
+        //         double phi = ((double)k+.5)/(double)Nr*2.*M_PI*9.32 + 4.*M_PI;
+        //         double r   = sqrt(x0*x0+y0*y0);
+        //         double r = pow(phi/10.,-2.);
+        //         double r   = 2./(1.+sin(phi));//1.0;//((double)k+0.5)/(double)Nr*(Rmax-Rmin) + Rmin;
+        //         if( r<1. ) phi = -phi;
+        r /= rescale;
+
+        glVertex3f( r*cos(phi)-xoff , r*sin(phi)-yoff , camdist + .0011 );
+        if( k%2==1 )
+        {
+            glEnd();
+            glBegin(GL_LINE_LOOP);
+        }
+    }
+    glEnd();
+
+    /*
+    e += 0.01;
+    glBegin(GL_LINE_LOOP);
+    for( k=0 ; k<Nr ; ++k ){
+    double phi0 = ((double)k-.5)/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
+    double x0 = 1.+e*cos(phi0);
+    double y0 = e*sin(phi0);
+
+    double phi = atan2(y0,x0);
+    double r   = sqrt(x0*x0+y0*y0);
+    //         double phi = (double)k/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
+    //         double r   = 2./(1.+sin(phi));//1.0;//((double)k+0.5)/(double)Nr*(Rmax-Rmin) + Rmin;
+    //         if( r<1. ) phi = -phi;
+    r /= rescale;
+
+    glVertex3f( r*cos(phi)-xoff , r*sin(phi)-yoff , camdist + .0011 );
+    if( k%2==1 ){
+    glEnd();
+    glBegin(GL_LINE_LOOP);
+    }
+    }
+    glEnd();
+    */
+}
+
+void drawText(double RotationAngleX, double RotationAngleY,
+                    double RotationAngleZ, double camdist, double xoff,
+                    double yoff, double zoff)
+{
+    char tprint[256];
+    sprintf(tprint,"t = %.2e",t/2./M_PI);
+    glutPrint( -.6 , .5 , camdist + .001 , glutFonts[6] , tprint , 0.0f, 0.0f , 0.0f , 0.5f );
+    //    sprintf(tprint,"uMax = %.1f",uMax);
+    //    glutPrint( -.8 , .4 , camdist + .001 , glutFonts[6] , tprint , 0.0f, 0.0f , 0.0f , 0.5f );
+}
+
+void drawHelp(double RotationAngleX, double RotationAngleY,
+                    double RotationAngleZ, double camdist, double xoff,
+                    double yoff, double zoff)
+{
+    int NLines = 9;
+    double dy = -.04;
+    char help[NLines][256];
+    sprintf(help[0],"Help Display:");
+    sprintf(help[1],"b - Toggle Colorbar");
+    sprintf(help[2],"c - Change Colormap");
+    sprintf(help[3],"f - Toggle Max/Min Floors");
+    sprintf(help[4],"p - Toggle Planet Data");
+    sprintf(help[5],"1-9 - Choose Primitive Variable to Display");
+    sprintf(help[6],"wasd - Move Camera");
+    sprintf(help[7],"z/x - Zoom in/out");
+    sprintf(help[8],"h - Toggle Help Screen");
+    int i;
+    for( i=0 ; i<NLines ; ++i )
+    {
+        glutPrint( -.8 , i*dy , camdist + .001 , glutFonts[6] , help[i] , 
+                    0.0f, 0.0f , 0.0f , 0.5f );
+    }
+} 
+
+/* 
+ * The main drawing function. 
+ */
 void DrawGLScene(){
 
    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -337,396 +886,45 @@ void DrawGLScene(){
    double yoff    = offy;
    double zoff    = 0.0;
 
-   if( draw_1d ){
-      glColor3f(1.0,1.0,1.0);
-      glBegin(GL_QUADS);
-      glVertex3f(-1./rescale-xoff,-1./rescale-yoff, camdist + zoff );
-      glVertex3f( 1./rescale-xoff,-1./rescale-yoff, camdist + zoff );
-      glVertex3f( 1./rescale-xoff, 1./rescale-yoff, camdist + zoff );
-      glVertex3f(-1./rescale-xoff, 1./rescale-yoff, camdist + zoff );
-      glEnd();
-      glLineWidth( 3.0f );
-      glColor3f(0.0,0.0,0.0);
+   if( draw_1d )
+   {
+      draw1dBackground(RotationAngleX, RotationAngleY, RotationAngleZ,
+                        camdist, xoff, yoff, zoff, q);
       if(theRadialData != NULL)
-      {
-          glBegin( GL_LINE_STRIP );
-          int j;
-    //      for( j=0 ; j<Nr ; ++j ){
-          for( j=0 ; j<Nr ; ++j ){
-             //if(logscale) val = log(getval(theZones[i],q))/log(10.);
-             double rm = r_jph[j-1];
-             double rp = r_jph[j]; 
-             double val = theRadialData[j][q]/max_1d;//*pow(.5*(rp+rm),1.5);//2.*(theRadialData[j][q]-minval)/(maxval-minval) - 1.;//getval(theZones[i],q);
-             if( q==1 ) val *= 1e2;
-             val = 2.*val - 1.;
-             double c0 = 2.*((.5*(rp+rm)-r_jph[-1])/(r_jph[Nr-1]-r_jph[-1]) - .5)/rescale;
-             double c1 = val/rescale;
-             glVertex3f( c0-xoff, c1-yoff, camdist-zoff+.001 );
-          }    
-          glEnd();
-      }
-/*
-      glColor3f(0.5,0.5,0.5);
-      glBegin( GL_LINE_STRIP );
+         draw1dRadialData(RotationAngleX, RotationAngleY, RotationAngleZ,
+                            camdist, xoff, yoff, zoff, q);
+      if( draw_planet )
+         draw1dPlanet(RotationAngleX, RotationAngleY, RotationAngleZ,
+                            camdist, xoff, yoff, zoff, q);
+   }
+   else
+   {
+       drawData(RotationAngleX, RotationAngleY, RotationAngleZ,
+                        camdist, xoff, yoff, zoff, q);
 
-      for( j=0 ; j<Nr ; ++j ){
-         //if(logscale) val = log(getval(theZones[i],q))/log(10.);
-         double rm = r_jph[j-1];
-         double rp = r_jph[j];
-         double r = .5*(rp+rm); 
-         double val = pow(r,-1.5)/max_1d;// *pow(.5*(rp+rm),1.5);//2.*(theRadialData[j][q]-minval)/(maxval-minval) - 1.;//getval(theZones[i],q);         if( q==1 ) val *= 1e2;
-         val = 2.*val - 1.;
-         double c0 = 2.*((.5*(rp+rm)-r_jph[-1])/(r_jph[Nr-1]-r_jph[-1]) - .5)/rescale;                 double c1 = val/rescale;
-         glVertex3f( c0-xoff, c1-yoff, camdist-zoff+.001 );
-      }       
-      glEnd();
-*/
-      if( draw_planet ){
-         double eps = 0.01;
-         int p;
-         for( p=0 ; p<Npl ; ++p ){
-            double r   = thePlanets[p][0];
-            double x = 2.*(( r - r_jph[-1] )/( r_jph[Nr-1]-r_jph[-1] ) - .5)/rescale;
-            glColor3f(0.0,0.0,0.0);
-            glLineWidth(2.0);
-            glBegin(GL_LINE_LOOP);
-            glVertex3f( x-xoff+eps , 1./rescale-yoff+eps , camdist+.001 );
-            glVertex3f( x-xoff-eps , 1./rescale-yoff+eps , camdist+.001 );
-            glVertex3f( x-xoff-eps , 1./rescale-yoff-eps , camdist+.001 );
-            glVertex3f( x-xoff+eps , 1./rescale-yoff-eps , camdist+.001 );
-            glEnd();
-         }
-      }
+       if( draw_bar )
+          drawColorBar(RotationAngleX, RotationAngleY, RotationAngleZ, camdist,
+                    xoff, yoff, zoff, q);
 
-   }else{
-      int Num_Draws = 1+reflect+draw_border;
-      int count;
-      int i,j;
-      for( count = 0 ; count < Num_Draws ; ++count ){
-         int draw_border_now = 0;
-         int draw_reflected_now = 0;
-         if( count==reflect+1 ) draw_border_now = 1;
-         if( reflect && count==1 ) draw_reflected_now = 1;
-         if( draw_border_now ) zoff -= .0001;
-      for( j=0 ; j<Nr ; ++j ){
-         double rm = r_jph[j-1]/rescale;
-         double rp = r_jph[j]/rescale;
-         double rc = .5*(rp+rm);
-         double dr = rp-rm;
-      
-         if( !draw_border ){
-            rm = rc-.55*dr;
-            rp = rc+.55*dr;
-         }
-         for( i=0 ; i<Np[j] ; ++i ){
+       if( draw_planet )
+          drawPlanet(RotationAngleX, RotationAngleY, RotationAngleZ, camdist,
+                        xoff, yoff, zoff);
 
-            double phip = p_iph[j][i];
-            double phim;
-            if( i==0 ) phim = p_iph[j][Np[j]-1]; else phim = p_iph[j][i-1];
-            if( t_off && !p_off ){ phip -= t; phim -= t; }
-            if( p_off ){ phip -= thePlanets[1][1]; phim -= thePlanets[1][1]; }
-            double dp   = phip-phim;
-            while( dp < 0.0 ) dp += 2.*M_PI;
-            while( dp > 2.*M_PI ) dp -= 2.*M_PI;
-            double phi = phim + 0.5*dp;
-            if( !draw_border ){
-               phip = phi+.55*dp;
-               phim = phi-.55*dp;
-            }
-
-            double val = (getval(theZones[j][i],q)-minval)/(maxval-minval);
-            if(logscale) val = (log(getval(theZones[j][i],q))/log(10.)-minval)/(maxval-minval);
-            if( val > 1.0 ) val = 1.0;
-            if( val < 0.0 ) val = 0.0;
-            //double u = getval( theZones[j][i] , 2 );
-            //if( uMax < u ) uMax = u;
-
-            float rrr,ggg,bbb;
-            get_rgb( val , &rrr , &ggg , &bbb , cmap );
-
-            if( (!dim3d || (sin(phi)>0 || cos(phi+.25)<0.0)) && dim3d !=2 ){
-            //if( dp < 1.5 && (!dim3d || (sin(phi)>0 && cos(phi)>0.0)) && dim3d !=2 ){
-               if( !draw_border_now ){ 
-                  glColor3f( rrr , ggg , bbb );
-                  glBegin(GL_POLYGON);
-               }else{
-                  glLineWidth(3.0f);
-                  glColor3f(0.0,0.0,0.0);
-                  glBegin(GL_LINE_LOOP);
-               }
-
-               double z0 = 0.0;
-               if( dim3d ) z0 = z_kph[KK]/rescale;
-     
-               double c0 = rm*cos(phim);
-               double c1 = rm*sin(phim);
-               glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
-
-               int np = (int) (rp*(phip-phim) / (rp-rm)) + 1;
-               int nm = (int) (rm*(phip-phim) / (rp-rm)) + 1;
-
-               c0 = rp*cos(phim);
-               c1 = rp*sin(phim);
-               glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
-
-               int p;
-               for(p=1; p<np; p++)
-               {
-                   double ph = phim + (p*(phip-phim))/np;
-                   c0 = rp*cos(ph)/cos(dp/np);
-                   c1 = rp*sin(ph)/cos(dp/np);
-                   glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
-               }
-
-               //c0 = rp*cos(phi)/cos(.5*dp);
-               //c1 = rp*sin(phi)/cos(.5*dp);
-               //glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
-
-               c0 = rp*cos(phip);
-               c1 = rp*sin(phip);
-               glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
-
-               c0 = rm*cos(phip);
-               c1 = rm*sin(phip);
-               glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
-               
-               for(p=nm-1; p>0; p--)
-               {
-                   double ph = phim + (p*(phip-phim))/nm;
-                   c0 = rm*cos(ph);
-                   c1 = rm*sin(ph);
-                   glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
-               }
-
-               glEnd();
-            }
-         }
-         if( dim3d ){
-            int k;
-            for( k=0 ; k<Nz ; ++k ){
-               int jk;
-               if(ZRORDER)
-                  jk = k*Nr+j;
-               else
-                  jk = j*Nz+k;
-               double rp = r_jph[j]/rescale;
-               double rm = r_jph[j-1]/rescale;
-               double zp = z_kph[k]/rescale;
-               double zm = z_kph[k-1]/rescale;
-
-               double phi = 0.0;//rzZones[jk][Nq];
-
-            double val = (getval(rzZones[jk],q)-minval)/(maxval-minval);
-            if(logscale) val = (log(getval(rzZones[jk],q))/log(10.)-minval)/(maxval-minval);
-            if( val > 1.0 ) val = 1.0;
-            if( val < 0.0 ) val = 0.0;
-            float rrr,ggg,bbb;
-            get_rgb( val , &rrr , &ggg , &bbb , cmap );
-               if( !draw_border_now ){ 
-                  glColor3f( rrr , ggg , bbb );
-                  glBegin(GL_POLYGON);
-               }else{
-                  glLineWidth(2.0f);
-                  glColor3f(0.0,0.0,0.0);
-                  glBegin(GL_LINE_LOOP);
-               } 
-                  
-                  glVertex3f( rp*cos(phi) - xoff , rp*sin(phi) - yoff + zoff, zp );
-                  glVertex3f( rm*cos(phi) - xoff , rm*sin(phi) - yoff + zoff, zp );
-                  glVertex3f( rm*cos(phi) - xoff , rm*sin(phi) - yoff + zoff, zm );
-                  glVertex3f( rp*cos(phi) - xoff , rp*sin(phi) - yoff + zoff, zm );
-                  glEnd();
-            }
-            if( draw_border_now || dim3d == 1 ){
-               glLineWidth(2.0f);
-               glColor3f(0.0,0.0,0.0);
-               glBegin(GL_LINE_LOOP);
-
-               double rp = r_jph[Nr-1]/rescale;
-               //double rm =-r_jph[Nr-1]/rescale;
-               double rm = r_jph[-1]/rescale;
-               double zp = z_kph[Nz-1]/rescale;
-               double zm = z_kph[  -1]/rescale;
-
-               glVertex3f( rp-xoff , -yoff+zoff , zp );
-               glVertex3f( rm-xoff , -yoff+zoff , zp );
-               glVertex3f( rm-xoff , -yoff+zoff , zm );
-               glVertex3f( rp-xoff , -yoff+zoff , zm );
-               glEnd();
-            }
-         }
-      }
+       if( draw_spiral )
+          drawSpiral(RotationAngleX, RotationAngleY, RotationAngleZ, camdist,
+                        xoff, yoff, zoff);
    }
 
+   if( draw_t )
+       drawText(RotationAngleX, RotationAngleY, RotationAngleZ, camdist,
+                        xoff, yoff, zoff);
 
-   if( draw_bar ){
-      glRotatef(-RotationAngleZ, 0, 0, 1);
-      glRotatef(-RotationAngleY, 0, 1, 0);
-      glRotatef(-RotationAngleX, 1, 0, 0);
-      double xb = 0.6;
-      double hb = 1.0;
-      double wb = 0.02;
-      int Nb = 1000;
-      double dy = hb/(double)Nb;
-      int k;
-      for( k=0 ; k<Nb ; ++k ){
-         double y = (double)k*dy - .5*hb;
-         double val = (double)k/(double)Nb;
-         float rrr,ggg,bbb;
-         get_rgb( val , &rrr , &ggg , &bbb , cmap );
-         glLineWidth(0.0f);
-         glColor3f( rrr , ggg , bbb );
-         glBegin(GL_POLYGON);
-         glVertex3f( xb    , y    , camdist + .001 ); 
-         glVertex3f( xb+wb , y    , camdist + .001 ); 
-         glVertex3f( xb+wb , y+dy , camdist + .001 ); 
-         glVertex3f( xb    , y+dy , camdist + .001 ); 
-         glEnd();
-      }
-      int Nv = 8;
-      for( k=0 ; k<Nv ; ++k ){
-         double y = (double)k*hb/(double)(Nv-1) - .5*hb;
-         double val = (double)k/(double)(Nv-1)*(maxval-minval) + minval;
-         char valname[256];
-         sprintf(valname,"%+.2e",val);
-         glLineWidth(1.0f);
-         glColor3f(0.0,0.0,0.0);
-         glBegin(GL_LINE_LOOP);
-         glVertex3f( xb    , y , camdist + .0011 );
-         glVertex3f( xb+wb , y , camdist + .0011 );
-         glEnd();
-         glutPrint( xb+1.5*wb , y-.007 , camdist + .001 ,glutFonts[6] , valname , 0.0f, 0.0f , 0.0f , 0.5f );
-      }
+   if( help_screen )
+       drawHelp(RotationAngleX, RotationAngleY, RotationAngleZ, camdist,
+                        xoff, yoff, zoff);
 
-      glRotatef(RotationAngleX, 1, 0, 0);
-      glRotatef(RotationAngleY, 0, 1, 0);
-      glRotatef(RotationAngleZ, 0, 0, 1);
-   } 
-
-   if( draw_planet ){
-      glRotatef(-RotationAngleZ, 0, 0, 1);
-      glRotatef(-RotationAngleY, 0, 1, 0);
-      glRotatef(-RotationAngleX, 1, 0, 0);
-      double eps = 0.01;
-      int p;
-      for( p=0 ; p<Npl ; ++p ){
-         double r   = thePlanets[p][0]/rescale;
-         double phi = thePlanets[p][1];
-         if( t_off && !p_off ) phi -= t;
-         if( p_off ) phi -= thePlanets[1][1];
-         glColor3f(0.0,0.0,0.0);
-         glLineWidth(2.0);
-         glBegin(GL_LINE_LOOP);
-         glVertex3f( r*cos(phi)-xoff+eps , r*sin(phi)-yoff+eps , camdist+.001 );
-         glVertex3f( r*cos(phi)-xoff-eps , r*sin(phi)-yoff+eps , camdist+.001 );
-         glVertex3f( r*cos(phi)-xoff-eps , r*sin(phi)-yoff-eps , camdist+.001 );
-         glVertex3f( r*cos(phi)-xoff+eps , r*sin(phi)-yoff-eps , camdist+.001 );
-         glEnd();
-      }
-      glRotatef(RotationAngleX, 1, 0, 0);
-      glRotatef(RotationAngleY, 0, 1, 0);
-      glRotatef(RotationAngleZ, 0, 0, 1);
-   }
-
-   if( draw_spiral ){
-
-      double rp   = 5.0;//thePlanets[1][0];
-      double Mach = 3.65;
-      double p0 = 1.2;
-      double dr = .07;
-      int Nr = 200;
-      double Rmin = 0.5;
-      double Rmax = 1.1;
-      int k;
-      glLineWidth(3.0f);
-      glColor3f(0.0,0.0,0.0);
-      //glColor3f(1.0,1.0,1.0);
-      glBegin(GL_LINE_LOOP);
-      for( k=0 ; k<Nr ; ++k ){
-         //double phi0 = ((double)k+.5)/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
-         double x = ((double)k+.5)/(double)Nr;
-         double r = .001*pow(.5/.001,x);
-         //double r = .5*pow(1.5/.5,x);
-         double phi0 = p0-log(r/0.001)*Mach;//(3.-2.*sqrt(1./r)-r)*5.;
-         //double phi0 = (3.-2.*sqrt(1./r)-r)*20.;
-         //if( r<1. ) phi0 = -phi0;
-
-//         double x0 = rp + dr*cos(phi0);
-//         double y0 = dr*sin(phi0);
-  
-         double phi = phi0;
-//         double r = rp;       
-
-//         double phi = atan2(y0,x0);
-//         double phi = ((double)k+.5)/(double)Nr*2.*M_PI*9.32 + 4.*M_PI;
-//         double r   = sqrt(x0*x0+y0*y0);
-//         double r = pow(phi/10.,-2.);
-//         double r   = 2./(1.+sin(phi));//1.0;//((double)k+0.5)/(double)Nr*(Rmax-Rmin) + Rmin;
-//         if( r<1. ) phi = -phi;
-         r /= rescale;
-         
-         glVertex3f( r*cos(phi)-xoff , r*sin(phi)-yoff , camdist + .0011 );
-         if( k%2==1 ){
-            glEnd();
-            glBegin(GL_LINE_LOOP);
-         }
-      }
-      glEnd();
-
-
-/*
-      e += 0.01;
-      glBegin(GL_LINE_LOOP);
-      for( k=0 ; k<Nr ; ++k ){
-         double phi0 = ((double)k-.5)/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
-         double x0 = 1.+e*cos(phi0);
-         double y0 = e*sin(phi0);
-         
-         double phi = atan2(y0,x0);
-         double r   = sqrt(x0*x0+y0*y0);
-//         double phi = (double)k/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
-//         double r   = 2./(1.+sin(phi));//1.0;//((double)k+0.5)/(double)Nr*(Rmax-Rmin) + Rmin;
-//         if( r<1. ) phi = -phi;
-         r /= rescale;
-         
-         glVertex3f( r*cos(phi)-xoff , r*sin(phi)-yoff , camdist + .0011 );
-         if( k%2==1 ){
-            glEnd();
-            glBegin(GL_LINE_LOOP);
-         }
-      }
-      glEnd();
-*/
-   }
-   }
-
-   if( draw_t ){
-      char tprint[256];
-      sprintf(tprint,"t = %.2e",t/2./M_PI);
-      glutPrint( -.6 , .5 , camdist + .001 , glutFonts[6] , tprint , 0.0f, 0.0f , 0.0f , 0.5f );
-  //    sprintf(tprint,"uMax = %.1f",uMax);
-  //    glutPrint( -.8 , .4 , camdist + .001 , glutFonts[6] , tprint , 0.0f, 0.0f , 0.0f , 0.5f );
-   }
-   if( help_screen ){
-      int NLines = 9;
-      double dy = -.04;
-      char help[NLines][256];
-      sprintf(help[0],"Help Display:");
-      sprintf(help[1],"b - Toggle Colorbar");
-      sprintf(help[2],"c - Change Colormap");
-      sprintf(help[3],"f - Toggle Max/Min Floors");
-      sprintf(help[4],"p - Toggle Planet Data");
-      sprintf(help[5],"1-9 - Choose Primitive Variable to Display");
-      sprintf(help[6],"wasd - Move Camera");
-      sprintf(help[7],"z/x - Zoom in/out");
-      sprintf(help[8],"h - Toggle Help Screen");
-      int i;
-      for( i=0 ; i<NLines ; ++i ){
-         glutPrint( -.8 , i*dy , camdist + .001 , glutFonts[6] , help[i] , 0.0f, 0.0f , 0.0f , 0.5f );
-      }
-   } 
-
-   if( CommandMode ){
+   if( CommandMode )
+   {
       TakeScreenshot("out.ppm");
       exit(1);
    }
@@ -761,7 +959,6 @@ void keyPressed(unsigned char key, int x, int y)
    if( key == 'g' ) draw_border = !draw_border;
    if( key == 'h' ) help_screen = !help_screen;
    if( key == 'l' ) logscale = !logscale;
-   if( key == 'r' ) reflect = !reflect;
    if( key == 's' ) draw_scale = !draw_scale;
    if( key == 't' ) draw_t = !draw_t;
    if( key == 'u' ) draw_1d = !draw_1d;
@@ -902,8 +1099,12 @@ void loadGrid(char *filename)
 {
    char group1[256];
    char group2[256];
+   char group3[256];
+   char group4[256];
    strcpy( group1 , "Grid" );
    strcpy( group2 , "Data" );
+   strcpy( group3 , "Pars" );
+   strcpy( group4 , "Opts" );
 
    hsize_t dims[3];
    
@@ -921,9 +1122,24 @@ void loadGrid(char *filename)
 
    readSimple( filename , group1 , (char *)"r_jph" , r_jph , H5T_NATIVE_DOUBLE );
    readSimple( filename , group1 , (char *)"z_kph" , z_kph , H5T_NATIVE_DOUBLE );
-
    r_jph++;
    z_kph++;
+
+   readSimple( filename , group3 , (char *)"Phi_Max", &phimax, 
+                    H5T_NATIVE_DOUBLE);
+
+   char buf[256];
+
+   readString(filename, group4, (char *)"GEOMETRY", buf, 256);
+
+   printf("Geometry is: %s\n", buf);
+   printf("%lu %d %d\n", strlen(buf), strcmp(buf,"cartesian"), 
+                            strcmp(buf,"cylindrical"));
+
+   if(strcmp(buf, "cylindrical") == 0)
+      geometry = 1;
+   else
+      geometry = 0;
 
    int start[2]    = {0,0};
    int loc_size[2] = {Nz,Nr};
@@ -989,10 +1205,8 @@ void loadSliceZ(char *filename, int k)
 {
    char group1[256];
    char group2[256];
-   char group3[256];
    strcpy( group1 , "Grid" );
    strcpy( group2 , "Data" );
-   strcpy( group3 , "Pars" );
 
    int Tindex[Nr];
 
@@ -1044,7 +1258,6 @@ void loadSliceZ(char *filename, int k)
    printf("  Allocated,");
 
    //Load data
-   readPatch(); 
 
    int start[2]    = {0,0};
    int loc_size[2] = {0,Nq+1};

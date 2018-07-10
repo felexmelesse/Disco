@@ -9,15 +9,15 @@ void setGeometryParams( struct domain * theDomain ){
 
 double get_dp( double yp , double ym ){
     double dy = yp-ym;
-    while( dy < 0.0 ) dp += y_max;
-    while( dy > y_max) dp -= y_max;
+    while( dy < 0.0 ) dy += y_max;
+    while( dy > y_max) dy -= y_max;
     return(dy);
 }
 
 double get_signed_dp( double yp , double ym ){
     double dy = yp-ym;
-    while( dy <-.5*y_max ) dp += y_max;
-    while( dy > .5*y_max ) dp -= y_max;
+    while( dy <-.5*y_max ) dy += y_max;
+    while( dy > .5*y_max ) dy -= y_max;
     return(dy);
 }
 
@@ -77,7 +77,7 @@ void get_xyz(double *x, double *xyz)
 void get_rpz(double *x, double *rpz)
 {
     rpz[0] = sqrt(x[0]*x[0]+x[1]*x[1]);
-    rpz[1] = atan2(x[1]/x[0]);
+    rpz[1] = atan2(x[1],x[0]);
     rpz[2] = x[2];
 }
 

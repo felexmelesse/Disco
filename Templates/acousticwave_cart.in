@@ -4,9 +4,9 @@
 
 # Build options
 INITIAL  = acousticwave
-HYDRO    = euler
-GEOMETRY = cylindrical
-BOUNDARY = fixed
+HYDRO    = euler_cart
+GEOMETRY = cartesian
+BOUNDARY = fixed3d
 OUTPUT   = h5out
 RESTART  = h5in
 PLANETS  = none

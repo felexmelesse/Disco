@@ -115,6 +115,10 @@ void writeOpts(struct domain *theDomain, char filename[])
     buf[255] = '\0';
     dumpVal(filename, "Opts", "HYDRO", buf2, strtype);
     
+    strncpy(buf, GEOMETRY, 256);
+    buf[255] = '\0';
+    dumpVal(filename, "Opts", "GEOMETRY", buf2, strtype);
+    
     strncpy(buf, BOUNDARY, 256);
     buf[255] = '\0';
     dumpVal(filename, "Opts", "BOUNDARY", buf2, strtype);
@@ -464,7 +468,6 @@ void output( struct domain * theDomain , char * filestart ){
    int * Id_phi0 = (int *) malloc( jSize*kSize*sizeof(int) );
    double * diagRZwrite = (double *) malloc( jSize*kSize*Ntools*sizeof(double) );
    double * Qwrite = (double *) malloc( myNtot*Ndoub*sizeof(double) );
-   printf("Qwrite address: %p\n", (void *) Qwrite);
 
    double *Qrz = theDomain->theTools.Qrz;
 
@@ -482,7 +485,6 @@ void output( struct domain * theDomain , char * filestart ){
          double phi0 = M_PI;
          int Id = 0;
          int i;
-         printf("%d %d %d %d\n", j, k, j+Nr*k, jk);
          for( i=0 ; i<Np[j+Nr*k] ; ++i ){
             struct cell * c = &(theCells[j+Nr*k][i]);
             Cell2Doub( c , Qwrite+index*Ndoub , 1 );
@@ -515,7 +517,6 @@ void output( struct domain * theDomain , char * filestart ){
          int start2[2]    = {runningTot,0};
          int loc_size2[2] = {myNtot,Ndoub};
          int glo_size2[2] = {Ntot,Ndoub};
-         printf("%d %d %d %d\n", runningTot, myNtot, Ntot, Ndoub);
          writePatch( filename , "Data" , "Cells" , Qwrite , H5T_NATIVE_DOUBLE , 2 , start2 , loc_size2 , glo_size2 );
          //Write Indices and Sizes for each radial track
          start2[0] = k0;
@@ -524,7 +525,6 @@ void output( struct domain * theDomain , char * filestart ){
          loc_size2[1] = jSize;
          glo_size2[0] = Nz_Tot;
          glo_size2[1] = Nr_Tot;
-         printf("%d %d %d %d %d %d %d %d\n", k0, j0, kSize, jSize, Nz_Tot, Nr_Tot, Nz, Nr);
          writePatch( filename , "Grid" , "Index"   , Index   , H5T_NATIVE_INT , 2 , start2 , loc_size2 , glo_size2 );
          writePatch( filename , "Grid" , "Np"      , Size    , H5T_NATIVE_INT , 2 , start2 , loc_size2 , glo_size2 );
          writePatch( filename , "Grid" , "Id_phi0" , Id_phi0 , H5T_NATIVE_INT , 2 , start2 , loc_size2 , glo_size2 );

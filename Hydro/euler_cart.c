@@ -74,7 +74,7 @@ void getUstar( double * prim , double * Ustar , double * x , double Sk , double 
 
    double vn = vr*n[0] + vp*n[1] + vz*n[2];
 
-   double vn_off = vn - om*r*n[1];
+   double vn_off = vn - om*n[1];
    double Ss_off = Ss + vn_off - vn;
 
    double rhoe = Pp/(gamma_law - 1.);
@@ -145,7 +145,7 @@ void flux( double * prim , double * flux , double * x , double * n ){
 
    double vn = vr*n[0] + vp*n[1] + vz*n[2];
    double wn = om*n[1];
-   double vp_off = vp - om*r;
+   double vp_off = vp - om;
 
    double rhoe = Pp/(gamma_law - 1.);
    double v2 = vr*vr + vp_off*vp_off + vz*vz;

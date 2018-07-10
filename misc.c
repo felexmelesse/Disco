@@ -385,16 +385,8 @@ void phi_flux( struct domain * theDomain , double dt ){
          int jk = j+Nr*k;
          struct cell * cp = theCells[jk];
 
-         printf("Phi Flux j:%d k:%d jk:%d Np:%d\n", j, k, jk, Np[jk]);
-
          for( i=0 ; i<Np[jk] ; ++i ){
-             /*
-             if(j==0)
-                 printf("    i:%d %lf %lf %lf %lf %lf\n", i,cp[i].prim[RHO],
-                            cp[i].prim[PPP],cp[i].prim[URR],cp[i].prim[UPP],
-                            cp[i].prim[UZZ]);
-                            */
-            int ip = (i+1)%Np[jk];
+            int ip = i<Np[jk]-1 ? i+1 : 0;
             double phi = cp[i].piph;
             double xp[3] = {rp, phi, zp};
             double xm[3] = {rm, phi, zm};
