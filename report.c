@@ -191,7 +191,6 @@ void report( struct domain * theDomain ){
    double bM = PdV/B2;
 
    if( rank==0 ){
-       /*
       FILE * rFile = fopen("report.dat","a");
       fprintf(rFile,"%le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le\n",
                 t,Torque,Power,Fr,rho_min,rhoavg_min,PsiR,PsiI,Mass,Mdot,S_R,
@@ -200,7 +199,6 @@ void report( struct domain * theDomain ){
       //for( j=0 ; j<10 ; ++j ) fprintf(rFile,"%e %e ",T_cut[j],P_cut[j]);
       //fprintf(rFile,"\n");
       fclose(rFile);
-      */
    }
 
 }

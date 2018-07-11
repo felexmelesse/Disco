@@ -137,3 +137,37 @@ void get_vec_from_xyz(double *x, double *vxyz, double *v)
     v[1] = -sp*vxyz[0] + cp*vxyz[1];
     v[2] = vxyz[2];
 }
+
+void geom_grad(double *prim, double *grad, double *xp, double *xm, 
+                double PLM, int dim, int LR)
+{
+    if(dim !=1 || LR != 0)
+    {
+        printf("Geometric gradient called on non-geometric boundary\n");
+        printf("--Cylindrical setup only has geometric boundary at r=0.\n");
+        return;
+    }
+    if(xp[0] < 0.0 || fabs(xm[0]) > 1.0e-10*xp[0])
+    {
+        printf("Geometric gradient called on cell with rm = %.le (!= 0)\n",
+                xm[0]);
+        return;
+    }
+
+    int q;
+    double r = get_centroid(xp[0], xm[0], 1);
+    for(q = 0; q<NUM_Q; q++)
+    {
+        if(q == URR || (NUM_C>BZZ && q==BRR))
+        {
+            double SL = prim[q]/r;
+            double S = grad[q];
+            if( S*SL < 0.0 )
+                grad[q] = 0.0; 
+            else if( fabs(PLM*SL) < fabs(S) )
+                grad[q] = PLM*SL;
+        }
+        else
+            grad[q] = 0.0;
+    }
+}

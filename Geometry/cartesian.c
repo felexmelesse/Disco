@@ -127,3 +127,11 @@ void get_vec_from_xyz(double *x, double *vxyz, double *v)
     v[1] = vxyz[1];
     v[2] = vxyz[2];
 }
+
+void geom_grad(double *prim, double *grad, double *xp, double *xm, 
+                double PLM, int dim, int LR)
+{
+    printf("Geometric gradient called on non-geometric boundary.\n");
+    printf("--Cartesian setup has NO geometric boundaries.\n");
+    return;
+}

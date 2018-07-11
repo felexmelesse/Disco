@@ -12,7 +12,6 @@ static double explicit_viscosity = 0.0;
 static int include_viscosity = 0;
 static int isothermal = 0;
 static int alpha_flag = 0;
-static int polar_sources = 0;
 
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;

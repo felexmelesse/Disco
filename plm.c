@@ -52,6 +52,10 @@ void plm_phi( struct domain * theDomain ){
 
 double get_dA( double * , double * , int );
 double get_centroid(double , double , int );
+void geom_grad(double *prim, double *grad, double *xp, double *xm, 
+                double PLM, int dim, int LR);
+void plm_geom_boundary(struct domain *theDomain, int jmin, int jmax, int kmin,
+                        int kmax, int dim, int LR);
 
 void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , int dim ){
 
@@ -62,7 +66,6 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
    double PLM = theDomain->theParList.PLM;
-   int *dim_rank = theDomain->dim_rank;
    
    int i,j,k,q;
 
@@ -163,35 +166,52 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
       }    
    }
 
-   if(dim == 1 && dim_rank[0] == 0 && strcmp(BOUNDARY, "polar") == 0)
-   {
-       // Reflecting boundary at r=0
-       j = 0;
-       double r = get_centroid(r_jph[j], r_jph[j-1], 1);
-       for(k=0; k<Nz; k++)
+   // Geometric boundaries don't have ghost zones, so the gradients there need
+   // to be fixed.  
+   
+   if(dim == 1 && theDomain->NgRa == 0)
+      plm_geom_boundary(theDomain, 0, 0, 0, Nz-1, dim, 0);
+
+   if(dim == 1 && theDomain->NgRb == 0)
+      plm_geom_boundary(theDomain, Nr-1, Nr-1, 0, Nz-1, dim, 1);
+
+   if(dim == 2 && theDomain->NgZa == 0)
+      plm_geom_boundary(theDomain, 0, Nr-1, 0, 0, dim, 0);
+
+   if(dim == 2 && theDomain->NgZb == 0)
+      plm_geom_boundary(theDomain, 0, Nr-1, Nz-1, Nz-1, dim, 1);
+}
+
+void plm_geom_boundary(struct domain *theDomain, int jmin, int jmax, 
+                        int kmin, int kmax, int dim, int LR)
+{
+    struct cell ** theCells = theDomain->theCells;
+    int Nr = theDomain->Nr;
+    int * Np = theDomain->Np;
+    double * r_jph = theDomain->r_jph;
+    double * z_kph = theDomain->z_kph;
+    double PLM = theDomain->theParList.PLM;
+
+    int i,j,k;
+
+    double xp[3], xm[3];
+    for(k=kmin; k<=kmax; k++)
+    {
+       xp[2] = z_kph[k];
+       xm[2] = z_kph[k-1];
+       for(j=jmin; j<=jmax; j++)
        {
            int jk = j+Nr*k;
+           xp[0] = r_jph[j];
+           xm[0] = r_jph[j-1];
            for(i=0; i < Np[jk]; i++)
            {
                struct cell * c = &(theCells[jk][i]);
+               xp[1] = c->piph;
+               xm[1] = c->piph - c->dphi;
 
-               for(q = 0; q<NUM_Q; q++)
-               {
-                   if(q == URR || (NUM_C>BZZ && q==BRR))
-                   {
-                       double SL = c->prim[q]/r;
-                       double S = c->grad[q];
-                       if( S*SL < 0.0 )
-                          c->grad[q] = 0.0; 
-                       else if( fabs(PLM*SL) < fabs(S) )
-                          c->grad[q] = PLM*SL;
-                   }
-                   else
-                      c->grad[q] = 0.0;
-               }
+               geom_grad(c->prim, c->grad, xp, xm, PLM, dim, LR); 
            }
        }
-   }
+    }
 }
-
-
