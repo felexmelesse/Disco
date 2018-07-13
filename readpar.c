@@ -62,6 +62,7 @@ int read_par_file( struct domain * theDomain ){
 
    int tTimes_2pi;
    int pTimes_2pi;
+   int zTimes_pi = 0;
 
    int nrank;
    for( nrank=0 ; nrank<size ; ++nrank ){
@@ -115,6 +116,7 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Include_Atmos"         , VAR_INT  , &(theList->include_atmos)   );
          err += readvar( pfile , "T_Times_2pi"           , VAR_INT  , &tTimes_2pi );
          err += readvar( pfile , "P_Times_2pi"           , VAR_INT  , &pTimes_2pi );
+         err += readvar( pfile , "Z_Times_pi"           , VAR_INT  , &zTimes_pi );
          err += readvar( pfile , "Mach_Number"           , VAR_DOUB , &(theList->Disk_Mach)       );
          err += readvar( pfile , "Mass_Ratio"            , VAR_DOUB , &(theList->Mass_Ratio)      );
          err += readvar( pfile , "Eccentricity"          , VAR_DOUB , &(theList->Eccentricity)    );
@@ -151,6 +153,10 @@ int read_par_file( struct domain * theDomain ){
    }
    if( pTimes_2pi ){
       theList->phimax *= 2.*M_PI;
+   }
+   if( zTimes_pi ){
+      theList->zmin *= M_PI;
+      theList->zmax *= M_PI;
    }
 
    int errtot;

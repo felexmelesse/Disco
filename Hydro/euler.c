@@ -22,7 +22,7 @@ void setHydroParams( struct domain * theDomain ){
    explicit_viscosity = theDomain->theParList.viscosity;
    include_viscosity = theDomain->theParList.visc_flag;
    alpha_flag = theDomain->theParList.alpha_flag;
-   if(strcmp(BOUNDARY, "polar") == 0)
+   if(theDomain->NgRa == 0)
        polar_sources = 1;
 }
 

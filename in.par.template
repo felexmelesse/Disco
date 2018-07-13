@@ -28,6 +28,7 @@ Z_Max			10.0  //0.0625
 Z_Periodic		0
 Phi_Max			1.0
 P_Times_2pi		1
+Z_Times_pi      0
 Log_Zoning		0	//0=Uniform, 1=Log, 2=Hybrid
 Log_Radius		0.1	//Only for option 2 of Log_Zoning
 

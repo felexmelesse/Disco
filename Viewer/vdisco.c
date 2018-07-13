@@ -455,6 +455,55 @@ void drawZCell(double x1p, double x1m, double x2p, double x2m, double x3,
             glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
         }
     }
+    else if(geometry == 2)
+    {
+        double rp = x1p/rescale;
+        double rm = x1m/rescale;
+        double phip = x2p;
+        double phim = x2m;
+        double sinth = sin(x3);
+        double costh = cos(x3);
+        double dp = phip-phim;
+
+        double c0 = rm*sinth*cos(phim);
+        double c1 = rm*sinth*sin(phim);
+        double c2 = rm*costh;
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff );
+
+        int np = (int) (rp*(phip-phim) / (rp-rm)) + 1;
+        int nm = (int) (rm*(phip-phim) / (rp-rm)) + 1;
+
+        c0 = rp*sinth*cos(phim);
+        c1 = rp*sinth*sin(phim);
+        c2 = rp*costh;
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff );
+
+        int p;
+        for(p=1; p<np; p++)
+        {
+            double ph = phim + (p*(phip-phim))/np;
+            c0 = rp*sinth*cos(ph)/cos(dp/np);
+            c1 = rp*sinth*sin(ph)/cos(dp/np);
+            glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+        }
+
+        c0 = rp*sinth*cos(phip);
+        c1 = rp*sinth*sin(phip);
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+
+        c0 = rm*sinth*cos(phip);
+        c1 = rm*sinth*sin(phip);
+        c2 = rm*costh;
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+
+        for(p=nm-1; p>0; p--)
+        {
+            double ph = phim + (p*(phip-phim))/nm;
+            c0 = rm*sinth*cos(ph);
+            c1 = rm*sinth*sin(ph);
+            glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+        }
+    }
     else
     {
         double xm = x1m/rescale;
@@ -466,6 +515,89 @@ void drawZCell(double x1p, double x1m, double x2p, double x2m, double x3,
         glVertex3f( xp-xoff, ym-yoff, camdist-zoff+z );
         glVertex3f( xp-xoff, yp-yoff, camdist-zoff+z );
         glVertex3f( xm-xoff, yp-yoff, camdist-zoff+z );
+    }
+}
+
+void drawPhiCell(double x1p, double x1m, double x3p, double x3m, double x2,
+                    double camdist, double xoff, double yoff, double zoff)
+{
+    if(geometry == 1)
+    {
+        double cp = cos(x2);
+        double sp = sin(x2);
+        double rm = x1m/rescale;
+        double rp = x1p/rescale;
+        double zm = x3m/rescale;
+        double zp = x3p/rescale;
+
+        glVertex3f( rm*cp-xoff, rm*sp-yoff, camdist-zoff+zm );
+        glVertex3f( rp*cp-xoff, rp*sp-yoff, camdist-zoff+zm );
+        glVertex3f( rp*cp-xoff, rp*sp-yoff, camdist-zoff+zp );
+        glVertex3f( rm*cp-xoff, rm*sp-yoff, camdist-zoff+zp );
+    }
+    else if(geometry == 2)
+    {
+        double rp = x1p/rescale;
+        double rm = x1m/rescale;
+        double thp = x3p;
+        double thm = x3m;
+        double sinp = sin(x2);
+        double cosp = cos(x2);
+        double dth = thp-thm;
+
+        double c0 = rm*sin(thm)*cosp;
+        double c1 = rm*sin(thm)*sinp;
+        double c2 = rm*cos(thm);
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff );
+
+        int np = (int) (rp*(thp-thm) / (rp-rm)) + 1;
+        int nm = (int) (rm*(thp-thm) / (rp-rm)) + 1;
+
+        c0 = rp*sin(thm)*cosp;
+        c1 = rp*sin(thm)*sinp;
+        c2 = rp*cos(thm);
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff );
+
+        int p;
+        for(p=1; p<np; p++)
+        {
+            double th = thm + (p*(thp-thm))/np;
+            c0 = rp*sin(th)*cosp/cos(dth/np);
+            c1 = rp*sin(th)*sinp/cos(dth/np);
+            c2 = rp*cos(th);
+            glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+        }
+
+        c0 = rp*sin(thp)*cosp;
+        c1 = rp*sin(thp)*sinp;
+        c2 = rp*cos(thp);
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+
+        c0 = rm*sin(thp)*cosp;
+        c1 = rm*sin(thp)*sinp;
+        c2 = rm*cos(thp);
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+
+        for(p=nm-1; p>0; p--)
+        {
+            double th = thm + (p*(thp-thm))/nm;
+            c0 = rm*sin(th)*cosp;
+            c1 = rm*sin(th)*sinp;
+            c2 = rp*cos(th);
+            glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+        }
+    }
+    else
+    {
+        double xm = x1m/rescale;
+        double xp = x1p/rescale;
+        double zm = x3m/rescale;
+        double zp = x3p/rescale;
+        double y = x2/rescale;
+        glVertex3f( xm-xoff, y-yoff, camdist-zoff+zm );
+        glVertex3f( xp-xoff, y-yoff, camdist-zoff+zm );
+        glVertex3f( xp-xoff, y-yoff, camdist-zoff+zp );
+        glVertex3f( xm-xoff, y-yoff, camdist-zoff+zp );
     }
 }
 
@@ -548,7 +680,7 @@ void drawZSlice(double camdist, double xoff, double yoff, double zoff, int q,
                 }
 
                 double z0 = 0.0;
-                if( dim3d ) 
+                //if( dim3d ) 
                     z0 = z_kph[KK];
 
                 drawZCell(rp, rm, phip, phim, z0, camdist, xoff, yoff, zoff);
@@ -578,14 +710,12 @@ void drawPhiSlice(double camdist, double xoff, double yoff, double zoff, int q,
                 jk = k*Nr+j;
             else
                 jk = j*Nz+k;
-            double rp = r_jph[j]/rescale;
-            double rm = r_jph[j-1]/rescale;
-            double zp = z_kph[k]/rescale;
-            double zm = z_kph[k-1]/rescale;
+            double rp = r_jph[j];
+            double rm = r_jph[j-1];
+            double zp = z_kph[k];
+            double zm = z_kph[k-1];
 
             double phi = 0.0;//rzZones[jk][Nq];
-            double sphi = sin(phi);
-            double cphi = cos(phi);
 
             double val = (getval(rzZones[jk],q)-minval)/(maxval-minval);
             if(logscale)
@@ -609,10 +739,7 @@ void drawPhiSlice(double camdist, double xoff, double yoff, double zoff, int q,
                 glBegin(GL_LINE_LOOP);
             } 
                   
-            glVertex3f( rp*cphi - xoff, rp*sphi - yoff + zoff, zp );
-            glVertex3f( rm*cphi - xoff, rm*sphi - yoff + zoff, zp );
-            glVertex3f( rm*cphi - xoff, rm*sphi - yoff + zoff, zm );
-            glVertex3f( rp*cphi - xoff, rp*sphi - yoff + zoff, zm );
+            drawPhiCell(rp, rm, zp, zm, phi, camdist, xoff, yoff, zoff);
             glEnd();
         }
 
@@ -622,16 +749,14 @@ void drawPhiSlice(double camdist, double xoff, double yoff, double zoff, int q,
             glColor3f(0.0,0.0,0.0);
             glBegin(GL_LINE_LOOP);
 
-            double rp = r_jph[Nr-1]/rescale;
-            //double rm =-r_jph[Nr-1]/rescale;
-            double rm = r_jph[-1]/rescale;
-            double zp = z_kph[Nz-1]/rescale;
-            double zm = z_kph[  -1]/rescale;
-
-            glVertex3f( rp-xoff , -yoff+zoff , zp );
-            glVertex3f( rm-xoff , -yoff+zoff , zp );
-            glVertex3f( rm-xoff , -yoff+zoff , zm );
-            glVertex3f( rp-xoff , -yoff+zoff , zm );
+            double rp = r_jph[Nr-1];
+            //double rm =-r_jph[Nr-1];
+            double rm = r_jph[-1];
+            double zp = z_kph[Nz-1];
+            double zm = z_kph[  -1];
+            
+            double phi = 0.0;
+            drawPhiCell(rp, rm, zp, zm, phi, 0.0, xoff, yoff, zoff);
             glEnd();
         }
     }
@@ -994,7 +1119,13 @@ void keyPressed(unsigned char key, int x, int y)
    if( key == 'q' )
    {
        if(KK == Nz-1)
+           KK = 0;
+       else if(KK == 0)
+           KK = Nz/4;
+       else if(KK == Nz/4)
            KK = Nz/2;
+       else if(KK == Nz/2)
+           KK = 3*Nz/4;
        else
            KK = Nz - 1;
        loadSliceZ(filename, KK);
@@ -1138,6 +1269,8 @@ void loadGrid(char *filename)
 
    if(strcmp(buf, "cylindrical") == 0)
       geometry = 1;
+   if(strcmp(buf, "spherical") == 0)
+      geometry = 2;
    else
       geometry = 0;
 
@@ -1210,19 +1343,12 @@ void loadSliceZ(char *filename, int k)
 
    int Tindex[Nr];
 
+   printf("Loading Z slice...\n");
+
    printf("Zones:");
 
-   //Grab zone indices
-   int i,j;
-   for( j=0 ; j<Nr ; ++j ){
-      int jk = k*Nr+j;
-      if(!ZRORDER)
-          jk = j*Nz+k;
-      Np[j]     = Np_All[jk];
-      Tindex[j] = Tindex_All[jk];
-   }
-
    //Free arrays if already allocated
+   int i,j;
    if(theZones != NULL)
    {
        for( j=0 ; j<Nr ; ++j )
@@ -1238,6 +1364,15 @@ void loadSliceZ(char *filename, int k)
        for( j=0 ; j<Nr ; ++j )
            free(p_iph[j]);
        free(p_iph);
+   }
+
+   //Grab zone indices
+   for( j=0 ; j<Nr ; ++j ){
+      int jk = k*Nr+j;
+      if(!ZRORDER)
+          jk = j*Nz+k;
+      Np[j]     = Np_All[jk];
+      Tindex[j] = Tindex_All[jk];
    }
 
    //Allocate arrays
@@ -1282,6 +1417,8 @@ void loadSliceZ(char *filename, int k)
 
 void loadSlicePhi(char *filename)
 {
+    printf("Loading Phi slice...\n");
+    
     int j,k;
     char group2[256];
     strcpy( group2 , "Data" );
@@ -1403,7 +1540,7 @@ int main(int argc, char *argv[])
 
    loadGrid(filename);
 
-   KK = Nz - 1;
+   KK = Nz/4;
    loadSliceZ(filename, KK);
    loadSlicePhi(filename);
    loadDiagnostics(filename, KK);
