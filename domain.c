@@ -19,6 +19,7 @@ void setMetricParams( struct domain * );
 void setFrameParams(struct domain * );
 void setDiagParams( struct domain * );
 void setNoiseParams( struct domain * );
+void setBCParams( struct domain * );
 
 int get_num_rzFaces( int , int , int );
 
@@ -95,7 +96,7 @@ void setupDomain( struct domain * theDomain ){
    setFrameParams( theDomain );
    setDiagParams( theDomain );
    setNoiseParams( theDomain );
-
+   setBCParams( theDomain );
 }
 
 void initial( double * , double * ); 
