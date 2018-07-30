@@ -14,9 +14,12 @@ int get_num_rzFaces( int Nr , int Nz , int dim ){
 void addFace( struct face * theFaces , int n , struct cell * cL , struct cell * cR , double dxL , double dxR , double * xp , double * xm , int dim , int LRtype ){
    double dp = get_dp(xp[1],xm[1]);
    double phic = get_dp(xp[1],.5*dp);
-   theFaces[n].cm[0] = get_centroid(xp[0], xm[0], 1);
+   double r = dim==1 ? 0.5*(xp[0]+xm[0]) : get_centroid(xp[0], xm[0], 1);
+   double z = dim==2 ? 0.5*(xp[2]+xm[2]) : get_centroid(xp[2], xm[2], 2);
+
+   theFaces[n].cm[0] = r;
    theFaces[n].cm[1] = phic;
-   theFaces[n].cm[2] = get_centroid(xp[2], xm[2], 2);
+   theFaces[n].cm[2] = z;
    theFaces[n].L   = cL;
    theFaces[n].R   = cR;
    theFaces[n].dxL = dxL;

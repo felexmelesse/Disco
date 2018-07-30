@@ -13,95 +13,104 @@ static double rho_atm = 0.0;
 static double B0 = 0.0;
 static int field_choice = 0;
 
+void get_rpz(double *x, double *rpz);
+void get_vec_from_rpz(double *x, double *vrpz, double *v);
+void get_vec_contravariant(double *x, double *v, double *vc);
+
 void setICparams( struct domain * theDomain ){
-   gam = theDomain->theParList.Adiabatic_Index;
-   //M = theDomain->theParList.metricPar2;
-   M = 1.0;
-   a = theDomain->theParList.metricPar3;
-   field_choice = theDomain->theParList.initPar0;
-   Rin = theDomain->theParList.initPar1;
-   Rmax = theDomain->theParList.initPar2;
-   rho_atm = theDomain->theParList.initPar3;
-   B0 = theDomain->theParList.initPar4;
+    gam = theDomain->theParList.Adiabatic_Index;
+    //M = theDomain->theParList.metricPar2;
+    M = 1.0;
+    a = theDomain->theParList.metricPar3;
+    field_choice = theDomain->theParList.initPar0;
+    Rin = theDomain->theParList.initPar1;
+    Rmax = theDomain->theParList.initPar2;
+    rho_atm = theDomain->theParList.initPar3;
+    B0 = theDomain->theParList.initPar4;
 }
 
 void initial( double * prim , double * x ){
 
-   double r   = x[0];
-   double phi = x[1];
-   double z  = x[2];
-   double R = sqrt(r*r + z*z);
+    double rpz[3];
+    get_rpz(x, rpz);
+    double r   = rpz[0];
+    double z  = rpz[2];
+    double R = sqrt(r*r + z*z);
 
-   double k;
-   if(Rmax > 2*Rin)
-       Rmax = 2*Rin;
-   if(Rmax < Rin)
-       Rmax = Rin;
-   k = Rmax/Rin;
+    double k;
+    if(Rmax > 2*Rin)
+        Rmax = 2*Rin;
+    if(Rmax < Rin)
+        Rmax = Rin;
+    k = Rmax/Rin;
 
-   double h = M/R - 0.5*M*Rmax/(r*r) - 0.5*M*(2-k)/Rin;
-   double hmax = 0.5*M*(k-1)*(k-1)/Rmax;
-   double rho = pow(h/hmax, 1.0/(gam-1.0));
-   double l = sqrt(M*Rmax);
-   double om = l/(r*r);
-   double q = 1.0;
+    double h = M/R - 0.5*M*Rmax/(r*r) - 0.5*M*(2-k)/Rin;
+    double hmax = 0.5*M*(k-1)*(k-1)/Rmax;
+    double rho = pow(h/hmax, 1.0/(gam-1.0));
+    double l = sqrt(M*Rmax);
+    double om = l/(r*r);
+    double q = 1.0;
 
-   if(h < 0.0 || rho < rho_atm)
-   {
-       h = M/R;
-       rho = rho_atm * pow(Rin/R, 1.0/(gam-1.0));
-       q = 0.0;
-       om = 0.0;
-   }
+    if(h < 0.0 || rho < rho_atm)
+    {
+        h = M/R;
+        rho = rho_atm * pow(Rin/R, 1.0/(gam-1.0));
+        q = 0.0;
+        om = 0.0;
+    }
 
-   double P = (gam-1)/gam * rho*h;
+    double P = (gam-1)/gam * rho*h;
 
-   double Br, Bp, Bz;
+    double Br, Bp, Bz;
 
-   if(NUM_C > BZZ)
-   {
-       if(field_choice == 0)
-       {
-           Br = 0.0;
-           Bp = 0.0;
-           Bz = B0;
-       }
-       else if(field_choice == 1 && rho > 0.2)
-       {
-           // A_phi ~ max(rho/rho_max - 0.2, 0)
-           // B^r   = -d_z A_phi
-           // B^z   =  d_r A_phi
-           // A^phi =          0
-           double dhdr = -M*r/(R*R*R) + M*Rmax/(r*r*r);
-           double dhdz = -M*z/(R*R*R);
+    if(NUM_C > BZZ)
+    {
+        if(field_choice == 0)
+        {
+            Br = 0.0;
+            Bp = 0.0;
+            Bz = B0;
+        }
+        else if(field_choice == 1 && rho > 0.2)
+        {
+            // A_phi ~ max(rho/rho_max - 0.2, 0)
+            // B^r   = -d_z A_phi
+            // B^z   =  d_r A_phi
+            // A^phi =          0
+            double dhdr = -M*r/(R*R*R) + M*Rmax/(r*r*r);
+            double dhdz = -M*z/(R*R*R);
            
-           Br = -1.0/(gam-1.0) * rho/h * dhdz * B0;
-           Bp = 0.0;
-           Bz =  1.0/(gam-1.0) * rho/h * dhdr * B0;
-       }
-       else
-       {
-           Br = 0.0;
-           Bp = 0.0;
-           Bz = 0.0;
-       }
-   }
+            Br = -1.0/(gam-1.0) * rho/h * dhdz * B0;
+            Bp = 0.0;
+            Bz =  1.0/(gam-1.0) * rho/h * dhdr * B0;
+        }
+        else
+        {
+            Br = 0.0;
+            Bp = 0.0;
+            Bz = 0.0;
+        }
+    }
 
+    double v[3], u[3];
+    double vrpz[3] = {0.0, r*om, 0.0};
+    get_vec_from_rpz(x, vrpz, v);
+    get_vec_contravariant(x, v, u);
 
-   prim[RHO] = rho;
-   prim[PPP] = P;
-   prim[URR] = 0.0;
-   prim[UPP] = om;
-   prim[UZZ] = 0.0;
+    prim[RHO] = rho;
+    prim[PPP] = P;
+    prim[URR] = u[0];
+    prim[UPP] = u[1];
+    prim[UZZ] = u[2];
 
-   if(NUM_C > BZZ)
-   {
+    if(NUM_C > BZZ)
+    {
         prim[BRR] = Br;
         prim[BPP] = Bp;
         prim[BZZ] = Bz;
-   }
+    }
 
-   if(NUM_N > 0)
-       prim[NUM_C] = q;
+    if(NUM_N > 0)
+        prim[NUM_C] = q;
 }
 
