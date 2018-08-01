@@ -7,9 +7,6 @@ static double cs = 1.0;
 static double mach = 0.0;
 static double costheta0 = 0.0;
 static double phi0_o_pi = 0.0;
-
-void get_vec_from_xyz(double *x, double *vxyz, double *v);
-void get_vec_contravariant(double *x, double *v, double *vc);
     
 void setICparams( struct domain * theDomain )
 {
@@ -31,16 +28,11 @@ void initial( double * prim , double * x )
     double P = rho * cs*cs/gam;
     double v = mach*cs;
 
-    double vxyz[3] = {v*kx, v*ky, v*kz};
-    double u[3];
-    get_vec_from_xyz(x, vxyz, u);
-    get_vec_contravariant(x, u, u);
-
     prim[RHO] = rho;
     prim[PPP] = P;
-    prim[URR] = u[0];
-    prim[UPP] = u[1];
-    prim[UZZ] = u[2];
+    prim[URR] = v * kx;
+    prim[UPP] = v * ky;
+    prim[UZZ] = v * kz;
 
     int q;
     for(q = 5; q < NUM_Q; q++)

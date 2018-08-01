@@ -110,7 +110,7 @@ void setupGrid( struct domain * theDomain ){
          get_centroid_arr(xp, xm, x);
 
          double dr = get_dL(xp, xm, 1);
-         double hp = get_scale_factor(x, 0);
+         double hp = get_scale_factor(xp, 0);
 
          double dp = aspect*dr/hp;
          int Np = (int)(Pmax/dp);

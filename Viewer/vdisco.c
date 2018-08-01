@@ -814,12 +814,13 @@ void drawColorBar(double RotationAngleX, double RotationAngleY,
     }
 
     int Nv = 8;
+
     for( k=0 ; k<Nv ; ++k )
     {
         double y = (double)k*hb/(double)(Nv-1) - .5*hb;
-        double val = (double)k/(double)(Nv-1)*(maxval-minval) + minval;
+        double val = ((double)k/(double)(Nv-1))*(maxval-minval) + minval;
         char valname[256];
-        sprintf(valname,"%+.2e",val);
+        sprintf(valname,"%+.4e",val);
         glLineWidth(1.0f);
         glColor3f(0.0,0.0,0.0);
         glBegin(GL_LINE_LOOP);
@@ -1269,7 +1270,7 @@ void loadGrid(char *filename)
 
    if(strcmp(buf, "cylindrical") == 0)
       geometry = 1;
-   if(strcmp(buf, "spherical") == 0)
+   else if(strcmp(buf, "spherical") == 0)
       geometry = 2;
    else
       geometry = 0;
