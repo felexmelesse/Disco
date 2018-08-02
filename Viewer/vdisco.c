@@ -159,7 +159,7 @@ void getMaxMin(void){
 }
 
 void getH5dims( char * file , char * group , char * dset , hsize_t * dims ){
-   hid_t h5fil = H5Fopen( file , H5F_ACC_RDWR , H5P_DEFAULT );
+   hid_t h5fil = H5Fopen( file , H5F_ACC_RDONLY , H5P_DEFAULT );
    hid_t h5grp = H5Gopen1( h5fil , group );
    hid_t h5dst = H5Dopen1( h5grp , dset );
    hid_t h5spc = H5Dget_space( h5dst );
@@ -173,7 +173,7 @@ void getH5dims( char * file , char * group , char * dset , hsize_t * dims ){
 }
 
 void readSimple( char * file , char * group , char * dset , void * data , hid_t type ){
-   hid_t h5fil = H5Fopen( file , H5F_ACC_RDWR , H5P_DEFAULT );
+   hid_t h5fil = H5Fopen( file , H5F_ACC_RDONLY , H5P_DEFAULT );
    hid_t h5grp = H5Gopen1( h5fil , group );
    hid_t h5dst = H5Dopen1( h5grp , dset );
 
@@ -189,7 +189,7 @@ void readString(char *file, char *group, char *dset, char *buf, int len)
    hid_t strtype = H5Tcopy(H5T_C_S1);
    H5Tset_size(strtype, H5T_VARIABLE);
 
-   hid_t h5fil = H5Fopen( file , H5F_ACC_RDWR , H5P_DEFAULT );
+   hid_t h5fil = H5Fopen( file , H5F_ACC_RDONLY , H5P_DEFAULT );
    hid_t h5grp = H5Gopen1( h5fil , group );
    hid_t h5dst = H5Dopen1( h5grp , dset );
 
@@ -212,7 +212,7 @@ void readString(char *file, char *group, char *dset, char *buf, int len)
 }
 
 void readPatch( char * file , char * group , char * dset , void * data , hid_t type , int dim , int * start , int * loc_size , int * glo_size){
-   hid_t h5fil = H5Fopen( file , H5F_ACC_RDWR , H5P_DEFAULT );
+   hid_t h5fil = H5Fopen( file , H5F_ACC_RDONLY , H5P_DEFAULT );
    hid_t h5grp = H5Gopen1( h5fil , group );
    hid_t h5dst = H5Dopen1( h5grp , dset );
 
