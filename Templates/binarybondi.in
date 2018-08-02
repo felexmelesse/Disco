@@ -3,7 +3,7 @@
 # This file contains user-specified build options.
 
 # Build options
-INITIAL  = uniform
+INITIAL  = bondi
 HYDRO    = euler_sph
 GEOMETRY = spherical
 BOUNDARY = accrete3d

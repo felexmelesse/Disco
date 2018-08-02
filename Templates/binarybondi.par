@@ -5,12 +5,12 @@ Restart			0	//Restart from input.h5
 //Time Range//
 T_Start			0.0 //1.0
 T_End		    1.0
-T_Times_2pi		0
+T_Times_2pi		1
 
 //Output Frequency//
 Num_Reports		    4e4
 Num_Snapshots		0
-Num_Checkpoints		20
+Num_Checkpoints		10
 Use_Logtime		    0
 
 //Grid Dimensions//
@@ -80,9 +80,9 @@ Include_Atmos	0
 
 //Initial Condition Parameters
 Init_Par0       0     // int
-Init_Par1       0.0   // mach
-Init_Par2       0.0   // phi0 / pi
-Init_Par3       0.0   // cos(theta0)
+Init_Par1       3.0   // Rs (sonic point)
+Init_Par2       3.0   // R0 (transition to 0 velocity)
+Init_Par3       0.0   // doub
 Init_Par4       0.0   // doub
 Init_Par5       0.0   // doub
 Init_Par6       0.0   // doub
