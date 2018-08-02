@@ -15,8 +15,9 @@ void setICparams( struct domain * theDomain )
 {
     gam = theDomain->theParList.Adiabatic_Index;
     mach = theDomain->theParList.initPar1;
-    phi0_o_pi = theDomain->theParList.initPar2;
-    costheta0 = theDomain->theParList.initPar3;
+    cs = theDomain->theParList.initPar2;
+    phi0_o_pi = theDomain->theParList.initPar3;
+    costheta0 = theDomain->theParList.initPar4;
 }
 
 void initial( double * prim , double * x )
