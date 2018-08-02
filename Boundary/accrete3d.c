@@ -20,7 +20,7 @@ void boundary_trans( struct domain * theDomain , int dim )
 {
     if(dim == 1)
     {
-        boundary_zerograd_rinn(theDomain, 0);
+        boundary_zerograd_rinn(theDomain, 1);
         boundary_fixed_rout(theDomain);
     }
     else if(dim == 2)

@@ -67,7 +67,7 @@ double maxval = -HUGE_VAL;
 double minval = HUGE_VAL;
 
 double t;
-int Nr,Nz,Nq,Npl,N1d,Nc,KK;
+int Nr,Nz,Nq,Npl,NpDat,N1d,Nc,KK;
 int * Np = NULL;
 double * r_jph = NULL;
 double * z_kph = NULL;
@@ -820,7 +820,7 @@ void drawColorBar(double RotationAngleX, double RotationAngleY,
         double y = (double)k*hb/(double)(Nv-1) - .5*hb;
         double val = ((double)k/(double)(Nv-1))*(maxval-minval) + minval;
         char valname[256];
-        sprintf(valname,"%+.4e",val);
+        sprintf(valname,"%+.3e",val);
         glLineWidth(1.0f);
         glColor3f(0.0,0.0,0.0);
         glBegin(GL_LINE_LOOP);
@@ -1296,23 +1296,33 @@ void loadGrid(char *filename)
    getH5dims( filename , group2 , (char *)"Cells" , dims );
    Nc = dims[0];
    Nq = dims[1]-1;
+   printf("Nc = %d Nr = %d Nq=%d\n",Nc,Nr,Nq);
+}
 
-   getH5dims( filename , group2 , (char *)"Planets" , dims );
-   Npl = dims[0];
-   int NpDat = dims[1];
-   printf("Nc = %d Nr = %d Nq=%d Npl=%d NpDat=%d\n",Nc,Nr,Nq,Npl,NpDat);
+void loadPlanets(char *filename)
+{
+   char group2[256];
+   strcpy( group2 , "Data" );
 
-   thePlanets = (double **) malloc( Npl*sizeof(double *) );
+   hsize_t dims[3];
    int p;
-   for( p=0 ; p<Npl ; ++p ){ 
-      thePlanets[p] = (double *) malloc( 2*sizeof(double) );
+
+   if(thePlanets == NULL)
+   {
+       getH5dims( filename , group2 , (char *)"Planets" , dims );
+       Npl = dims[0];
+       NpDat = dims[1];
+       printf("Npl=%d NpDat=%d\n",Npl, NpDat);
+
+       thePlanets = (double **) malloc( Npl*sizeof(double *) );
+       for( p=0 ; p<Npl ; ++p ){ 
+          thePlanets[p] = (double *) malloc( 2*sizeof(double) );
+       }
    }
    
-   start[1] = 0;
-   loc_size[0] = 1;
-   glo_size[0] = Npl;
-   loc_size[1] = NpDat;
-   glo_size[1] = NpDat;
+   int start[2]    = {0,0};
+   int loc_size[2] = {1,NpDat};
+   int glo_size[2] = {Npl,NpDat};
    for( p=0 ; p<Npl ; ++p ){
       start[0] = p;
       double thisPlanet[6];
@@ -1330,6 +1340,7 @@ void loadFile(int fileIndex, int zslice)
 {
     printf("File %d of %d\n", fileIndex+1, nfiles);
     strcpy(filename, filenameList[fileIndex]);
+    loadPlanets(filenameList[fileIndex]);
     loadSliceZ(filenameList[fileIndex], zslice);
     loadSlicePhi(filenameList[fileIndex]);
     loadDiagnostics(filenameList[fileIndex], zslice);
@@ -1540,6 +1551,7 @@ int main(int argc, char *argv[])
    //if( argc>2 ){ CommandMode=1; FullScreenMode=1; }
 
    loadGrid(filename);
+   loadPlanets(filename);
 
    KK = Nz/4;
    loadSliceZ(filename, KK);
