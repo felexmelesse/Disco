@@ -19,7 +19,7 @@ static int sink_flag  = 0;
 static double a = 1.0;
 static double q_planet = 1.0;
 static int cs2Choice = 0;
-static double G_EPS = 0.02;
+static double G_EPS = -0.02;
 static double t_step = 0.0;
 
 void setHydroParams( struct domain * theDomain ){

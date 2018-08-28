@@ -5,14 +5,14 @@ double PHI_ORDER = 2.0;
 static double R_SCHWZ = 0.1/3.0;
 static int grav2D = 0;
 static int pw_flag = 0.0;
-static double G_EPS = 0.02;
+//static double G_EPS = 0.02;
 
 double get_dp( double , double );
 
 void setGravParams( struct domain * theDomain ){
 
    grav2D = theDomain->theParList.grav2D;
-   G_EPS = theDomain->theParList.g_eps;
+   //G_EPS = theDomain->theParList.g_eps;
 }
 
 double phigrav( double M , double r , double eps ){
@@ -59,11 +59,11 @@ void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
         pot = phigrav_pw( pl->M, script_r );
    }
    else{
-        //pot = phigrav( pl->M , script_r , pl->eps );
-        pot = phigrav( pl->M, script_r, G_EPS ); //yike smoothing
+        pot = phigrav( pl->M , script_r , pl->eps );
+        //pot = phigrav( pl->M, script_r, G_EPS ); //yike smoothing
         
-        //TODO: add a parameter for G_EPS = 0.02 (or other)
-        //      if( G_EPS > 0.0 ) do yike smoothing
+        // Yike smoothing peculiarities are handled specifically
+       // in Planets/cm.c now
    }
 
    double c2 = gam*prim[PPP]/prim[RHO];
@@ -99,11 +99,11 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
            f1 = -fgrav_pw( pl->M, script_r );
    }
    else{
-       //f1 = -fgrav( pl->M, script_r, pl->eps );
-       f1 = -fgrav_yike( pl->M, script_r, G_EPS );
+       f1 = -fgrav( pl->M, script_r, pl->eps );
+       //f1 = -fgrav_yike( pl->M, script_r, G_EPS );
 
-       //TODO: add a parameter for G_EPS = 0.02 (or other)
-       //      if( G_EPS > 0.0 ) do yike smoothing
+       // Yike smoothing peculiarities are handled specifically
+       // in Planets/cm.c now
    }
 
    double cosa = dx/script_r;

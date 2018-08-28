@@ -6,12 +6,17 @@ static double smooth = 0.0;
 static double Mach = 1.0;
 static double tt = 0.0;
 
+//Yike stuff for binaries
+static double G_EPS = 0.0;
+
 void setPlanetParams( struct domain * theDomain ){
 
    theDomain->Npl = 2; 
    q_planet = theDomain->theParList.Mass_Ratio;
    Mach = theDomain->theParList.Disk_Mach;
    smooth = 0.5/Mach;
+   
+   G_EPS = theDomain->theParList.g_eps;
 
 }
 
@@ -42,12 +47,19 @@ void initializePlanets( struct planet * thePlanets ){
    thePlanets[1].phi   = 0.0; 
    thePlanets[1].eps   = smooth;// + 1.0;//0.025;
 
+   if( G_EPS > 0.0 ){
+        thePlanets[0].eps = G_EPS;
+        thePlanets[1].eps = G_EPS;
+   }
+
 }
 
 void movePlanets( struct planet * thePlanets , double t , double dt ){
    thePlanets[0].phi += thePlanets[0].omega*dt;
    thePlanets[1].phi += thePlanets[1].omega*dt;
    double eps = smooth + exp(-t/30.);
+   if( G_EPS > 0.0 )
+      eps = G_EPS;
    thePlanets[0].eps = eps;
    thePlanets[1].eps = eps;
 
