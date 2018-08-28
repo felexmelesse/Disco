@@ -79,6 +79,8 @@ void freeDomain( struct domain * );
 
 void setPlanetParams( struct domain * );
 void initializePlanets( struct planet * );
+void init_tracerList( struct domain * );
+void initializeTracers( struct domain * );
 int num_diagnostics( void );
 int get_num_rzFaces( int , int , int );
 
@@ -279,5 +281,9 @@ void restart( struct domain * theDomain ){
    theDomain->fIndex_r = (int *) malloc( (theDomain->N_ftracks_r+1)*sizeof(int) );
    theDomain->fIndex_z = (int *) malloc( (theDomain->N_ftracks_z+1)*sizeof(int) );
 
+   //Right now just resets tracers--doesn't pick up previous state from input.h5
+   theDomain->theTracers = (struct tracerList*) malloc(sizeof(struct tracerList) );
+   init_tracerList( theDomain );
+   initializeTracers( theDomain );
 }
 
