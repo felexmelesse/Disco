@@ -97,7 +97,9 @@ double get_om1( double r ){
     return om1;
 }
 
-double get_cs2( double r ){
+double get_bin_potential( double, double );
+
+double get_cs2( double r, double phi ){
     double cs2;
 
     if(cs2Choice == 1)
@@ -105,12 +107,20 @@ double get_cs2( double r ){
 
     else if(cs2Choice == 2)
     {
+        double mu  = 0.5;
         double nu = .5;
-        cs2 = .5/Mach/Mach/pow(r,2.*nu);
+        double smooth = 0.05;
+        if( r < smooth )
+            r = smooth;
+        cs2 = mu/Mach/Mach/pow(r,2.*nu);
     }
     else if(cs2Choice == 3)
     {
         cs2 = M*H0*H0 / (2*r1*r1*r1);
+    }
+    else if(cs2Choice == 4){
+        double pot = get_bin_potential( r, phi );
+        cs2 = pot/(Mach*Mach);
     }
     else
         cs2 = 1.0;
