@@ -84,7 +84,7 @@ double getmindt( struct domain * theDomain ){
    }
    dt *= theDomain->theParList.CFL;
    MPI_Allreduce( MPI_IN_PLACE , &dt , 1 , MPI_DOUBLE , MPI_MIN , theDomain->theComm );
-
+   
    return( dt );
 }
 
@@ -456,11 +456,20 @@ void setup_faces( struct domain * theDomain , int dim ){
 
 }
 
-void source( struct domain *, double * , double * , double * , double * , double, double );
-void planet_src( struct planet * , double * , double * , double * , double * , double );
-void omega_src( double * , double * , double * , double * , double );
+void reset_fgrav( double *grav ){
 
-void add_source( struct domain * theDomain , double dt ){
+    grav[0] = 0.0;
+    grav[1] = 0.0;
+    grav[2] = 0.0;
+}
+
+void source( struct domain *, double * , double * , double * , double * , double, double, int );
+void planet_src( struct planet * , double * , double *, double * , double * , double * , double );
+void omega_src( double * , double * , double * , double * , double );
+void density_sink( struct domain *, double *, double *, double *, double *, double ,double );
+void density_sink_yike( struct domain *, double *, double *, double *, double *, double ,double );
+
+void add_source( struct domain * theDomain , double dt, int last_step ){
 
    struct cell ** theCells = theDomain->theCells;
    struct planet * thePlanets = theDomain->thePlanets;
@@ -483,12 +492,14 @@ void add_source( struct domain * theDomain , double dt ){
             double xp[3] = {r_jph[j]  ,phip,z_kph[k]  };
             double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
             double dV = get_dV(xp,xm);
-            //density_sink( theDomain, c->prim, c->cons, xp, xm, dV );
-            source( theDomain, c->prim , c->cons , xp , xm , dV, dt );
+            reset_fgrav( c->f_grav );
+            source( theDomain, c->prim , c->cons , xp , xm , dV, dt, last_step );
             for( p=0 ; p<Npl ; ++p ){
-               planet_src( thePlanets+p , c->prim , c->cons , xp , xm , dV*dt );
+               planet_src( thePlanets+p , c->prim , c->cons, c->f_grav , xp , xm , dV*dt );
             }
             omega_src( c->prim , c->cons , xp , xm , dV*dt );
+            //density_sink( theDomain, c->prim, c->cons, xp, xm, dV, dt );
+            density_sink_yike( theDomain, c->prim, c->cons, xp, xm, dV, dt );
          }
       }
    }
@@ -656,6 +667,9 @@ void AMR( struct domain * theDomain ){
 int getN0( int, int, int );
 
 void setProcessCoords( struct domain *theDomain ){
+   //TODO:Make this just a function call for tracer initialization and 
+   //     parallel exchange--it's redundant save bounds
+
   //Sets coordinate bounds of each process without ghost cells
   //Built for use in implementing tracers
   int Nr = theDomain->Nr;
@@ -666,7 +680,8 @@ void setProcessCoords( struct domain *theDomain ){
   double *r_jph = theDomain->r_jph;
   double *z_kph = theDomain->z_kph;
   int Z_Periodic = theDomain->theParList.Z_Periodic;
- 
+
+  //Might need to fix this to adapt to different BCs?
   double r0, rf;
   if( dim_rank[0]!=0) 
      r0 = r_jph[Ng-1];

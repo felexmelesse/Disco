@@ -27,12 +27,13 @@ void timestep( struct domain * theDomain , double dt ){
    for( p=0 ; p<Npl ; ++p ){
       planet_RK_copy( theDomain->thePlanets + p );
    }
+   
    struct tracer *tr = theDomain->theTracers->head;
    while( tr!=NULL ){
       tracer_RK_copy( tr );
       tr = tr->next;
    }
-
+   
    onestep( theDomain , 0.0 ,     dt , 1 , 0 , dt );
    onestep( theDomain , 0.5 , 0.5*dt , 0 , 1 , dt );
 //   onestep( theDomain , 0.0 ,     dt , 1 , 1 , dt );

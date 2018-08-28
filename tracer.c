@@ -1,44 +1,93 @@
 #include "paul.h"
 
-static int Nmc = 0.0;
+static int      Nmc = 0;
+static double   tr_rmax = 0.0;
+static double   tr_rmin = 0.0;
+static double   BIG_NUM = 10000;
+static double   gamma_law = 0.0;
 //static double r_mini = 1.0;
 //static double r_gap  = 2.0;
 
+void set_tracer_bounds( double *, double *);
+double SS_area( double, double );
 double get_dV( double *, double * );
 
 void setTracerParams( struct domain * theDomain){
 
    //r_sink = theDomain->theParList.r_sink;
+   gamma_law = theDomain->theParList.Adiabatic_Index;
    int initType = theDomain->theParList.tr_init_type;
    int num_tracers = theDomain->theParList.num_tracers;
+   tr_rmax = theDomain->theParList.tr_rmax;
+   tr_rmin = theDomain->theParList.tr_rmin;
+   if( tr_rmin > tr_rmax )
+       printf("WARNING: tracer r_min > r_max \n");
 
    if( !initType ){
+     //number of tracers = number of cells--doesn't have tr_max yet
       int Ncells = theDomain->Ncells;
       theDomain->Ntr = Ncells;
-   }else if( initType==1 ){
+   }else if( initType==1 || initType==3 ){
       if( theDomain->rank==0 )
          printf("Total Tracers: %d \n", num_tracers );
 
       double rmin = theDomain->theParList.rmin;
       double rmax = theDomain->theParList.rmax;
+      if( tr_rmax > 0.0 && rmax > tr_rmax )
+          rmax = tr_rmax;
+      if( tr_rmin > 0.0 && tr_rmin > rmin )
+          rmin = tr_rmin;
       double zmin = theDomain->theParList.zmin;
       double zmax = theDomain->theParList.zmax;
       double phi_max = theDomain->theParList.phimax;
       double XM[3] = {rmin, 0.0, zmin};
       double XP[3] = {rmax, phi_max, zmax};
-      double Vtot = get_dV( XP, XM );
-      double ratio = num_tracers/Vtot;
-
+      
       double r0   = theDomain->r0;
       double z0   = theDomain->z0;
       double delr = theDomain->delr;
       double delz = theDomain->delz;
-      double xm[3] = {r0, 0.0, z0};
-      double xp[3] = {r0+delr, phi_max, z0+delz};
-      double dV = get_dV( xp, xm );
+      double r1   = r0 + delr;
 
-      theDomain->Ntr = dV*ratio;
+       
+      //set_tracer_bounds( &r0, &r1 );
+      //TODO: Move these too some function that sets r1 and r0 only for 
+      //      tracer initialization
+      //if( tr_rmax > 0.0 ){
+      
+      if( tr_rmax ){
+        if( tr_rmax > r0 ){
+            if( r1 > tr_rmax )
+                r1 = tr_rmax;
+        }
+        else{
+            r1 = r0; //No tracers in this process
+        }
+      }
+      if( tr_rmin ){
+        if( tr_rmin < r1 ){
+            if( tr_rmin > r0 )
+                r0 = tr_rmin;
+        }
+        else{
+            r1 = r0; //No tracers in this process
+        }
+      }
+
+      double xm[3] = {r0, 0.0, z0};
+      double xp[3] = {r1, phi_max, z0+delz};
+      if( initType==1 ){
+          double Vtot = get_dV( XP, XM );
+          double ratio = num_tracers/Vtot;
+          double dV = get_dV( xp, xm );
+          theDomain->Ntr = dV*ratio;
+      }
+      else{
+          double ratio = num_tracers/SS_area( rmin, rmax );
+          theDomain->Ntr = ratio*SS_area( r0, r1 );
+      }
    }else{
+      //equal number of tracers by process--doesn't have tr_rmax yet
       int size = theDomain->size;
       theDomain->Ntr = num_tracers/size;
    }
@@ -46,13 +95,49 @@ void setTracerParams( struct domain * theDomain){
    theDomain->Nmc = Nmc;
    //theDomain->tr_out = theDomain->theParList.tr_out_flag;
    MPI_Barrier( theDomain->theComm );
-   printf("Rank %d: Ntr = %d \n", theDomain->rank, theDomain->Ntr);
+   //printf("Rank %d: Ntr = %d \n", theDomain->rank, theDomain->Ntr);
 
+}
+
+double SS_area( double r1, double r2 ){
+    //Area under the curve r^(-1/2) from r1 to r2
+    return 2*( sqrt(r2) - sqrt(r1) );
+}
+
+void set_tracer_bounds( double* r0, double* r1 ){
+
+    if( tr_rmax ){
+        if( tr_rmax > (*r0) ){
+            if( (*r1) > tr_rmax )
+                (*r1) = tr_rmax;
+        }
+        else{
+            (*r1) = (*r0); //No tracers in this process
+        }
+    }
+    if( tr_rmin ){
+        if( tr_rmin < (*r1) ){
+            if( tr_rmin > (*r0) )
+                (*r0) = tr_rmin;
+        }
+        else{
+            (*r1) = (*r0); //No tracers in this process
+        }
+    }
+    return;
 }
 
 double getRandIn( double xmin, double dx){
 
   return xmin + ( (double)rand()/(double)RAND_MAX )*dx;
+}
+
+double getRand_SS( double xmin, double norm_fac ){
+
+    double u  = (double)rand()/(double)RAND_MAX;
+    double rs = 0.5*u*norm_fac + sqrt(xmin);
+    return rs*rs;
+    //return xmin + ( (double)rand()/(double)RAND_MAX )*dx;
 }
 
 /*
@@ -132,13 +217,31 @@ void initializeTracers( struct domain *theDomain ){
       double delr = theDomain->delr;
       double delz = theDomain->delz;
       double phi_max = theDomain->theParList.phimax;
-
+      
+      double r1 = r0 + delr;
+      if( tr_rmax > 0.0 && r1 > tr_rmax ){
+          r1 = tr_rmax;
+          delr = r1 - r0;
+          //delr will be negative for processes after tr_rmax
+          //shouldn't matter bc should get 0 tracers
+      }
+      if( tr_rmin > 0.0 && r0 < tr_rmin ){
+          r0 = tr_rmin;
+          delr = r1 - r0;
+      }
       srand(rank);
       rand();
 
+      //double r_cav = 2.0;
       double r, z, phi;
       while( tr != NULL){
-         r = getRandIn(r0, delr);
+         if( initType == 3 ){
+            double norm_fac = SS_area( r0, r1 );
+            r = getRand_SS(r0, norm_fac);
+         }
+         else
+            r = getRandIn(r0, delr);
+
          z = getRandIn(z0, delz);
          phi = getRandIn(0, phi_max);
          tr->R = r; tr->Z = z; tr->Phi = phi;
@@ -281,6 +384,10 @@ void get_tracer_cell(struct domain *theDomain, struct tracer *tr){
      struct cell *c = &(theCells[jk][i]);
      if( check_phi( tr->Phi, c->piph, c->dphi, phi_max) ){
         tr->myCell = c;
+        //set dPdphi
+        //tr->dPdp = c->gradp[PPP];
+        //if( tr->dPdp >  BIG_NUM )
+        //    tr->dPdp = 0.0/0.0;
         return;
      }
    }
@@ -349,22 +456,126 @@ void moveTracers(struct domain *theDomain, struct tracer *tr, double dt){
 */
 }
 
+double get_dvdt( struct tracer *tr ){
+    
+    double dvr = tr->Vr - tr->v_prev[0];
+    double dvp = (tr->Omega)*(tr->R) - tr->v_prev[0];
+    double dvz = tr->Vz - tr->v_prev[2];
+
+    return sqrt( dvr*dvr + dvp*dvp + dvz*dvz );
+}   
+
+//Specific to Binary runs -> at present doing this for expediency
+//double get_planets_phi( double , double );
+double get_bin_potential( double, double );
+double get_cs2( double, double );
+
 void updatePhysQuants( struct tracer * tr, double gamma ){
     //Need to update (and treatment of tracer charactersitics
     //overall) to be more general
     struct cell *c = tr->myCell;
-    double r = tr->R;
-    double Lp = -1;
-    double Ss = -1;
+    double rho_0 = tr->prim[RHO];
+    int q;
     if( c!=NULL ){
-        double rho = c->prim[RHO];
+        //give prim vars to tracer
+        for( q=0; q<NUM_Q; q++ ){
+            double x = c->prim[q];
+            if( x > BIG_NUM ) 
+                x = -1.0;
+            tr->prim[q] = x;
+        }    
+    }
+    else{
+        for( q=0; q<NUM_Q; q++ )
+            tr->prim[q] = -1.0;
+    }
+        
+//================ Calculate jacobi constant ================================
+    double r  = tr->R;
+    double vp = r*(tr->Omega - 1.0 ); //Make sure velocity is in corot frame
+    double v2 = (tr->Vr)*(tr->Vr) + vp*vp + (tr->Vz)*(tr->Vz);
+//    double bin_pot = get_planets_phi( r , tr->Phi );
+    double bin_pot = get_bin_potential( r , tr->Phi );
+    double C_j = r*r - v2 + 2*bin_pot;
+    if( fabs(C_j) > BIG_NUM )
+        C_j = -1;
+    tr->C_j = C_j;
+//===========================================================================
+//
+//================ Calculate Change in C_j ==================================
+//                 based on D.J. D'Orazio et al. (2016)
+    double rho = tr->prim[RHO];
+    double cs2 = get_cs2( r, tr->Phi );
+    double ratio = rho/rho_0;
+    if( ratio < 0.0 ) //maybe change how this is handled
+        ratio = 1.0;
+    double dCj = cs2/gamma_law*log( ratio ); // = /int dP/rho = c_s^2/gamma *ln(rho/rho_old)
+    if( fabs(dCj) > BIG_NUM )
+        dCj = 0.0;
+    tr->dPdp = dCj;
+//===========================================================================
+
+
+/*    
+    double r = tr->R;
+    double Lp = -1.0;
+    double Jj = -1.0;
+    double Ss = -1.0;
+    double rho = 1.0;
+    if( c!=NULL ){
+        rho = c->prim[RHO];
+        //double rho = c->prim[RHO]
         double Pp  = c->prim[PPP];
         double om  = c->prim[UPP];
-        Lp = rho*om*r*r;
+        double r2  = r*r;
+        Lp = om*r2;   // *rho;
         Ss = log( Pp/pow(rho,gamma) );
+        Jj = Lp - pow(r,-1.5)*r2; 
     }
-    tr->Lp = Lp;
+    if( Lp > BIG_NUM ) Lp = -1.0;
+    if( Ss > BIG_NUM ) Ss = -1.0;
+    if( Jj > BIG_NUM ) Jj = -1.0;
+    
+    tr->Lp = Lp*rho;
+    tr->Jj = Jj;         //specific angmom minus keplerian background
     tr->Ss = Ss;
+*/
+/*
+    double fgrav = -1;
+    double gravfrac = -1;
+    if( c!=NULL ){
+        //give prim vars to tracer
+        //int q = 0;
+        for( q=0; q<NUM_Q; q++ ){
+            double x = c->prim[q];
+            if( x > BIG_NUM ) 
+                x = -1.0;
+            tr->prim[q] = x;
+        }    
+        //calculate magnitude of fgrav for tracer
+        int n;
+        double fg2 = 0;
+        for(n=0; n<3; n++)
+            fg2 += pow( c->f_grav[n], 2 );
+        fgrav = sqrt( fg2 );
+    }
+    else{
+        for( q=0; q<NUM_Q; q++ )
+            tr->prim[q] = -1.0;
+    }
+    //Need to calculate grav_frac b4 reset v_prev
+    double dvdt = get_dvdt( tr );
+    if( fgrav >= 0.0 ){
+        gravfrac = (dvdt - fgrav)/fgrav;
+    }
+
+    tr->gravfrac  = fabs( gravfrac );
+    tr->v_prev[0] = tr->Vr;
+    tr->v_prev[1] = tr->Omega*tr->R;
+    tr->v_prev[2] = tr->Vz;
+
+
+ */
 }
 
 
@@ -387,6 +598,7 @@ void tracer_RK_adjust( struct tracer * tr , double RK ){
 }
 
 
+
 void updateTracers(struct domain *theDomain, double dt){
     double gamma = theDomain->theParList.Adiabatic_Index; 
 
@@ -397,6 +609,7 @@ void updateTracers(struct domain *theDomain, double dt){
 	    get_local_vel( tr );
         //set_tracer_vel( tr );
         updatePhysQuants( tr, gamma );
+        //calc_dPdp( theDomain );
         moveTracers( theDomain , tr , dt );
         tr = tr->next;
    }

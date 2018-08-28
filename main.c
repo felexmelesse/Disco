@@ -18,7 +18,7 @@ void set_B_fields( struct domain * );
 void setupDomain( struct domain * );
 void freeDomain( struct domain * );
 void check_dt( struct domain * , double * );
-void possiblyOutput( struct domain * , int );
+int possiblyOutput( struct domain * , int );
 void tracerOutput( struct domain *);
 void tracerReport( struct domain *);
 int  trOutStep( struct domain * );
@@ -62,12 +62,17 @@ int main( int argc , char * argv[] ){
       fclose(rFile);
    }
 
+   //Time the hydro
+   clock_t t = clock();
    while( !(theDomain.final_step) ){
       
       double dt = getmindt( &theDomain );
       check_dt( &theDomain , &dt );
-      possiblyOutput( &theDomain , 0 );
+      int dt_flag = possiblyOutput( &theDomain , 0 );
+      if( !(theDomain.rank) && dt_flag )
+          printf("dt: %f  ", dt);
       timestep( &theDomain , dt );
+      
    /*
        if( theDomain.Ntr && trOutStep(&theDomain) ){
          tracerOutput( &theDomain );
@@ -76,6 +81,11 @@ int main( int argc , char * argv[] ){
       */
       theDomain.mdStep++;
    }
+   //Calc time taken
+   t = clock() - t;
+   if( !theDomain.rank )
+       printf("Time for Hydro: %f\n", ((double)t)/CLOCKS_PER_SEC ); //in seconds
+
 
    possiblyOutput( &theDomain , 1 );
    //tracerOutput( &theDomain );
