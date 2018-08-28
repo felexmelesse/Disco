@@ -123,6 +123,8 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
             if( (dim==1 && j==Nr-1) || (dim==2 && k==Nz-1) ) dAtot = dAm;
             for( q=0 ; q<NUM_Q ; ++q ){
                c->grad[q] /= dAtot;
+               //if( c->origin )
+               //    c->grad[q] = 0.0;
             }    
          }    
       }    

@@ -28,6 +28,8 @@ void build_tracerList( struct domain * );
 
 int get_num_rzFaces( int , int , int );
 
+static double t_start = 0.0;
+
 void setupDomain( struct domain * theDomain ){
 
    srand(theDomain->rank);
@@ -134,6 +136,7 @@ void setupCells( struct domain * theDomain ){
 
    int restart_flag = theDomain->theParList.restart_flag;
    if( restart_flag ) restart( theDomain );
+   t_start = theDomain->t;
 
    int noiseType = theDomain->theParList.noiseType;
 
@@ -180,6 +183,10 @@ void setupCells( struct domain * theDomain ){
             prim2cons( c->prim , c->cons , x , dV );
             cons2prim( c->cons , c->prim , x , dV );
             c->real = 1;
+            if( xm[0]==0.0 ) //if cell is a middle wedge
+                c->origin = 1;
+            else
+                c->origin = 0;
          }    
       }    
    }
@@ -224,6 +231,14 @@ void freeDomain( struct domain * theDomain ){
    free( theDomain->fIndex_r );
    free( theDomain->fIndex_z );
 
+   int n;
+   struct tracer *tr = theDomain->theTracers->head;
+   while( tr!=NULL ){
+        struct tracer *temp = tr;
+        tr = tr->next;
+        free(temp);
+   }
+   free( theDomain->theTracers );
 }
 
 void check_dt( struct domain * theDomain , double * dt ){
@@ -250,7 +265,7 @@ void check_dt( struct domain * theDomain , double * dt ){
    MPI_Allreduce( MPI_IN_PLACE , &check , 1 , MPI_INT , MPI_SUM , theDomain->theComm );
    if( final ) theDomain->final_step = 1;
    if( check ) theDomain->check_plz = 1;
-
+   
 }
 
 void report( struct domain * );
@@ -259,7 +274,7 @@ void output( struct domain * , char * );
 void tracerOutput( struct domain * );
 void tracerReport( struct domain * );
 
-void possiblyOutput( struct domain * theDomain , int override ){
+int possiblyOutput( struct domain * theDomain , int override ){
 
    double t = theDomain->t;
    double t_min = theDomain->t_init;
@@ -271,7 +286,8 @@ void possiblyOutput( struct domain * theDomain , int override ){
    int LogOut = theDomain->theParList.Out_LogTime;
    int step = theDomain->mdStep;
    int n0;
-
+   
+   int dt_flag = 0;
    n0 = (int)( t*Nrpt/t_fin );
    if( LogOut ) n0 = (int)( Nrpt*log(t/t_min)/log(t_fin/t_min) );
    if( theDomain->nrpt < n0 || override ){
@@ -279,8 +295,10 @@ void possiblyOutput( struct domain * theDomain , int override ){
       //longandshort( &theDomain , &L , &S , &iL , &iS , theDomain.theCells[0] , 0 , 0 );
       report( theDomain );
 
-      if( theDomain->rank==0 ) 
+      if( theDomain->rank==0 ){ 
          printf("t = %.3e   Step = %d\n", t,step);
+         dt_flag = 1;
+      }
    }
    n0 = (int)( t*Nchk/t_fin );
    if( LogOut ) n0 = (int)( Nchk*log(t/t_min)/log(t_fin/t_min) );
@@ -313,15 +331,16 @@ void possiblyOutput( struct domain * theDomain , int override ){
    }
 
    //Tracer Outputting
-   n0 = (int)( t*Nxyz/t_fin );
+   n0 = (int)( (t-t_start)*Nxyz/(t_fin-t_start) );
    if( LogOut ) 
-      n0 = (int)( Nsnp*log(t/t_min)/log(t_fin/t_min) );
+      n0 = (int)( Nxyz*log(t/t_min)/log(t_fin/t_min) );
    if( (theDomain->nxyz < n0 && Nxyz>0) || override ){
       theDomain->nxyz = n0;
       tracerOutput( theDomain );
       //tracerReport( theDomain );
    }
 
+   return dt_flag;
 }
 
 int trOutStep( struct domain *theDomain ){
@@ -343,19 +362,30 @@ void tracerOutput( struct domain *theDomain ){
    sprintf(filename, "%s.xyz", "tracers" );
 
    int Ntr_tot = theDomain->Ntr;
-   int step = theDomain->mdStep;
+   //int step = theDomain->mdStep;
+   int step = theDomain->nxyz;
    int rank = theDomain->rank;
    int size = theDomain->size;
    double t = theDomain->t;
 
+   int rewrite_flag = theDomain->theParList.restart_flag;
+   if( step )
+       rewrite_flag = 0;
    int outFlag = theDomain->theParList.tr_out_flag;
 
    MPI_Allreduce( MPI_IN_PLACE, &Ntr_tot, 1, MPI_INT, MPI_SUM, theDomain->theComm );
-
+/*
    if( rank==0 && step==0 ){
 	   FILE * pFile = fopen(filename, "w");
       printf("Rewriting Tracer Out-File\n");
 	   fclose(pFile);
+   }
+*/
+   if( !rank ){
+      if( !step || rewrite_flag ){
+        FILE * pFile = fopen(filename, "w");
+        fclose( pFile );
+      }
    }
    MPI_Barrier( theDomain->theComm);
 
@@ -381,16 +411,25 @@ void tracerOutput( struct domain *theDomain ){
       	    double z = tr->Z;
       	    double x = r*cos(phi);
          	double y = r*sin(phi);
-         	//double vr = tr->Vr;
-      	    //double om = tr->Omega;
-         	//double vz = tr->Vz;
-            double Lp = tr->Lp;
-            double Ss = tr->Ss;
-      	    fprintf(pFile, "%d %4.2f %d %d %4.4f %4.4f %4.4f %4.4f %4.4f \n",    
+         	double vr = tr->prim[URR];
+      	    double om = tr->prim[UPP];
+         	double vz = tr->prim[UZZ];
+            double rho = tr->prim[RHO];
+            double ppp = tr->prim[PPP];
+            //double dPdp = tr->dPdp;
+            double C_j  = tr->C_j;
+            double dCj  = tr->dPdp;
+            //double gravfrac = tr->gravfrac;
+            //double Lp = tr->Lp;
+            //double Jj = tr->Jj;
+            //double Ss = tr->Ss;
+      	    fprintf(pFile, "%d %4.2f %d %d %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f %4.4f\n",    
                            step,t, 
                            id,type, 
                            x,y,z, 
-                           Lp, Ss);
+                           vr,om,vz,
+                           rho, ppp,
+                           C_j, dCj);
             tr = tr->next;
             count++;
          }

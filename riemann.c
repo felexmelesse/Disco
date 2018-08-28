@@ -120,8 +120,21 @@ void riemann_trans( struct face * F , double dt , int dim ){
 
    int q;
    for( q=0 ; q<NUM_Q ; ++q ){
-      primL[q] = cL->prim[q] + cL->grad[q]*dxL + cL->gradp[q]*dpL;
-      primR[q] = cR->prim[q] - cR->grad[q]*dxR - cR->gradp[q]*dpR;
+      //primL[q] = cL->prim[q] + cL->grad[q]*dxL + cL->gradp[q]*dpL;
+      //primR[q] = cR->prim[q] - cR->grad[q]*dxR - cR->gradp[q]*dpR;
+      
+    
+      //Not doing linear reconstruction for innermost 'wedge' zones
+      //Breaks at Mach >= 10. TODO:fix PLM so don't need this
+      if( cL->origin || cR->origin ){
+        primL[q] = cL->prim[q] + cL->gradp[q]*dpL;
+        primR[q] = cR->prim[q] - cR->gradp[q]*dpR; 
+      }
+      else{
+        primL[q] = cL->prim[q] + cL->grad[q]*dxL + cL->gradp[q]*dpL;
+        primR[q] = cR->prim[q] - cR->grad[q]*dxR - cR->gradp[q]*dpR;
+      }
+    
    }
    
    double n[3] = {0.0,0.0,0.0};
