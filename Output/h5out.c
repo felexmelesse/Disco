@@ -84,6 +84,7 @@ int Cell2Doub( struct cell * c , double * Q , int mode ){
    }
 }
 
+
 void buildTracerBuffers( struct domain *theDomain, int *trInt, double *trDubs, int Nints, int Ncharcs  ){
    //*Nints = 2;
    //*Ndubs = 7;
@@ -115,6 +116,7 @@ void buildTracerBuffers( struct domain *theDomain, int *trInt, double *trDubs, i
       count++;
    }
 }
+
 
 void dumpVal(char *filename, char *group, char *dset, void *val, 
                 hid_t type)
@@ -392,6 +394,7 @@ void output( struct domain * theDomain , char * filestart ){
 
    int Ndoub = Cell2Doub(NULL,NULL,0);
 
+/*
 //Building Tracer Buffer
    int Nints    = 2;
    int Ncharacs = 0;
@@ -404,7 +407,7 @@ void output( struct domain * theDomain , char * filestart ){
    MPI_Allreduce( MPI_IN_PLACE, &Ntr_tot, 1, MPI_INT, MPI_SUM, theDomain->theComm );
    buildTracerBuffers( theDomain, trInts, trDubs, Nints, Ncharacs );
    MPI_Barrier( theDomain->theComm );
-
+*/
    hsize_t fdims1[1];
    hsize_t fdims2[2];
    if( rank==0 ){
@@ -433,19 +436,18 @@ void output( struct domain * theDomain , char * filestart ){
       fdims2[0] = Npl;
       fdims2[1] = NpDat;
       createDataset(filename,"Data","Planets",2,fdims2,H5T_NATIVE_DOUBLE);
-
+/*
       fdims2[0] = Ntr_tot;
       fdims2[1] = Nints;
       createDataset(filename, "Data", "Tracer_id", 2, fdims2, H5T_NATIVE_INT);
       fdims2[0] = Ntr_tot;
       fdims2[1] = Ndubs;
       createDataset(filename, "Data", "Tracer_data", 2, fdims2, H5T_NATIVE_DOUBLE);
-      printf("Made Tracer Datasets\n");
-
+      //printf("Made Tracer Datasets\n");
+*/
       hsize_t fdims3[3] = {Nz_Tot, Nr_Tot, Ntools};
       createDataset(filename,"Data", "Diagnostics", 3, fdims3, H5T_NATIVE_DOUBLE);
    }
-
    MPI_Barrier( theDomain->theComm );
    if( rank==0 ){
       writeSimple(filename,"Grid","T",&(theDomain->t),H5T_NATIVE_DOUBLE);
@@ -531,7 +533,7 @@ void output( struct domain * theDomain , char * filestart ){
       MPI_Bcast( &thisTot , 1 , MPI_INT , nrk , theDomain->theComm );
       if( rank > nrk ) runningTot += thisTot;
    }
-
+/*
    MPI_Barrier( theDomain->theComm );
    int Ntr_b4 = 0;
    for( nrk=0; nrk<size; ++nrk ){
@@ -540,14 +542,14 @@ void output( struct domain * theDomain , char * filestart ){
       if( rank>nrk )
          Ntr_b4 += thisNtr;
    }
-
+*/
    int jk;
    for( jk=0 ; jk<jSize*kSize ; ++jk ){
       Index[jk] += runningTot;
       Id_phi0[jk] += runningTot;
    }
    MPI_Barrier( theDomain->theComm );
-
+   
    for( nrk=0 ; nrk < size ; ++nrk ){
       if( rank==nrk ){      
          //Write Cell Data
@@ -592,6 +594,7 @@ void output( struct domain * theDomain , char * filestart ){
             writePatch( filename , "Grid" , "z_kph" , z_kph-1+offset , H5T_NATIVE_DOUBLE , 1 , start1 , loc_size1 , glo_size1 ); 
          }
 
+/*
          //Write Tracer Data
          start2[0]    = Ntr_b4;
          start2[1]    = 0;
@@ -608,7 +611,7 @@ void output( struct domain * theDomain , char * filestart ){
          glo_size2[0] = Ntr_tot;
          glo_size2[1] = Ndubs;
          writePatch( filename, "Data", "Tracer_data", trDubs, H5T_NATIVE_DOUBLE, 2, start2, loc_size2, glo_size2 );
-
+*/
       }
       MPI_Barrier( theDomain->theComm );
    }
@@ -619,8 +622,8 @@ void output( struct domain * theDomain , char * filestart ){
    free(Id_phi0);
    free(Qwrite);
    free(diagRZwrite);
-   free(trInts);
-   free(trDubs);
+   //free(trInts);
+   //free(trDubs);
    MPI_Barrier(theDomain->theComm);
 }
 
