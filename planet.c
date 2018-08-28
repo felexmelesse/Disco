@@ -1,16 +1,18 @@
 #include "paul.h"
 
+double t = 0.0;
 double PHI_ORDER = 2.0;
 static double R_SCHWZ = 0.1/3.0;
 static int grav2D = 0;
-static int pw_flag = 1.0;
+static int pw_flag = 0.0;
+static double G_EPS = 0.02;
 
 double get_dp( double , double );
 
 void setGravParams( struct domain * theDomain ){
 
-   grav2D = theDomain->theParList.grav2D; 
-
+   grav2D = theDomain->theParList.grav2D;
+   G_EPS = theDomain->theParList.g_eps;
 }
 
 double phigrav( double M , double r , double eps ){
@@ -20,6 +22,11 @@ double phigrav( double M , double r , double eps ){
 
 double fgrav( double M , double r , double eps ){
    double n = PHI_ORDER;
+   return( M*pow(r,n-1.)/pow( pow(r,n) + pow(eps,n),1.+1./n) );
+}
+
+double fgrav_yike( double M, double r, double eps ){
+   double n = 2.0;
    return( M*pow(r,n-1.)/pow( pow(r,n) + pow(eps,n),1.+1./n) );
 }
 
@@ -52,7 +59,11 @@ void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
         pot = phigrav_pw( pl->M, script_r );
    }
    else{
-        pot = phigrav( pl->M , script_r , pl->eps );
+        //pot = phigrav( pl->M , script_r , pl->eps );
+        pot = phigrav( pl->M, script_r, G_EPS ); //yike smoothing
+        
+        //TODO: add a parameter for G_EPS = 0.02 (or other)
+        //      if( G_EPS > 0.0 ) do yike smoothing
    }
 
    double c2 = gam*prim[PPP]/prim[RHO];
@@ -88,7 +99,11 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
            f1 = -fgrav_pw( pl->M, script_r );
    }
    else{
-       f1 = -fgrav( pl->M, script_r, pl->eps );
+       //f1 = -fgrav( pl->M, script_r, pl->eps );
+       f1 = -fgrav_yike( pl->M, script_r, G_EPS );
+
+       //TODO: add a parameter for G_EPS = 0.02 (or other)
+       //      if( G_EPS > 0.0 ) do yike smoothing
    }
 
    double cosa = dx/script_r;
@@ -116,7 +131,7 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
 
 }
 
-void planet_src( struct planet * pl , double * prim , double * cons , double * xp , double * xm , double dVdt ){
+void planet_src( struct planet * pl , double * prim , double * cons , double *grav , double * xp , double * xm , double dVdt ){
 
    double rp = xp[0];
    double rm = xm[0];
@@ -133,6 +148,10 @@ void planet_src( struct planet * pl , double * prim , double * cons , double * x
 
    double Fr,Fp,Fz;
    planetaryForce( pl , r , phi , z , &Fr , &Fp , &Fz , 0 );
+
+   grav[0] += Fr;
+   grav[1] += Fp;
+   grav[2] += Fz;
 
    cons[SRR] += rho*Fr*dVdt;
    cons[SZZ] += rho*Fz*dVdt;
@@ -167,8 +186,18 @@ int nearest_planet_dist( struct domain *theDomain, double r, double phi ){
       if( dist < nearest )
          nearest = dist;
    }
+   
    return nearest;
+}
 
+double get_planet_2dist( double r, double phi, double rp, double pp ){
+    
+    double cosp = cos(phi);
+    double sinp = sin(phi);
+    double dx = r*cosp - rp*cos(pp);
+    double dy = r*sinp - rp*sin(pp);
+    
+    return sqrt(dx*dx+dy*dy);
 }
 
 void planet_RK_copy( struct planet * pl ){
