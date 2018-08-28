@@ -3,32 +3,50 @@
 
 double get_om( double );
 double get_om1( double );
-double get_cs2( double );
+double get_cs2( double, double );
 
 static double gamma_law = 0.0; 
 static double R_SINK    = 0.0;
-static double TAU_SINK  = 1e-4;  //5.27;
+static double TAU_SINK  = 1e-4;  //5.0;
 static double RHO_FLOOR = 0.0; 
 static double PRE_FLOOR = 0.0; 
 static double explicit_viscosity = 0.0;
 static int include_viscosity = 0;
 static int isothermal = 0;
 static int alpha_flag = 0;
+static int sink_flag  = 0;
+
+static double a = 1.0;
+static double q_planet = 1.0;
+static int cs2Choice = 0;
+static double G_EPS = 0.02;
+static double t_step = 0.0;
 
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
    isothermal = theDomain->theParList.isothermal_flag;
+   sink_flag = theDomain->theParList.sink_flag;
    R_SINK = theDomain->theParList.r_sink;
+   TAU_SINK = theDomain->theParList.t_sink;
    RHO_FLOOR = theDomain->theParList.Density_Floor;
    PRE_FLOOR = theDomain->theParList.Pressure_Floor;
    explicit_viscosity = theDomain->theParList.viscosity;
    include_viscosity = theDomain->theParList.visc_flag;
    alpha_flag = theDomain->theParList.alpha_flag;
 
+//========= Params for Binary Sims ===================
+   cs2Choice = theDomain->theParList.Cs2_Profile;
+   q_planet = theDomain->theParList.Mass_Ratio;
+   G_EPS = theDomain->theParList.g_eps;
+
 }
 
 int set_B_flag(void){
    return(0);
+}
+
+void set_hydro_time( double t ){
+    t_step = t;
 }
 
 double get_omega( double * prim , double * x ){
@@ -104,6 +122,7 @@ void getUstar( double * prim , double * Ustar , double * x , double Sk , double 
 void cons2prim( double * cons , double * prim , double * x , double dV ){
    
    double r = x[0];
+   double phi = x[1];
    double rho = cons[DDD]/dV;
    if( rho < RHO_FLOOR )   rho = RHO_FLOOR;
    double Sr  = cons[SRR]/dV;
@@ -121,11 +140,36 @@ void cons2prim( double * cons , double * prim , double * x , double dV ){
    double rhoe = E-KE;
    double Pp = (gamma_law - 1.)*rhoe;
 
-   if( Pp  < PRE_FLOOR*rho ) Pp = PRE_FLOOR*rho;
+   
+//==================== Yike Cap Stuff ==================
+   double CS_CAP = 10.0;
+   double CS_FLOOR = 1e-5;
+   double VEL_CAP = 20.0;
+  
    if( isothermal ){
-      double cs2 = get_cs2( r );
+      double cs2 = get_cs2( r, phi );
+      if( cs2 < CS_FLOOR*CS_FLOOR )
+          cs2 = CS_FLOOR*CS_FLOOR;
+      if( cs2 > CS_CAP*CS_CAP )
+          cs2 = CS_CAP*CS_CAP;
       Pp = cs2*rho/gamma_law;
    }
+
+   double v_mag = sqrt( 2.*KE/rho );
+   if( v_mag > VEL_CAP ){
+        vr = vr*VEL_CAP/v_mag;
+        vp = vp*VEL_CAP/v_mag;
+        vz = vz*VEL_CAP/v_mag;
+   }
+//========================================================
+
+/*
+   if( Pp  < PRE_FLOOR*rho ) Pp = PRE_FLOOR*rho;
+   if( isothermal ){
+      double cs2 = get_cs2( r, phi );
+      Pp = cs2*rho/gamma_law;
+   }
+*/
 
    prim[RHO] = rho;
    prim[PPP] = Pp;
@@ -171,43 +215,53 @@ void flux( double * prim , double * flux , double * x , double * n ){
 }
 
 double nearest_planet_dist( struct domain *, double, double );
+double get_moment_arm( double * , double * );
 double get_dp( double , double );
+double get_planet_2dist( double, double, double, double );
 
-void source( struct domain *theDomain, double * prim , double * cons , double * xp , double * xm , double dV, double dt ){
+void source( struct domain *theDomain, double * prim , double * cons , double * xp , double * xm , double dV, double dt, int last_step ){
    
    double rp = xp[0];
    double rm = xm[0];
    double dphi = get_dp(xp[1],xm[1]);
+   double phip = xp[1];
+   double phim = phip - dphi;
    double rho = prim[RHO];
    double Pp  = prim[PPP];
    double r_1  = .5*(rp+rm);
    double r2_3 = (rp*rp + rp*rm + rm*rm)/3.;
    double vr  = prim[URR];
+   double vz  = prim[UZZ];
    double omega = prim[UPP];
    double dVdt = dV*dt;
 
-   //Density Sink
-   double dist = nearest_planet_dist(theDomain, r_1, xm[1]+0.5*dphi);
-   if( dist < R_SINK ){
-      //rho = RHO_FLOOR;
-      if( rho > RHO_FLOOR )
-           rho -= ( dt/TAU_SINK )*rho;
-      if( rho < RHO_FLOOR )
-           rho = RHO_FLOOR;
 
-      prim[RHO] = rho;
-      cons[DDD] = rho*dV;
-   }
- 
    double centrifugal = rho*omega*omega*r2_3/r_1*sin(.5*dphi)/(.5*dphi);
    double press_bal   = Pp/r_1;
 
-   cons[SRR] += dVdt*( centrifugal + press_bal );
+   cons[SRR] += dVdt*( centrifugal + press_bal ); 
 
    double om  = get_om( r_1 );
    double om1 = get_om1( r_1 );
 
    cons[TAU] += dVdt*rho*vr*( om*om*r2_3/r_1 - om1*(omega-om)*r2_3 );
+
+//================ Yike Binary Visc. Calc. =================
+   double om_bh = pow( a, -1.5 );
+   double mu = q_planet/(1.+q_planet);
+   double phi = 0.5*(phip+phim);
+   double eps = G_EPS;
+
+   double M1 = 1.-mu;
+   double r1 = a*mu;
+   double phi1 = om_bh*t_step - M_PI;
+   double d1 = get_planet_2dist( r_1, phi, r1, phi1 );
+
+   double M2 = mu;
+   double r2 = a*(1.-mu);
+   double phi2 = om_bh*t_step;
+   double d2 = get_planet_2dist( r_1, phi, r2, phi2 );
+//==========================================================
  
    if( include_viscosity ){
       double nu = explicit_viscosity;
@@ -215,11 +269,90 @@ void source( struct domain *theDomain, double * prim , double * cons , double * 
          double alpha = explicit_viscosity;
          double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
          double h = c*pow( r_1 , 1.5 );
+        //viscosity calculation for Binary system--based on Yike's
+         if( cs2Choice==4 ){
+            double denom = 1./sqrt( M1*pow(d1*d1+eps*eps,-1.5) + M2*pow(d2*d2+eps*eps,-1.5) );
+            h = c*denom;
+         }
          nu = alpha*c*h;
       }
-      cons[SRR] += -dVdt*nu*rho*vr/(r_1*r_1);
+      //Seems like Yike doesn't have this source term???
+      //Commented out just for test
+      cons[SRR] += -dVdt*nu*rho*vr/(r_1*r_1);  
    }
 
+}
+
+void density_sink( struct domain *theDomain, double *prim, double *cons, double *xp, double *xm, double dV, double dt ){
+
+    double rho = prim[RHO];
+    double vr  = prim[URR];
+    double om  = prim[UPP];
+    double vz  = prim[UZZ];
+    double rp = xp[0];
+    //double rm = xm[0];
+    double r = get_moment_arm( xp, xm );
+    //double r = 0.5*(xp[0]+xm[0]);
+    double dphi = get_dp( xp[1],xm[1] );
+    double phip = xp[1];
+    double phim = phip - dphi;
+    double dist = nearest_planet_dist( theDomain, rp, 0.5*(phip+phim) );
+    if( sink_flag && dist < R_SINK ){
+        //rho -= ( dt/TAU_SINK )*rho;
+        //rho -= (1e-10)*rho;
+        double sink_frac = dt/TAU_SINK;
+        if( sink_frac > 1.0 ){
+            sink_frac = 0.95;
+            //printf("WARNING: TAU_SINK < dt \n");
+        }
+        //printf("sink_frac %f\n", sink_frac);
+        prim[RHO] -= sink_frac*rho;
+        //cons[DDD] -= sink_frac*(rho*dV);
+        //cons[SRR] -= sink_frac*(rho*vr*dV);
+        //cons[LLL] -= sink_frac*(rho*om*r*r*dV);
+        //cons[SZZ] -= sink_frac*(rho*vz*dV);
+        int q;
+        double floor = 1e-5;
+        for( q=0; q<NUM_Q; q++ ){
+          cons[q] -= sink_frac*cons[q];
+        }
+        //double x[3] = {r, 0.5*(phip+phim), 0.5*(xp[2]+xm[2])};
+        //prim2cons( prim, cons, x, dV );
+    }
+}
+
+void density_sink_yike( struct domain *theDomain, double *prim, double *cons, double *xp, double *xm, double dV, double dt ){
+
+    double rho = prim[RHO];
+    double vr  = prim[URR];
+    double om  = prim[UPP];
+    double vz  = prim[UZZ];
+    double rp = xp[0];
+    double rm = xm[0];
+    double r = get_moment_arm( xp, xm );
+    //double r = 0.5*(xp[0]+xm[0]);
+    double dphi = get_dp( xp[1],xm[1] );
+    double phip = xp[1];
+    double phim = phip - dphi;
+    double dist = nearest_planet_dist( theDomain, 0.5*(rp+rm), 0.5*(phip+phim) );
+    if( sink_flag && dist < R_SINK ){
+        double t_visc = TAU_SINK;
+        if( t_visc < 10.*dt )
+            t_visc = 10.*dt;
+        double sink_frac = dt/t_visc;
+        
+        //prim[RHO] -= sink_frac*rho;
+        cons[DDD] -= sink_frac*cons[DDD];
+        cons[SRR] -= sink_frac*cons[SRR];
+        cons[LLL] -= sink_frac*cons[LLL];
+        cons[SZZ] -= sink_frac*cons[SZZ];
+        cons[TAU] -= sink_frac*cons[TAU];
+        //int q;
+        //double floor = 1e-5;
+        //for( q=0; q<NUM_Q; q++ ){
+        //  cons[q] -= sink_frac*cons[q];
+        //}
+    }
 }
 
 void visc_flux( double * prim , double * gprim , double * flux , double * x , double * n ){
@@ -227,12 +360,43 @@ void visc_flux( double * prim , double * gprim , double * flux , double * x , do
    double r = x[0];
    double nu = explicit_viscosity;
 
+//================ Yike Binary Visc. Calc. =================
+   double q = q_planet;
+   double om_bh = pow( a, -1.5 );
+   double mu = q/(1.+q);
+   double eps = G_EPS;
+
+   double M1 = 1.-mu;
+   double r1 = a*mu;
+   double phi1 = om_bh*t_step - M_PI;
+   double d1 = get_planet_2dist( r, x[1], r1, phi1 );
+
+   double M2 = mu;
+   double r2 = a*(1.-mu);
+   double phi2 = om_bh*t_step;
+   double d2 = get_planet_2dist( r, x[1], r2, phi2 );
+//==========================================================
+
+   if( alpha_flag ){
+        double alpha = explicit_viscosity;
+        double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
+        double h = c*pow( r , 1.5 );
+        //viscosity calculation for Binary system--based on Yike's
+        if( cs2Choice==4 ){
+           double denom = 1./sqrt( M1*pow(d1*d1+eps*eps,-1.5) + M2*pow(d2*d2+eps*eps,-1.5) );
+           h = c*denom;
+        }
+        nu = alpha*c*h;
+    }
+/*
    if( alpha_flag ){
       double alpha = explicit_viscosity;
       double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
       double h = c*pow( r , 1.5 );
+      
       nu = alpha*c*h;
    }
+*/
 
    double rho = prim[RHO];
    double vr  = prim[URR];
@@ -294,6 +458,7 @@ double mindt(double * prim , double w , double * xp , double * xm ){
    double vz  = prim[UZZ];
    double cs  = sqrt(gamma_law*Pp/rho);
 
+   
    double maxvr = cs + fabs(vr);
    double maxvp = cs + fabs(vp);
    double maxvz = cs + fabs(vz);
@@ -325,6 +490,14 @@ double mindt(double * prim , double w , double * xp , double * xm ){
    double dt_visc = .03*dx*dx/nu;
    if( dt > dt_visc ) dt = dt_visc;
 */
+   double delta_t = 1e-4;
+   if( dt <= delta_t ){
+        //printf("rho = %f\n", rho);
+        //printf("P   = %f\n", Pp );
+        //printf("cs  = %f\n", cs );
+        //printf("Fluid velocity in cell: (%f, %f, %f)\n", vr, vp, vz);
+   }
+   
    return( dt );
 
 }

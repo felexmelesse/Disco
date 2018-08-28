@@ -19,7 +19,7 @@ void B_faces_to_cells( struct domain * , int );
 void setup_faces( struct domain * , int );
 void phi_flux( struct domain * , double dt );
 void trans_flux( struct domain * , double dt , int );
-void add_source( struct domain * , double dt );
+void add_source( struct domain * , double dt, int );
 
 void avg_Efields( struct domain * );
 void update_B_fluxes( struct domain * , double );
@@ -38,11 +38,14 @@ void exchangeTracers( struct domain * , int );
 
 //int get_num_rzFaces( int , int , int );
 int set_B_flag( void );
+void set_hydro_time( double );
 
 void onestep( struct domain * theDomain , double RK , double dt , int first_step , int last_step , double global_dt ){
-
    int Nz = theDomain->Nz;
    int bflag = set_B_flag();
+    
+   //set time in Hydro/euler.c for binary stuff
+   set_hydro_time( theDomain->t );
 
    if( first_step ) set_wcell( theDomain );
    adjust_RK_cons( theDomain , RK );
@@ -63,7 +66,7 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
       update_B_fluxes( theDomain , dt );
    }
 
-   add_source( theDomain , dt );
+   add_source( theDomain , dt, last_step );
 
    if( first_step ){
       move_cells( theDomain , dt );
