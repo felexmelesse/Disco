@@ -44,7 +44,10 @@ struct param_list{
    double rmin, rmax;
    double zmin, zmax;
    double phimax;
+
+   int    sink_flag;
    double r_sink;
+   double t_sink;
 
    int LogZoning, Z_Periodic;
    double LogRadius;
@@ -67,20 +70,23 @@ struct param_list{
    int isothermal_flag;
    int Cs2_Profile;
    double Cs2_Par;
+   int alpha_flag;
+   int grav2D;
+   double g_eps;
+
 
    double Disk_Mach;
    double Mass_Ratio;
    double Eccentricity;
    double Drift_Rate,Drift_Exp;
-   int grav2D;
-   int alpha_flag;
-
+   
    int num_tracers;
    int num_mc_trs;  //not used anymore?
    int tr_out_step; //not used anymore?
    int tr_out_num;
    int tr_out_flag;
    int tr_init_type;
+   double tr_rmax, tr_rmin;
 
    int restart_flag;
    int CT;
@@ -176,7 +182,9 @@ struct cell{
    double RK_Phi[NUM_FACES];
    double tempDoub;
 
+   double f_grav[3];
    int real;
+   int origin;
 };
 
 struct edge{
@@ -243,9 +251,17 @@ struct tracer{
    double RK_omega;
    double RK_vz;
 
-   double Lp;
-   double Ss;
+   double prim[NUM_Q];
+   double dPdp;
+   double C_j;
 
+   double gravfrac;
+   double v_prev[3];
+/*
+   double Lp;
+   double Jj;
+   double Ss;
+*/
    struct tracer *next;
    struct cell *myCell;   
 
