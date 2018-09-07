@@ -7,6 +7,7 @@ static int enOmChoice = 0;
 static double enOmPar = 0.0;
 static int cs2Choice = 0;
 static double cs2Par = 0.0;
+static double Omega0 = 0.0;
 
 static double Mach = 0.0;
 static double r0 = 0.0;
@@ -22,6 +23,7 @@ void setOmegaParams( struct domain * theDomain ){
    enOmPar = theDomain->theParList.Energy_Omega_Par;
    cs2Choice = theDomain->theParList.Cs2_Profile;
    cs2Par = theDomain->theParList.Cs2_Par;
+   Omega0 = theDomain->theParList.RotOmega;
 
    Mach = theDomain->theParList.Disk_Mach;
    r0 = theDomain->theParList.initPar1; // Inner edge
@@ -55,22 +57,22 @@ double get_om( double *x ){
     double om;
 
     if(enOmChoice == 1)
-        om = 1.0;
+        om = 1.0-Omega0;
 
     else if(enOmChoice == 2)
-        om = 1.0/pow(r,1.5);
+        om = 1.0/pow(r,1.5)-Omega0;
 
     else if(enOmChoice == 3)
     {
         double n = 8.0;
-        om = 1./pow( pow( r , 1.5*n ) + 1. , 1./n );
+        om = 1./pow( pow( r , 1.5*n ) + 1. , 1./n )-Omega0;
     }
 
     else if(enOmChoice == 4)
-        om =  10.*exp(-.5*r*r);
+        om =  10.*exp(-.5*r*r)-Omega0;
 
     else
-        om = 0.0;
+        om = 0.0-Omega0;
 
     return om;
 }
