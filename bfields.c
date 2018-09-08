@@ -8,6 +8,9 @@ double get_dV( double * , double * );
 void setup_faces( struct domain * , int );
 int get_num_rzFaces( int , int , int );
 void B_faces_to_cells( struct domain * , int );
+double bfield_scale_factor(double x, int dim);
+void get_centroid_arr(double *, double *, double *);
+double get_scale_factor(double *, int);
  
 void set_B_fields( struct domain * theDomain ){
 
@@ -19,10 +22,10 @@ void set_B_fields( struct domain * theDomain ){
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
 
-   for( j=0 ; j<Nr ; ++j ){
-      double r = get_centroid(r_jph[j], r_jph[j-1], 1);
-      for( k=0 ; k<Nz ; ++k ){
-         double z = get_centroid(z_kph[k], z_kph[k-1], 2);
+   for( k=0 ; k<Nz ; ++k ){
+      double z = get_centroid(z_kph[k], z_kph[k-1], 2);
+      for( j=0 ; j<Nr ; ++j ){
+         double r = get_centroid(r_jph[j], r_jph[j-1], 1);
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);
@@ -155,7 +158,8 @@ void B_faces_to_cells( struct domain * theDomain , int type ){
 
                double xp[3] = { r_jph[j]   , c->piph  , z_kph[k]   };
                double xm[3] = { r_jph[j-1] , cm->piph , z_kph[k-1] };
-               double r = get_centroid( r_jph[j] , r_jph[j-1], 1 );
+               double x[3];
+               get_centroid_arr(xp, xm, x);
                double dA = get_dA( xp , xm , 0 );
                double dV = get_dV( xp , xm );
 
@@ -163,8 +167,11 @@ void B_faces_to_cells( struct domain * theDomain , int type ){
                   c->prim[BRR] /= c->tempDoub;
                   c->prim[BPP] = .5*(c->Phi[0]+cm->Phi[0])/dA;
                }else{
-                  c->cons[BRR] *= dV/r/c->tempDoub;
-                  c->cons[BPP] = .5*(c->Phi[0]+cm->Phi[0])*dV/dA/r;
+                  double rfac = bfield_scale_factor(x[0], 0);
+                  double hr = get_scale_factor(x, 1);
+                  double hp = get_scale_factor(x, 0);
+                  c->cons[BRR] *= dV*rfac/(c->tempDoub * hr) ;
+                  c->cons[BPP] = .5*(c->Phi[0]+cm->Phi[0])*dV/(dA * hp);
                }
             }
          }
@@ -214,12 +221,16 @@ void B_faces_to_cells( struct domain * theDomain , int type ){
 
                   double xp[3] = { r_jph[j]   , c->piph  , z_kph[k]   };   
                   double xm[3] = { r_jph[j-1] , cm->piph , z_kph[k-1] };
+                  double x[3];
+                  get_centroid_arr(xp, xm, x);
                   double dV = get_dV( xp , xm );
 
                   if( type==0 ){
                      c->prim[BZZ] /= c->tempDoub;
                   }else{
-                     c->cons[BZZ] *= dV/c->tempDoub;
+                     double zfac = bfield_scale_factor(x[2], 2);
+                     double hz = get_scale_factor(x, 2);
+                     c->cons[BZZ] *= dV*zfac/(c->tempDoub * hz);
                   }    
                }    
             }    
@@ -507,22 +518,26 @@ void subtract_advective_B_fluxes( struct domain * theDomain ){
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
    int * Np = theDomain->Np;
+   double * r_jph = theDomain->r_jph;
 
-   for( j=0 ; j<Nr ; ++j ){
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=0 ; k<Nz ; ++k ){
+      for( j=0 ; j<Nr ; ++j ){
          int jk = j+Nr*k;
+         double rp = r_jph[j];
+         double rm = r_jph[j-1];
+         double r = get_centroid(rp, rm, 1);
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c  = theCells[jk]+i;
 
             double wm = c->wiph;
             double wp = c->wiph;
 
-            c->E[0] -= wm*c->B[0];
-            c->E[1] -= wp*c->B[1];
+            c->E[0] -= rm*wm * c->B[0];
+            c->E[1] -= rp*wp * c->B[1];
 
             if( NUM_EDGES == 8 ){
-               c->E[4] -= wm*c->B[4];
-               c->E[5] -= wp*c->B[5];
+               c->E[4] -= r*wm * c->B[4];
+               c->E[5] -= r*wp * c->B[5];
             }
          }
       }
@@ -653,5 +668,252 @@ void flip_fluxes( struct domain * theDomain , int dim ){
       n0 = fI[jk];
    }
 
+}
+
+double get_dL( double * , double * , int );
+void add_E_phi( double * , double * , double * , double * , double );
+
+int phi_switch( double dphi , double Pmax , int mode ){
+
+   while( dphi > .5*Pmax ) dphi -= Pmax;
+   while( dphi <-.5*Pmax ) dphi += Pmax;
+   if( mode == 1 ) dphi = -dphi;
+
+   int LR = 0;
+   if( dphi > 0.) LR = 1;
+
+   return( LR );
+
+}
+
+int get_which4( double phi , double phiR , double phiU , double phiUR , int * LR_alt , int * UD_alt , int mode , double Pmax ){
+
+   int which4;
+   double dphi;
+   
+   dphi = phi - phiR;
+   int LR_D = phi_switch( dphi , Pmax , mode );
+
+   dphi = phiU - phiUR;
+   int LR_U = phi_switch( dphi , Pmax , mode );
+
+   double phi1 = phi;
+   if( LR_D ) phi1 = phiR;
+   double phi2 = phiU;
+   if( LR_U ) phi2 = phiUR;
+
+   dphi = phi1-phi2;
+   int UD = phi_switch( dphi , Pmax , mode );
+
+   if( UD==0 ){
+      if( LR_D==0 ) which4 = 0;
+      else which4 = 1;
+   }else{
+      if( LR_U==0 ) which4 = 2;
+      else which4 = 3;
+   }
+
+   if( mode == 0 ){
+      if( which4 == 0 || which4 == 1 ) *LR_alt = LR_U;
+      else                             *LR_alt = LR_D;
+
+      if( which4 == 0 || which4 == 2 ){
+         dphi = phiR - phiUR;
+         *UD_alt = phi_switch( dphi , Pmax , mode );
+      }else{
+         dphi = phi - phiU;
+         *UD_alt = phi_switch( dphi , Pmax , mode );
+      }
+   }
+
+   return( which4 );
+}
+
+void make_edge_adjust( struct domain * theDomain , double dt ){
+
+   struct cell ** theCells = theDomain->theCells;
+   int Nr = theDomain->Nr;
+   int Nz = theDomain->Nz;
+   int * Np = theDomain->Np;
+   double * r_jph = theDomain->r_jph;
+   double * z_kph = theDomain->z_kph;
+   double Pmax = theDomain->phi_max;
+   int i,j,k;
+
+   int I0[Nr*Nz];
+   for( k=0 ; k<Nz ; ++k ){
+      for( j=0 ; j<Nr ; ++j ){
+         int jk = j+Nr*k;
+         int found=0;
+         int quad_prev=0;
+         for( i=0 ; i<Np[jk] && !found ; ++i ){
+            struct cell * c = theCells[jk]+i;
+            double convert = 2.*M_PI/Pmax;
+            double sn = sin(c->piph*convert);
+            double cs = cos(c->piph*convert);
+            if( sn>0. && cs>0. && quad_prev ){
+               quad_prev = 0; 
+               found = 1; 
+               I0[jk] = i; 
+            }else if( sn<0. && cs>0. ){
+               quad_prev=1;
+            }    
+         }    
+         if( !found ) I0[jk]=0;
+      }    
+   }
+
+   for( k=0 ; k<Nz-1 ; ++k ){
+      for( j=0 ; j<Nr-1 ; ++j ){
+         int jk   = j  +Nr*k;
+         int jkR  = j+1+Nr*k;
+         int jkU  = j  +Nr*(k+1);
+         int jkUR = j+1+Nr*(k+1);
+
+         double xp[3] = {r_jph[j],0.0,z_kph[k]};
+         double xm[3] = {r_jph[j],0.0,z_kph[k]};
+
+         int i   = I0[jk  ];
+         int iR  = I0[jkR ];
+         int iU  = I0[jkU ];
+         int iUR = I0[jkUR];
+
+         int Ne = Np[jk] + Np[jkR] + Np[jkU] + Np[jkUR];
+         int e;
+         for( e=0 ; e<Ne ; ++e ){
+
+            struct cell * c   = &(theCells[jk  ][i  ]);
+            struct cell * cR  = &(theCells[jkR ][iR ]);
+            struct cell * cU  = &(theCells[jkU ][iU ]);
+            struct cell * cUR = &(theCells[jkUR][iUR]);
+
+            int LR_alt;
+            int UD_alt;
+            int buffer;
+            int which4      = get_which4( c->piph         , cR->piph          , cU->piph          , cUR->piph           , &LR_alt , &UD_alt , 0 , Pmax );
+            int which4_back = get_which4( c->piph-c->dphi , cR->piph-cR->dphi , cU->piph-cU->dphi , cUR->piph-cUR->dphi , &buffer , &buffer , 1 , Pmax );
+
+            double * PhiL;
+            double * PhiR;
+            double * PhiU;
+            double * PhiD;
+
+            double E;
+
+            if( which4 == 0 ){
+               PhiL = c->Phi+4;
+               PhiD = c->Phi+2;
+               E = .25*( c->E_phi[3] + c->E_phi[1] );
+               if( LR_alt==0 ){
+                  PhiU = cU->Phi+2;
+                  E += .25*cU->E_phi[1];
+               }else{
+                  PhiU = cUR->Phi+1;
+                  E += .25*cUR->E_phi[0];
+               }
+               if( UD_alt==0 ){
+                  PhiR = cR->Phi+4;
+                  E += .25*cR->E_phi[3];
+               }else{
+                  PhiR = cUR->Phi+3;
+                  E += .25*cUR->E_phi[2];
+               }
+            }else if( which4 == 1 ){
+               PhiR = cR->Phi+4;
+               PhiD = cR->Phi+1;
+               E = .25*( cR->E_phi[3] + cR->E_phi[0] );
+               if( LR_alt==0 ){
+                  PhiU = cU->Phi+2;
+                  E += .25*cU->E_phi[1];
+               }else{
+                  PhiU = cUR->Phi+1;
+                  E += .25*cUR->E_phi[0];
+               }
+               if( UD_alt==0 ){
+                  PhiL = c->Phi+4;
+                  E += .25*c->E_phi[3];
+               }else{
+                  PhiL = cU->Phi+3;
+                  E += .25*cU->E_phi[2];
+               }
+            }else if( which4 == 2 ){
+               PhiL = cU->Phi+3;
+               PhiU = cU->Phi+2;
+               E = .25*( cU->E_phi[2] + cU->E_phi[1] );
+               if( LR_alt==0 ){
+                  PhiD = c->Phi+2;
+                  E += .25*c->E_phi[1];
+               }else{
+                  PhiD = cR->Phi+1;
+                  E += .25*cR->E_phi[0];
+               }
+               if( UD_alt==0 ){
+                  PhiR = cR->Phi+4;
+                  E += .25*cR->E_phi[3];
+               }else{
+                  PhiR = cUR->Phi+3;
+                  E += .25*cUR->E_phi[2];
+               }
+            }else{
+               PhiR = cUR->Phi+3;
+               PhiU = cUR->Phi+1;
+               E = .25*( cU->E_phi[2] + cU->E_phi[0] );
+               if( LR_alt==0 ){
+                  PhiD = c->Phi+2;
+                  E += .25*c->E_phi[1];
+               }else{
+                  PhiD = cR->Phi+1;
+                  E += .25*cR->E_phi[0];
+               }
+               if( UD_alt==0 ){
+                  PhiL = c->Phi+4;
+                  E += .25*cR->E_phi[3];
+               }else{
+                  PhiL = cU->Phi+3;
+                  E += .25*cUR->E_phi[2];
+               }
+            } 
+
+            if( which4 == 0 ){
+               xp[1] = c->piph;
+            }else if( which4 == 1 ){
+               xp[1] = cR->piph;
+            }else if( which4 == 2 ){
+               xp[1] = cU->piph;
+            }else{
+               xp[1] = cUR->piph;
+            }
+
+            if( which4_back == 0 ){
+               xm[1] = c->piph  - c->dphi;
+            }else if( which4_back == 1 ){
+               xm[1] = cR->piph - cR->dphi;
+            }else if( which4_back == 2 ){
+               xm[1] = cU->piph - cU->dphi;
+            }else{
+               xm[1] = cUR->piph- cUR->dphi;
+            }
+
+            double dl = get_dL( xp , xm , 0 );
+//if( e==0 ) printf("dl = %e which4 = %d, which4_back = %d, phip = %e phim = %e dphi=%e \n",dl,which4,which4_back,xp[1],xm[1],xp[1]-xm[1]);
+            add_E_phi( PhiL , PhiR , PhiD , PhiU , E*dl*dt );
+
+            if( which4 == 0 ){
+               ++i;
+               if( i   == Np[jk  ] ) i  =0;
+            }else if( which4 == 1 ){
+               ++iR;
+               if( iR  == Np[jkR ] ) iR =0;
+            }else if( which4 == 2 ){
+               ++iU;
+               if( iU  == Np[jkU ] ) iU =0;
+            }else{
+               ++iUR;
+               if( iUR == Np[jkUR] ) iUR=0;
+            }
+         }
+
+      }
+   }
 }
 

@@ -136,8 +136,9 @@ void riemann_trans( struct face * F , double dt , int dim ){
       primR[BTRANS] = Bavg;
    }
 
-   double Erz,Brz,Ephi,buffer;
-   solve_riemann( primL , primR , cL->cons , cR->cons , cL->grad , cR->grad , F->cm , n , 0.0 , dAdt , dim , &Erz , &Brz , &Ephi , &buffer );
+   double Erz,Brz,Ephi;
+   solve_riemann( primL , primR , cL->cons , cR->cons , cL->grad , cR->grad , 
+                  F->cm , n , 0.0 , dAdt , dim , &Erz , &Brz , &Ephi , NULL );
  
    double fracL = F->dphi / cL->dphi;
    double fracR = F->dphi / cR->dphi;
@@ -268,24 +269,6 @@ void solve_riemann( double * primL , double * primR , double * consL , double * 
    }
 
    flux_to_E( Flux , Ustr , x , E1_riemann , B1_riemann , E2_riemann , B2_riemann , dim );
-/*
-   if( use_B_fields && NUM_Q > BZZ ){
-      if( dim==0 ){
-         *E1_riemann = Flux[BRR]*r;   //Ez
-         *B1_riemann = Ustr[BRR]*r*r; // r*Br
-         *E2_riemann = Flux[BZZ];    //Er
-         *B2_riemann = Ustr[BZZ]*r;  //-r*Bz
-      }else if( dim==1 ){
-         *E1_riemann = -Flux[BPP]*r;  //Ez
-         *B1_riemann = Ustr[BRR]*r*r; // r*Br
-         *E2_riemann = 1.0*Flux[BZZ];     //Ephi
-      }else{
-         *E1_riemann = -Flux[BPP]*r;   //Er
-         *B1_riemann = Ustr[BZZ]*r;  //-r*Bz
-         *E2_riemann = 1.0*-Flux[BRR]*r;  //Ephi
-      }
-   }
-*/
 }
 
 

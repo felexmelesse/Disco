@@ -235,3 +235,12 @@ void reflect_prims(double * prim, double * x, int dim)
     else if(dim == 2)
         prim[UZZ] = -prim[UZZ];
 }
+
+double bfield_scale_factor(double x, int dim)
+{
+    // Returns the factor used to scale B_cons.
+    // x is coordinate location in direction dim.
+    // dim == 0: r, dim == 1: p, dim == 2: z
+    
+    return 1.0;
+}

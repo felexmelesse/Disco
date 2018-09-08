@@ -10,7 +10,7 @@ T_Times_2pi		1
 //Output Frequency//
 Num_Reports		4e4
 Num_Snapshots		0
-Num_Checkpoints		2
+Num_Checkpoints		20
 Use_Logtime		0
 
 //Grid Dimensions//
@@ -30,6 +30,11 @@ Phi_Max			1.0
 P_Times_2pi		1
 Log_Zoning		2	//0=Uniform, 1=Log, 2=Hybrid
 Log_Radius		0.1	//Only for option 2 of Log_Zoning
+
+NoBC_Rmin       1   //0 = Regular boundary. Ghost zones added and
+NoBC_Rmax       0   //    boundary condition applied.
+NoBC_Zmin       0   //1 = Coordinate boundary (like r=0 origin).
+NoBC_Zmax       0   //    No ghost zones or explicit BC applied.
 
 //Numerical Parameters
 CFL			0.5
@@ -76,6 +81,10 @@ Init_Par1       0.0   // doub
 Init_Par2       0.0   // doub
 Init_Par3       0.0   // doub
 Init_Par4       0.0   // doub
+Init_Par5       0.0   // doub
+Init_Par6       0.0   // doub
+Init_Par7       0.0   // doub
+Init_Par8       0.0   // doub
 
 //Noise Parameters
 Noise_Type      0       // 0: No Noise, 1: URR and UPP 

@@ -99,11 +99,18 @@ double getval( double * thisZone , int q ){
    double rho = thisZone[0];
 //   double X   = thisZone[5];
    double P   = thisZone[1];
+   double vr = thisZone[2];
+   double om = thisZone[3];
+
+/*
+   double gam = 1.333333;
+   double cs = sqrt(gam*P/rho);
+    return fabs(vr)/cs;
+    */
+
    double Br = thisZone[5];
    double Bp = thisZone[6];
    double Bz = thisZone[7];
-//   double gam = sqrt(1.+ur*ur+up*up);
-//   double e = (rho+4.*P)*gam*gam-P - rho*gam;
    return( .5*(Br*Br+Bp*Bp+Bz*Bz) ); //fabs(P/pow(rho,5./3.)-1.) );// fabs(thisZone[1]/pow(thisZone[0],5./3.)-1.) );
 //   return( rho*P );
 }
@@ -871,13 +878,13 @@ void drawSpiral(double RotationAngleX, double RotationAngleY,
                     double yoff, double zoff)
 {
 
-    double rp   = 5.0;//thePlanets[1][0];
+    //double rp   = 5.0;//thePlanets[1][0];
     double Mach = 3.65;
     double p0 = 1.2;
-    double dr = .07;
+    //double dr = .07;
     int Nr = 200;
-    double Rmin = 0.5;
-    double Rmax = 1.1;
+    //double Rmin = 0.5;
+    //double Rmax = 1.1;
     int k;
     
     glLineWidth(3.0f);

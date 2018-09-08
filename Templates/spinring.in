@@ -6,7 +6,7 @@
 INITIAL  = spinring
 HYDRO    = mhd
 GEOMETRY = cylindrical
-BOUNDARY = polar
+BOUNDARY = fixed3d
 OUTPUT   = h5out
 RESTART  = h5in
 PLANETS  = none
