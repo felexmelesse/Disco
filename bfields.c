@@ -519,25 +519,37 @@ void subtract_advective_B_fluxes( struct domain * theDomain ){
    int Nz = theDomain->Nz;
    int * Np = theDomain->Np;
    double * r_jph = theDomain->r_jph;
+   double * z_kph = theDomain->z_kph;
 
    for( k=0 ; k<Nz ; ++k ){
       for( j=0 ; j<Nr ; ++j ){
          int jk = j+Nr*k;
-         double rp = r_jph[j];
-         double rm = r_jph[j-1];
-         double r = get_centroid(rp, rm, 1);
+         double xp[3] = {r_jph[j], 0.0, z_kph[k]};
+         double xm[3] = {r_jph[j-1], 0.0, z_kph[k-1]};
+         double xc[3];
+         get_centroid_arr(xp, xm, xc);
+
+         double x[3] = {xm[0], 0.0, xc[2]};
+         double hL = get_scale_factor(x, 0);
+         x[0] = xp[0];
+         double hR = get_scale_factor(x, 0);
+         x[0] = xc[0]; x[2] = xm[2];
+         double hD = get_scale_factor(x, 0);
+         x[2] = xp[2];
+         double hU = get_scale_factor(x, 0);
+
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c  = theCells[jk]+i;
 
             double wm = c->wiph;
             double wp = c->wiph;
 
-            c->E[0] -= rm*wm * c->B[0];
-            c->E[1] -= rp*wp * c->B[1];
+            c->E[0] -= hL*wm * c->B[0];
+            c->E[1] -= hR*wp * c->B[1];
 
             if( NUM_EDGES == 8 ){
-               c->E[4] -= r*wm * c->B[4];
-               c->E[5] -= r*wp * c->B[5];
+               c->E[4] -= hD*wm * c->B[4];
+               c->E[5] -= hU*wp * c->B[5];
             }
          }
       }
