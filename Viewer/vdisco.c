@@ -1560,7 +1560,7 @@ int main(int argc, char *argv[])
    loadGrid(filename);
    loadPlanets(filename);
 
-   KK = Nz/4;
+   KK = Nz/2;
    loadSliceZ(filename, KK);
    loadSlicePhi(filename);
    loadDiagnostics(filename, KK);
