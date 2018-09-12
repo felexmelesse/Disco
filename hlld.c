@@ -275,14 +275,23 @@ void get_double_star( double * UsL , double * UsR , double * Uss , double * vel 
 
 }
 
+double get_scale_factor(double *, int);
+double bfield_scale_factor(double, int);
+
 void get_Ustar_HLLD( double w , double * pL , double * pR , double * F , double * U , double * x , double * n ){
 
-   double r = x[0];
    //Get Velocities
    double vel[5];
    double Pt_star;
-   pL[UYY] *= r;
-   pR[UYY] *= r;
+   double hr = get_scale_factor(x, 1);
+   double hp = get_scale_factor(x, 0);
+   double hz = get_scale_factor(x, 2);
+   pL[UXX] *= hr;
+   pR[UXX] *= hr;
+   pL[UYY] *= hp;
+   pR[UYY] *= hp;
+   pL[UZZ] *= hz;
+   pR[UZZ] *= hz;
    get_velocities( pL , pR , n , vel , &Pt_star );
 
    int q;
@@ -338,12 +347,23 @@ void get_Ustar_HLLD( double w , double * pL , double * pR , double * F , double 
          }
       }
    }
-   F[BXX] /= r;
-   F[BYY] /= r;
-   F[LLL] *= r;
-   U[BXX] /= r;
-   U[BYY] /= r;
-   U[LLL] *= r;
+
+   double brfac = bfield_scale_factor(x[0], 0);
+   double bpfac = bfield_scale_factor(x[1], 1);
+   double bzfac = bfield_scale_factor(x[2], 2);
+
+   F[SRR] *= hr;
+   F[LLL] *= hp;
+   F[SZZ] *= hz;
+   F[BXX] *= brfac/hr;
+   F[BYY] *= bpfac/hp;
+   F[BZZ] *= bzfac/hz;
+   U[SRR] *= hr;
+   U[LLL] *= hp;
+   U[SZZ] *= hz;
+   U[BXX] *= brfac/hr;
+   U[BYY] *= bpfac/hp;
+   U[BZZ] *= bzfac/hz;
 }
 
 

@@ -466,21 +466,24 @@ void avg_Efields( struct domain * theDomain ){
 
    }
 
-//E_Z ALONG THE POLE...
-   j=0;
-   for( k=0 ; k<Nz ; ++k ){
-      int jk = j+Nr*k;
-      double E = 0.0;
-      double B = 0.0;
-      for( i=0 ; i<Np[jk] ; ++i ){
-         struct cell * c = theCells[jk]+i;
-         E += c->E[1]/(double)Np[jk];
-      //   B += c->B[0]/(double)Np[jk];
-      }
-      for( i=0 ; i<Np[jk] ; ++i ){
-         struct cell * c = theCells[jk]+i;
-         c->E[0] = E;
-         c->B[0] = B;
+   //E_Z ALONG THE POLE...
+   if(theDomain->NgRa == 0)
+   {
+      j=0;
+      for( k=0 ; k<Nz ; ++k ){
+         int jk = j+Nr*k;
+         double E = 0.0;
+         double B = 0.0;
+         for( i=0 ; i<Np[jk] ; ++i ){
+            struct cell * c = theCells[jk]+i;
+            E += c->E[1]/(double)Np[jk];
+          //   B += c->B[0]/(double)Np[jk];
+         }
+         for( i=0 ; i<Np[jk] ; ++i ){
+            struct cell * c = theCells[jk]+i;
+            c->E[0] = E;
+            c->B[0] = B;
+         }
       }
    }
 

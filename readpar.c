@@ -82,6 +82,7 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Phi_Max"               , VAR_DOUB , &(theList->phimax)          );
          err += readvar( pfile , "Use_Logtime"           , VAR_INT  , &(theList->Out_LogTime)     );
          err += readvar( pfile , "Log_Zoning"            , VAR_INT  , &(theList->LogZoning)       );
+         err += readvar( pfile , "R_Periodic"            , VAR_INT  , &(theList->R_Periodic)      );
          err += readvar( pfile , "Z_Periodic"            , VAR_INT  , &(theList->Z_Periodic)      );
          err += readvar( pfile , "NoBC_Rmin"             , VAR_INT , &(theList->NoBC_Rmin)       );
          err += readvar( pfile , "NoBC_Rmax"             , VAR_INT , &(theList->NoBC_Rmax)       );

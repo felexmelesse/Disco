@@ -139,11 +139,12 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
    */
 
    exchangeData( theDomain , 0 );
-   boundary_trans( theDomain , 1 );
+   if(! theDomain->theParList.R_Periodic)
+      boundary_trans( theDomain , 1 );
    if( Nz > 1 ){
       exchangeData( theDomain , 1 );
-      int Periodic = theDomain->theParList.Z_Periodic;
-      if( !Periodic ) boundary_trans( theDomain , 2 );
+      if(! theDomain->theParList.Z_Periodic)
+         boundary_trans( theDomain , 2 );
    }
 
    //TODO: This was BEFORE BCs, but if wrecks cell pointers...

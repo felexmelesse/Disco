@@ -52,7 +52,8 @@ int main( int argc , char * argv[] ){
 */
    if( theDomain.Nr > 1 ){
       exchangeData( &theDomain , 0 );
-      boundary_trans( &theDomain , 1);
+      if( !theDomain.theParList.R_Periodic)
+         boundary_trans( &theDomain , 1);
    }
    if( theDomain.Nz > 1 ){
       exchangeData( &theDomain , 1 );

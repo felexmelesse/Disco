@@ -63,8 +63,11 @@ void copy_lite_to_cell( struct cell_lite * cl , struct cell * c ){
 void generate_sendbuffer( struct domain * theDomain , int rnum , int znum , int dim , int * nijk , int * indexL , int * indexR , struct cell_lite * pl , struct cell_lite * pr , int dn1 , int dn2 , int mode ){
 
    struct cell ** theCells = theDomain->theCells;
-   int Periodic = theDomain->theParList.Z_Periodic;
-   if( dim == 0 ) Periodic = 0;
+   int Periodic;
+   if( dim == 0 )
+       Periodic = theDomain->theParList.R_Periodic;
+   else
+       Periodic = theDomain->theParList.Z_Periodic;
    int * dim_rank = theDomain->dim_rank;
    int * dim_size = theDomain->dim_size;
    int Nr = theDomain->Nr;
@@ -114,8 +117,11 @@ void generate_sendbuffer( struct domain * theDomain , int rnum , int znum , int 
 void generate_intbuffer( struct domain * theDomain , int rnum , int znum , int dim , int * nijk , int * indexL , int * indexR , int * Npl , int * Npr , int dn1 , int dn2 , int mode ){
 
    struct cell ** theCells = theDomain->theCells;
-   int Periodic = theDomain->theParList.Z_Periodic;
-   if( dim == 0 ) Periodic = 0;
+   int Periodic;
+   if( dim == 0 )
+       Periodic = theDomain->theParList.R_Periodic;
+   else
+       Periodic = theDomain->theParList.Z_Periodic;
    int * dim_rank = theDomain->dim_rank;
    int * dim_size = theDomain->dim_size;
    int Nr = theDomain->Nr;
