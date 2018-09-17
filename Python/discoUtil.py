@@ -3,6 +3,7 @@ import math
 import h5py as h5
 import matplotlib.pyplot as plt
 import numpy as np
+import discoGeom as dg
 
 def loadPars(filename):
 
@@ -56,27 +57,20 @@ def loadCheckpoint(filename):
     riph = f['Grid']['r_jph'][...]
     ziph = f['Grid']['z_kph'][...]
     planetDat = f['Data']['Planets'][...]
+    pmax = f['Pars']['Phi_Max']
 
-    r = np.zeros(piph.shape)
-    z = np.zeros(piph.shape)
-    phi = np.zeros(piph.shape)
-    R = 0.5*(riph[1:] + riph[:-1])
-    Z = 0.5*(ziph[1:] + ziph[:-1])
     primPhi0 = np.zeros((index.shape[0], index.shape[1], prim.shape[1]))
     for k in range(index.shape[0]):
         for j in range(index.shape[1]):
-            ind0 = index[k,j]
-            ind1 = ind0 + nphi[k,j]
-            r[ind0:ind1] = R[j]
-            z[ind0:ind1] = Z[k]
-            piph_strip = piph[ind0:ind1]
-            pimh = np.roll(piph_strip, 1)
-            pimh[pimh>piph_strip] -= 2*np.pi
-            phi[ind0:ind1] = 0.5*(pimh+piph_strip)
             primPhi0[k,j,:] = prim[idPhi0[k,j],:]
 
-    return t, r, phi, z, prim, (riph, ziph, primPhi0, piph, planetDat, Phi,
-                                    idPhi0, nphi)
+    dat = (riph, ziph, primPhi0, piph, planetDat, Phi, idPhi0, nphi)
+    opts = loadOpts(filename)
+    pars = loadPars(filename)
+
+    r, phi, z = dg.getCellCentroids(dat, opts, pars)
+
+    return t, r, phi, z, prim, dat
 
 def loadDiagRZ(filename):
 

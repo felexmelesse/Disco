@@ -8,26 +8,25 @@ class DiscoDomain:
 
     # A class to contain a Disco Domain
 
-    git = None
-    _pars = None
-    _opts = None
-
-    t = 0.0
-
-    rjph = None
-    zkph = None
-    piph = None
-    _index = None
-    
-    prim = None
-    bflux = None
-    planets = None
-    
-    diagRZ = None
-    diagR = None
-    diagZ = None
-
     def __init__(self, checkpointFile=None, parFile=None):
+
+        self.git = None
+        self._pars = None
+        self._opts = None
+
+        self.t = 0.0
+
+        self.rjph = None
+        self.zkph = None
+        self.piph = None
+        self._index = None
+        
+        self.prim = None
+        self.bflux = None
+        self.planets = None
+        
+        self.diagRZ = None
+
         if checkpointFile is not None:
             self._loadFromCheckpoint(checkpointFile)
         elif parFile is not None:
