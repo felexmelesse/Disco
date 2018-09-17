@@ -19,6 +19,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
     primPhi0 = dat[2]
     piph = dat[3]
     pars = du.loadPars(file)
+    opts = du.loadOpts(file)
 
     if k is None:
         k = int(zkph.shape[0]/2-1)
@@ -50,9 +51,10 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
     #nq = prim.shape[1]
     nq = num_c + num_n
 
-    Zs = np.unique(z)
-    z_eq = Zs[len(Zs)/2]
-    eq_ind = (z==z_eq)
+    #Zs = np.unique(z)
+    #z_eq = Zs[len(Zs)/2]
+    #eq_ind = (z==z_eq)
+    Z = z[zind].mean()
     title = "DISCO t = {0:.1f}".format(t)
     name = file.split('/')[-1].split('.')[0].split('_')[-1]
 
@@ -77,8 +79,8 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
 
                 fig, ax = plt.subplots(1,1, figsize=(12,9))
 
-                dp.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], vartex[q],
-                                pars, vmin=vmin, vmax=vmax, rmax=rmax, 
+                dp.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], Z, vartex[q],
+                                pars, opts, vmin=vmin, vmax=vmax, rmax=rmax, 
                                 planets=planetDat)
                 fig.suptitle(title, fontsize=24)
                 plotname = "plot_eq_{0:s}_lin_{1:s}.png".format(name, varnames[q])
@@ -90,8 +92,8 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
             if q in logvars:
                 fig, ax = plt.subplots(1,1, figsize=(12,9))
 
-                dp.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], vartex[q],
-                                pars, vmin=vmin, vmax=vmax, rmax=rmax, 
+                dp.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], Z, vartex[q],
+                                pars, opts, vmin=vmin, vmax=vmax, rmax=rmax, 
                                 planets=planetDat, log=True)
                 fig.suptitle(title, fontsize=24)
                 plotname = "plot_eq_{0:s}_log_{1:s}.png".format(name, varnames[q])

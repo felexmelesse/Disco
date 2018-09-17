@@ -4,6 +4,8 @@ import numpy as np
 
 def getXYZ(x1, x2, x3, opts, pars):
 
+    x1, x2, x3 = np.broadcast_arrays(x1, x2, x3)
+
     if opts['GEOMETRY'] == "Cylindrical":
         return getXYZcyl(x1, x2, x3, pars)
     else:

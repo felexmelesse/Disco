@@ -6,10 +6,11 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import discoUtil as du
+import discoGeom as dg
 
-def plotZSlice(fig, ax, rjph, piph, r, q, label, pars, vmin=None, vmax=None, 
-            noGhost=False, colorbar=True, xlabel=None, ylabel=None, log=False, 
-            rmax=None, planets=None, cmap=None):
+def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None, 
+            vmax=None, noGhost=False, colorbar=True, xlabel=None, ylabel=None,
+            log=False, rmax=None, planets=None, cmap=None):
 
     phi_max = pars['Phi_Max']
 
@@ -38,6 +39,8 @@ def plotZSlice(fig, ax, rjph, piph, r, q, label, pars, vmin=None, vmax=None,
     else:
         norm = mpl.colors.Normalize(vmin, vmax)
 
+    pimh_min = np.inf
+
     for i, R in enumerate(Rs):
         ind = r==R
         imax = np.argmax(piph[ind])
@@ -51,14 +54,18 @@ def plotZSlice(fig, ax, rjph, piph, r, q, label, pars, vmin=None, vmax=None,
 
         rf = rjph[i:i+2]
 
-        x = rf[:,None] * np.cos(phif)[None,:]
-        y = rf[:,None] * np.sin(phif)[None,:]
+        #x = rf[:,None] * np.cos(phif)[None,:]
+        #y = rf[:,None] * np.sin(phif)[None,:]
+
+        x, y, z = dg.getXYZ(rf[:,None], phif[None,:], Z.mean(), opts, pars)
 
         C = ax.pcolormesh(x, y, aq[None,:], 
                 cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
 
         if lim_float and rf.max() > rmax:
             rmax = rf.max()
+        if phif.min() < pimh_min:
+            pimh_min =  phif.min()
 
     if planets is not None:
         rpl = planets[:,3]
@@ -68,8 +75,12 @@ def plotZSlice(fig, ax, rjph, piph, r, q, label, pars, vmin=None, vmax=None,
         ax.plot(xpl, ypl, color='grey', ls='', marker='o', mew=0, ms=5)
         
     ax.set_aspect('equal')
-    ax.set_xlim(-rmax, rmax)
-    ax.set_ylim(-rmax, rmax)
+    if opts['GEOMETRY'] == 'cylindrical':
+        ax.set_xlim(-rmax, rmax)
+        ax.set_ylim(-rmax, rmax)
+    else:
+        ax.set_xlim(rjph.min(), rjph.max())
+        ax.set_ylim(pimh_min, piph.max())
     
     if colorbar:
         cb = fig.colorbar(C)

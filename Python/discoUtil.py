@@ -128,10 +128,32 @@ def getVarNames(filename):
             names.append('q{0:d}'.format(q))
             texnames.append(r'$q_{0:d}$'.format(q))
     
+    elif hydro == 'euler_cart' and num_c <= 5:
+        names = ['rho', 'P', 'vx', 'vy', 'vz'][:num_c]
+        texnames = [r'$\rho$', r'$P$', r'$v_x$', r'$v_y$', r'$v_z$'][:num_c]
+        for q in range(num_n):
+            names.append('q{0:d}'.format(q))
+            texnames.append(r'$q_{0:d}$'.format(q))
+    
+    elif hydro == 'euler_sph' and num_c <= 5:
+        names = ['rho', 'P', 'vr', 'om', 'vt'][:num_c]
+        texnames = [r'$\rho$', r'$P$', r'$v_r$', r'$\Omega$', r'$v^\theta$'][:num_c]
+        for q in range(num_n):
+            names.append('q{0:d}'.format(q))
+            texnames.append(r'$q_{0:d}$'.format(q))
+    
     elif hydro == 'mhd' and num_c <= 8:
         names = ['rho', 'P', 'vr', 'om', 'vz', 'Br', 'Bp', 'Bz'][:num_c]
         texnames = [r'$\rho$', r'$P$', r'$v_r$', r'$\Omega$', r'$v_z$', 
                         r'$B_r$', r'$B_\phi$', r'$B_z$'][:num_c]
+        for q in range(num_n):
+            names.append('q{0:d}'.format(q))
+            texnames.append(r'$q_{0:d}$'.format(q))
+
+    elif hydro == 'mhd_cart' and num_c <= 8:
+        names = ['rho', 'P', 'vx', 'vy', 'vz', 'Bx', 'By', 'Bz'][:num_c]
+        texnames = [r'$\rho$', r'$P$', r'$v_x$', r'$v_y$', r'$v_z$', 
+                        r'$B_x$', r'$B_y$', r'$B_z$'][:num_c]
         for q in range(num_n):
             names.append('q{0:d}'.format(q))
             texnames.append(r'$q_{0:d}$'.format(q))

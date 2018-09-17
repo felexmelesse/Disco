@@ -162,7 +162,7 @@ def makeErrPlot(t, nx, err, name, label):
         fig, ax = plt.subplots(1,1)
         for tt in T:
             ind = t==tt
-            ax.plot(nx[ind], err[ind])
+            ax.plot(nx[ind], err[ind], marker='+', ms=10, mew=1, ls='')
         nn = np.logspace(math.log10(NX[1]), math.log10(NX[-1]), 
                             num=10, base=10.0)
         ax.plot(nn, err.max() * np.power(nn/nn[0], -2), ls='--', lw=2, 
