@@ -55,7 +55,7 @@ void initial(double *prim, double *x)
     get_xyz(x, xyz);
 
     double phi0 = phi0_o_pi * M_PI;
-    double sintheta0 = sqrt(1.0-costheta0*costheta0);
+    double sintheta0 = sqrt((1.0-costheta0)*(1.0+costheta0));
     double cosphi0 = cos(phi0);
     double sinphi0 = sin(phi0);
 
@@ -77,7 +77,7 @@ void initial(double *prim, double *x)
     double P = rho_ref * cs_ref*cs_ref/gam;
     double Vxyz[3] = {v0*ix, v0*iy, v0*iz};
 
-    double B0 = rho_ref * cA*cA;
+    double B0 = sqrt(rho_ref * cA*cA);
     double Bxyz[3] = {B0*ix, B0*iy, B0*iz};
 
     // Alfven wave phase
