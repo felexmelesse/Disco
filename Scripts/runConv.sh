@@ -2,7 +2,7 @@
 
 make
 
-NR=(0016 0032 0064 0128 0256 0512)
+NR=(0016 0032 0064 0128 0256)
 
 for nr in "${NR[@]}"
 do
@@ -21,5 +21,6 @@ do
     mv output.h5 output.$nr.h5
 done
 
-python Python/acousticwaveAnalysis.py output.*.h5
+#python Python/acousticwaveAnalysis.py output.*.h5
 #python Python/alfvenwaveAnalysis.py output.*.h5
+python Python/magnetosonicwaveAnalysis.py output.*.h5

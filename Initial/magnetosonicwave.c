@@ -30,12 +30,10 @@ void setICparams( struct domain * theDomain )
     phiB_o_pi = theDomain->theParList.initPar8;
 }
 
-
-
 void initial(double *prim, double *x)
 {
     /*
-     * Plane-parallel (circularly polarized?) Alfven wave
+     * Magnetosonic wave with purely transverse magnetic field
      */
 
     double xyz[3];
@@ -77,7 +75,7 @@ void initial(double *prim, double *x)
 
     double P = rho_ref*cs_ref*cs_ref/gam * pow(rho/rho_ref, gam);
 
-    double v = v0 + calc_magnetosonic_cf_int_newt(rho, rho_ref, cs_ref, 
+    double v = v0 + magnetosonic_cf_int_newt(rho, rho_ref, cs_ref, 
                                                     cA0, gam);
     double Vxyz[3] = {v*ix, v*iy, v*iz};
 

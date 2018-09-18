@@ -4,7 +4,7 @@ Restart			0	//Restart from input.h5
 
 //Time Range//
 T_Start			0.0 //1.0
-T_End		    0.1
+T_End		    0.05
 T_Times_2pi		0
 
 //Output Frequency//
@@ -14,7 +14,7 @@ Num_Checkpoints     10
 Use_Logtime		    0
 
 //Grid Dimensions//
-Num_R               64
+Num_R               128
 Num_Z			    1
 aspect			    1.0	//Cell Aspect Ratio, for calculating N_phi
 Max_Aspect_Short	1.5	
@@ -85,7 +85,7 @@ Init_Par1       0.0   // v0 (ambient velocity)
 Init_Par2       1.0   // cA (ambient Alfven speed = sqrt(B0^2/rho))
 Init_Par3       1.0   // a  (wave amplitude in units of B0)
 Init_Par4       0.3   // L (wave packet size)
-Init_Par5       0.5   // phi0_o_pi (azimuthal direction of B0)
+Init_Par5       0.0   // phi0_o_pi (azimuthal direction of B0)
 Init_Par6       0.0   // costheta0 (vertical direction of B0)
 Init_Par7      -0.5   // x0 (initial position of wave packet)
 Init_Par8       0.0   // phiB (transverse angle of B w.r.t v)

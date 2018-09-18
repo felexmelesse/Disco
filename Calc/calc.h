@@ -12,6 +12,6 @@ double bondi_rel_as(double a0, double gam);
 double bondi_rel_solve(double Mdot, double GM, double r, double gam, 
                         double h0, double K, double as);
 
-double calc_magnetosonic_cf_int_newt(double rho, double rho0, double cs0,
+double magnetosonic_cf_int_newt(double rho, double rho0, double cs0,
                                     double cA0, double gam);
 #endif
