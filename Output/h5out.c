@@ -346,7 +346,7 @@ void output( struct domain * theDomain , char * filestart ){
    int * dim_rank = theDomain->dim_rank;
    int * dim_size = theDomain->dim_size;
 
-   int NpDat = 6;
+   int NpDat = 7;
    int Ntools = theDomain->num_tools;
    avg_diagnostics( theDomain );
 
@@ -430,6 +430,7 @@ void output( struct domain * theDomain , char * filestart ){
          PlanetData[NpDat*p + 3] = pl->r;
          PlanetData[NpDat*p + 4] = pl->phi;
          PlanetData[NpDat*p + 5] = pl->eps;
+         PlanetData[NpDat*p + 6] = (double)pl->type;
       }
       writeSimple(filename,"Data","Planets",PlanetData,H5T_NATIVE_DOUBLE);
    }

@@ -12,14 +12,34 @@ void setGravParams( struct domain * theDomain ){
 
 }
 
-double phigrav( double M , double r , double eps ){
-   double n = PHI_ORDER;
-   return( M/pow( pow(r,n) + pow(eps,n) , 1./n ) ) ;
+double phigrav( double M , double r , double eps )
+{
+    if(type == PLPOINTMASS)
+    {
+        double n = PHI_ORDER;
+        return( M/pow( pow(r,n) + pow(eps,n) , 1./n ) ) ;
+    }
+    else if(type == PLPW)
+    {
+        return M / (r - 2*M);
+    }
+
+    return 0.0;
 }
 
-double fgrav( double M , double r , double eps ){
-   double n = PHI_ORDER;
-   return( M*pow(r,n-1.)/pow( pow(r,n) + pow(eps,n) ,1.+1./n) );
+double fgrav( double M , double r , double eps , int type)
+{
+    if(type == PLPOINTMASS)
+    {
+        double n = PHI_ORDER;
+        return( M*pow(r,n-1.)/pow( pow(r,n) + pow(eps,n) ,1.+1./n) );
+    }
+    else if(type == PLPW)
+    {
+        return M / ((r-2*M)*(r-2*M));
+    }
+    return 0.0;
+    
 }
 
 void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
@@ -59,7 +79,7 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
    double script_r = sqrt(dx*dx+dy*dy+z*z);
    double script_r_perp = sqrt(dx*dx+dy*dy);
 
-   double f1 = -fgrav( pl->M , script_r , pl->eps );
+   double f1 = -fgrav( pl->M , script_r , pl->eps , pl->type);
 
    double cosa = dx/script_r_perp;
    double sina = dy/script_r_perp;

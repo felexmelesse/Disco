@@ -1,5 +1,6 @@
 enum{RHO,PPP,URR,UPP,UZZ,BRR,BPP,BZZ};
 enum{DDD,TAU,SRR,LLL,SZZ};
+enum{PLPOINTMASS, PLPW};
 
 #if USE_MPI
 #include <mpi.h>
@@ -218,4 +219,6 @@ struct planet{
    double eps;
    double Fr;
    double Fp;
+
+   int type;
 };

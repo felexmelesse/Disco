@@ -269,9 +269,12 @@ void restart( struct domain * theDomain ){
       // Setup Planets
       setPlanetParams( theDomain );
       int Npl = theDomain->Npl;
-      int NpDat = 6;
       theDomain->thePlanets = (struct planet *) malloc( Npl*sizeof(struct planet) );
       initializePlanets( theDomain->thePlanets );
+      
+      getH5dims( filename , group2 ,"Planets", dims );
+      int NpDat = dims[1];
+
 
       double PlanetData[Npl*NpDat];
       start2[0] = 0;
@@ -292,6 +295,11 @@ void restart( struct domain * theDomain ){
          pl->r     = PlanetData[NpDat*p + 3];
          pl->phi   = PlanetData[NpDat*p + 4];
          pl->eps   = PlanetData[NpDat*p + 5];
+         if(NpDat > 6)
+            pl->type  = (int)PlanetData[NpDat*p + 6];
+         else
+            pl->type  = PLPOINTMASS;
+
       }
    }
 #if USE_MPI

@@ -9,18 +9,49 @@ def plotCheckpoint(file):
     print("Loading {0:s}...".format(file))
 
     t, r, phi, z, prim, dat = du.loadCheckpoint(file)
+    pars = du.loadPars(file)
+    opts = du.loadOpts(file)
 
     print("   Plotting...")
     nq = prim.shape[1]
+    nc = opts['NUM_C']
 
-    fig, ax = plt.subplots(2,3,figsize=(14,9))
-    du.plotAx(ax[0,0], r, prim[:,0], "linear", "log", r"$r$", r"$\rho$", 'k+')
-    du.plotAx(ax[0,1], r, prim[:,1], "linear", "log", r"$r$", r"$P$", 'k+')
-    du.plotAx(ax[1,0], r, prim[:,2], "linear", "linear", r"$r$", r"$u_r$", 'k+')
-    du.plotAx(ax[1,1], r, prim[:,3], "linear", "linear", r"$r$", r"$u_\phi$",'k+')
-    du.plotAx(ax[1,2], r, prim[:,4], "linear", "linear", r"$r$", r"$u_z$", 'k+')
-    if nq > 5:
-        du.plotAx(ax[0,2], r, prim[:,5], "linear", "linear", r"$r$", r"$q$", 'k+')
+    if nc <= 5:
+        fig, ax = plt.subplots(2,3,figsize=(14,9))
+        du.plotAx(ax[0,0], r, prim[:,0], "linear", "log", r"$r$", r"$\rho$", 
+                    'k+')
+        du.plotAx(ax[0,1], r, prim[:,1], "linear", "log", r"$r$", r"$P$", 
+                    'k+')
+        du.plotAx(ax[1,0], r, prim[:,2], "linear", "linear", r"$r$", r"$u_1$",
+                    'k+')
+        du.plotAx(ax[1,1], r, prim[:,3], "linear", "linear", r"$r$", 
+                    r"$u_2$",'k+')
+        du.plotAx(ax[1,2], r, prim[:,4], "linear", "linear", r"$r$", r"$u_3$", 
+                    'k+')
+        if nq > 5:
+            du.plotAx(ax[0,2], r, prim[:,5], "linear", "linear", r"$r$", 
+                    r"$q$", 'k+')
+    else:
+        fig, ax = plt.subplots(3,3,figsize=(14,12))
+        du.plotAx(ax[0,0], r, prim[:,0], "linear", "log", r"$r$", r"$\rho$", 
+                    'k+')
+        du.plotAx(ax[0,1], r, prim[:,1], "linear", "log", r"$r$", r"$P$", 
+                    'k+')
+        du.plotAx(ax[1,0], r, prim[:,2], "linear", "linear", r"$r$", r"$u_1$",
+                    'k+')
+        du.plotAx(ax[1,1], r, prim[:,3], "linear", "linear", r"$r$", 
+                    r"$u_2$",'k+')
+        du.plotAx(ax[1,2], r, prim[:,4], "linear", "linear", r"$r$", r"$u_3$", 
+                    'k+')
+        if nq > 8:
+            du.plotAx(ax[0,2], r, prim[:,8], "linear", "linear", r"$r$", 
+                    r"$q$", 'k+')
+        du.plotAx(ax[2,0], r, prim[:,5], "linear", "linear", r"$r$", r"$B_1$",
+                    'k+')
+        du.plotAx(ax[2,1], r, prim[:,6], "linear", "linear", r"$r$", 
+                    r"$B_2$",'k+')
+        du.plotAx(ax[2,2], r, prim[:,7], "linear", "linear", r"$r$", r"$B_z$", 
+                    'k+')
 
     title = "DISCO t = {0:.3g}".format(t)
 
