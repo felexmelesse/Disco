@@ -77,7 +77,8 @@ void initial(double *prim, double *x)
 
     double P = rho_ref*cs_ref*cs_ref/gam * pow(rho/rho_ref, gam);
 
-    double v = v0 + calc_magnetosonic_cf_int(rho, rho_ref, cs_ref, cA0, gam);
+    double v = v0 + calc_magnetosonic_cf_int_newt(rho, rho_ref, cs_ref, 
+                                                    cA0, gam);
     double Vxyz[3] = {v*ix, v*iy, v*iz};
 
     double B0 = sqrt(rho_ref)*cA0 * rho/rho_ref;

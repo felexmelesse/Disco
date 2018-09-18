@@ -32,7 +32,9 @@ FLAGS = -O3 -Wall -g $(OPT_DEFS) $(DIR_DEFS)
 INC = -I$(H55)/include
 LIB = -L$(H55)/lib -lhdf5 -lm
 
-OBJ = main.o readpar.o timestep.o onestep.o riemann.o mpisetup.o gridsetup.o domain.o misc.o $(GEOMETRY).o faces_alt.o exchange.o plm.o report.o profiler.o planet.o omega.o analysis.o bfields.o $(HLLD).o rotframe.o boundary_functions.o geometry_functions.o $(INITIAL).o $(OUTPUT).o $(HYDRO).o $(BOUNDARY).o $(RESTART).o $(PLANETS).o $(METRIC).o $(FRAME).o calc.o $(ANALYSIS).o  noise.o #snapshot.o
+OBJ = main.o readpar.o timestep.o onestep.o riemann.o mpisetup.o gridsetup.o domain.o misc.o $(GEOMETRY).o faces_alt.o exchange.o plm.o report.o profiler.o planet.o omega.o analysis.o bfields.o $(HLLD).o rotframe.o boundary_functions.o geometry_functions.o $(INITIAL).o $(OUTPUT).o $(HYDRO).o $(BOUNDARY).o $(RESTART).o $(PLANETS).o $(METRIC).o $(FRAME).o calc.a $(ANALYSIS).o  noise.o #snapshot.o
+
+CALC_OBJ = Calc/bondi.o Calc/integrate.o Calc/magnetosonic.o
 
 default: disco
 
@@ -47,8 +49,11 @@ $(TEMPLATES):
 %.o: %.c paul.h
 	$(CC) $(FLAGS) $(LOCAL_CFLAGS) $(INC) -c $<
 
-calc.o: Calc/*.c Calc/calc.h
-	$(CC) $(FLAGS) $(LOCAL_CFLAGS) $(INC) -c Calc/*.c -o calc.o
+Calc/%.o: Calc/%.c Calc/calc.h
+	$(CC) $(FLAGS) $(LOCAL_CFLAGS) $(INC) -c $< -o $@
+
+calc.a: $(CALC_OBJ)
+	ar rcs $@ $^
 
 $(TIMESTEP).o: Timestep/$(TIMESTEP).c paul.h
 	$(CC) $(FLAGS) $(LOCAL_CFLAGS) $(INC) -c Timestep/$(TIMESTEP).c
@@ -87,4 +92,4 @@ disco: $(OBJ) paul.h
 	$(CC) $(FLAGS) -o disco $(OBJ) $(LOCAL_LDFLAGS) $(LIB)
 
 clean:
-	rm -f *.o disco
+	rm -f Calc/*.o *.a *.o disco
