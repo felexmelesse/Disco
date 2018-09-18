@@ -5,7 +5,7 @@ include $(MAKEFILE_OPT)
 MAKEFILE_H5  = $(PWD)/Makefile_dir.in
 include $(MAKEFILE_H5)
 
-TEMPLATES = bexp bx3d earth fieldloop flock flock_grmhd isentropic jupiter kepler kh mri2 rotor shear shocktube spinring spread vortex sorathia_grmhd blast_grmhd fieldloop_grmhd bl kep_ring torus_fm isentropic_RAM entropywave acousticwave cb acousticwave_cart bondi binarybondi alfvenwave alfvenwave_cart
+TEMPLATES = bexp bx3d earth fieldloop flock flock_grmhd isentropic jupiter kepler kh mri2 rotor shear shocktube spinring spread vortex sorathia_grmhd blast_grmhd fieldloop_grmhd bl kep_ring torus_fm isentropic_RAM entropywave acousticwave cb acousticwave_cart bondi binarybondi alfvenwave alfvenwave_cart magnetosonicwave_cart
 
 GIT_VERSION = $(shell git describe --dirty --always --tags)
 
@@ -47,9 +47,6 @@ $(TEMPLATES):
 	make
 
 %.o: %.c paul.h
-	$(CC) $(FLAGS) $(LOCAL_CFLAGS) $(INC) -c $<
-
-Calc/%.o: Calc/%.c Calc/calc.h
 	$(CC) $(FLAGS) $(LOCAL_CFLAGS) $(INC) -c $< -o $@
 
 calc.a: $(CALC_OBJ)

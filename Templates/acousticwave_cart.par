@@ -10,7 +10,7 @@ T_Times_2pi		0
 //Output Frequency//
 Num_Reports		1e5
 Num_Snapshots		0
-Num_Checkpoints		1
+Num_Checkpoints		10
 Use_Logtime		0
 
 //Grid Dimensions//
@@ -25,9 +25,11 @@ R_Min			-1.0
 R_Max			1.0
 Z_Min			-1.0 //-0.0625
 Z_Max			1.0  //0.0625
+R_Periodic		0
 Z_Periodic		0
 Phi_Max			2.0
 P_Times_2pi		0
+Z_Times_pi      0
 Log_Zoning		0	//0=Uniform, 1=Log, 2=Hybrid
 Log_Radius		0.25	//Only for option 2 of Log_Zoning
 
