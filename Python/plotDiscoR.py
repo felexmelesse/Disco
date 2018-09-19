@@ -33,9 +33,9 @@ def plotCheckpoint(file):
                     r"$q$", 'k+')
     else:
         fig, ax = plt.subplots(3,3,figsize=(14,12))
-        du.plotAx(ax[0,0], r, prim[:,0], "linear", "log", r"$r$", r"$\rho$", 
+        du.plotAx(ax[0,0], r, prim[:,0], "linear", "linear", r"$r$", r"$\rho$", 
                     'k+')
-        du.plotAx(ax[0,1], r, prim[:,1], "linear", "log", r"$r$", r"$P$", 
+        du.plotAx(ax[0,1], r, prim[:,1], "linear", "linear", r"$r$", r"$P$", 
                     'k+')
         du.plotAx(ax[1,0], r, prim[:,2], "linear", "linear", r"$r$", r"$u_1$",
                     'k+')

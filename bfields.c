@@ -466,7 +466,7 @@ void avg_Efields( struct domain * theDomain ){
 
    }
 
-   //E_Z ALONG THE POLE...
+   //E ALONG THE POLE...
    if(theDomain->NgRa == 0)
    {
       j=0;
@@ -476,13 +476,70 @@ void avg_Efields( struct domain * theDomain ){
          double B = 0.0;
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = theCells[jk]+i;
-            E += c->E[1]/(double)Np[jk];
-          //   B += c->B[0]/(double)Np[jk];
+            E += c->E[1];
          }
+         E /= Np[jk];
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = theCells[jk]+i;
             c->E[0] = E;
             c->B[0] = B;
+         }
+      }
+   }
+   if(theDomain->NgRb == 0)
+   {
+      j=Nr-1;
+      for( k=0 ; k<Nz ; ++k ){
+         int jk = j+Nr*k;
+         double E = 0.0;
+         double B = 0.0;
+         for( i=0 ; i<Np[jk] ; ++i ){
+            struct cell * c = theCells[jk]+i;
+            E += c->E[0];
+         }
+         E /= Np[jk];
+         for( i=0 ; i<Np[jk] ; ++i ){
+            struct cell * c = theCells[jk]+i;
+            c->E[1] = E;
+            c->B[1] = B;
+         }
+      }
+   }
+   if(NUM_EDGES == 8 && theDomain->NgZa == 0)
+   {
+      k=0;
+      for( j=0 ; j<Nr ; ++j ){
+         int jk = j+Nr*k;
+         double E = 0.0;
+         double B = 0.0;
+         for( i=0 ; i<Np[jk] ; ++i ){
+            struct cell * c = theCells[jk]+i;
+            E += c->E[5];
+         }
+         E /= Np[jk];
+         for( i=0 ; i<Np[jk] ; ++i ){
+            struct cell * c = theCells[jk]+i;
+            c->E[5] = E;
+            c->B[5] = B;
+         }
+      }
+   }
+   if(NUM_EDGES == 8 && theDomain->NgZb == 0)
+   {
+      k=Nz-1;
+      for( j=0 ; j<Nr ; ++j ){
+         int jk = j+Nr*k;
+         double E = 0.0;
+         double B = 0.0;
+         for( i=0 ; i<Np[jk] ; ++i ){
+            struct cell * c = theCells[jk]+i;
+            E += c->E[4];
+         }
+         E /= Np[jk];
+         for( i=0 ; i<Np[jk] ; ++i ){
+            struct cell * c = theCells[jk]+i;
+            c->E[4] = E;
+            c->B[4] = B;
          }
       }
    }

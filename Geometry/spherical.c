@@ -180,7 +180,7 @@ void get_vec_from_xyz(double *x, double *vxyz, double *v)
     //Taken straight from the back cover of Griffith's E&M
 
     v[0] =  st*cp*vxyz[0] + st*sp*vxyz[1] + ct*vxyz[2];
-    v[1] = -st*vxyz[0] + cp*vxyz[1];
+    v[1] = -sp*vxyz[0] + cp*vxyz[1];
     v[2] = ct*cp*vxyz[0] + ct*sp*vxyz[1] - st*vxyz[2];
 }
 

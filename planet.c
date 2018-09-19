@@ -12,7 +12,7 @@ void setGravParams( struct domain * theDomain ){
 
 }
 
-double phigrav( double M , double r , double eps )
+double phigrav( double M , double r , double eps , int type)
 {
     if(type == PLPOINTMASS)
     {
@@ -55,7 +55,7 @@ void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
    double dy = r*sinp-rp*sin(pp);
    double script_r = sqrt(dx*dx+dy*dy);
 
-   double pot = phigrav( pl->M , script_r , pl->eps );
+   double pot = phigrav( pl->M , script_r , pl->eps , pl->type);
 
    double c2 = gam*prim[PPP]/prim[RHO];
    double factor = 1. + (gam-1.)*pot/c2;
