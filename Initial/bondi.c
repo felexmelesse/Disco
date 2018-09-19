@@ -6,6 +6,7 @@ static double M = 0.0;
 static double gam = 0.0;
 static double rs = 0.0;
 static double R0 = 0.0;
+static double B0 = 0.0;
 
 void get_rpz(double *x, double *rpz);
 void get_vec_from_rpz(double *x, double *vrpz, double *v);
@@ -16,6 +17,7 @@ void setICparams( struct domain * theDomain ){
    M = 1.0;
    rs = theDomain->theParList.initPar1;
    R0 = theDomain->theParList.initPar2;
+   B0 = theDomain->theParList.initPar3;
 }
 
 void initial( double * prim , double * x ){
@@ -27,7 +29,6 @@ void initial( double * prim , double * x ){
 
     double R = sqrt(r*r+z*z);
     double Mdot = 1.0;
-    double b0 = 1.0e-4;
     
     double us2 = M / (2*rs);
     double as2 = us2;
@@ -69,9 +70,13 @@ void initial( double * prim , double * x ){
 
     if(NUM_C > 5)
     {
-        prim[BRR] = r/(R*R*R)*b0 * chi;
-        prim[BPP] = 0.0;
-        prim[BZZ] = z/(R*R*R)*b0 * chi;
+        double bb = rs*rs*B0/(R*R);
+        double Brpz[3] = {bb*r/R, 0.0, bb*z/R};
+        double B[3];
+        get_vec_from_rpz(x, Brpz, B);
+        prim[BRR] = B[0];
+        prim[BPP] = B[1];
+        prim[BZZ] = B[2];
     }
 
     int q;

@@ -25,6 +25,7 @@ R_Min			1.0
 R_Max			10.0
 Z_Min			0.0 //-0.0625
 Z_Max			1.0  //0.0625
+R_Periodic		0
 Z_Periodic		0
 Phi_Max			1.0
 P_Times_2pi		1
@@ -41,7 +42,7 @@ NoBC_Zmax       1   //    No ghost zones or explicit BC applied.
 CFL			            0.2
 PLM			            1.5
 Max_DT                  0.0 //If > 0.0, the maximum allowed time step.
-Riemann_Solver		    0	//0=HLL, 1=HLLC, 2=HLLD
+Riemann_Solver		    2	//0=HLL, 1=HLLC, 2=HLLD
 Mesh_Motion		        3	//0=Fixed, 1=By Cell, 2=Riemann, 3=Avg, 4=Exact
 Exact_Mesh_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep
 Exact_Mesh_Omega_Par    0.0 //unused so far
@@ -82,7 +83,7 @@ Include_Atmos	0
 Init_Par0       0     // int
 Init_Par1       3.0   // Rs (sonic point)
 Init_Par2       3.0   // R0 (transition to 0 velocity)
-Init_Par3       0.0   // doub
+Init_Par3       0.0   // B0
 Init_Par4       0.0   // doub
 Init_Par5       0.0   // doub
 Init_Par6       0.0   // doub
