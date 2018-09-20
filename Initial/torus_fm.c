@@ -51,16 +51,18 @@ void initial( double * prim , double * x ){
     double l2 = M*Rmax*Rmax*Rmax/((Rmax-rs)*(Rmax-rs));
     double h = M/(R-rs) - 0.5*l2/(r*r) - M/(Rin-rs) + 0.5*l2/(Rin*Rin);
     double hmax = M/(Rmax-rs) - 0.5*l2/(Rmax*Rmax)
-                    - M/(Rin-rs) + 0.5*l1/(Rin*Rin);
+                    - M/(Rin-rs) + 0.5*l2/(Rin*Rin);
     double rho = pow(h/hmax, 1.0/(gam-1.0));
     double l = sqrt(l2);
     double om = l/(r*r);
     double q = 1.0;
 
-    if(h < 0.0 || rho < rho_atm)
+    if(h < 0.0 || rho < rho_atm || R < Rin)
     {
-        h = M/R;
-        rho = rho_atm * pow(Rin/R, 1.0/(gam-1.0));
+        //h = M/R;
+        //rho = rho_atm * pow(Rin/R, 1.0/(gam-1.0));
+        h = M/(R-rs);
+        rho = rho_atm * pow((Rin-rs)/(R-rs), 1.0/(gam-1.0));
         q = 0.0;
         om = 0.0;
     }
