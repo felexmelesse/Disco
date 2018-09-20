@@ -44,10 +44,16 @@ void initial( double * prim , double * x ){
         Rmax = Rin;
     k = Rmax/Rin;
 
-    double h = M/R - 0.5*M*Rmax/(r*r) - 0.5*M*(2-k)/Rin;
-    double hmax = 0.5*M*(k-1)*(k-1)/Rmax;
+    //double l2 = M*Rmax;
+    //double h = M/R - 0.5*l2/(r*r) - 0.5*M*(2-k)/Rin;
+    //double hmax = 0.5*M*(k-1)*(k-1)/Rmax;
+    double rs = 2*M;
+    double l2 = M*Rmax*Rmax*Rmax/((Rmax-rs)*(Rmax-rs));
+    double h = M/(R-rs) - 0.5*l2/(r*r) - M/(Rin-rs) + 0.5*l2/(Rin*Rin);
+    double hmax = M/(Rmax-rs) - 0.5*l2/(Rmax*Rmax)
+                    - M/(Rin-rs) + 0.5*l1/(Rin*Rin);
     double rho = pow(h/hmax, 1.0/(gam-1.0));
-    double l = sqrt(M*Rmax);
+    double l = sqrt(l2);
     double om = l/(r*r);
     double q = 1.0;
 
@@ -77,8 +83,11 @@ void initial( double * prim , double * x ){
             // B^r   = -d_z A_phi
             // B^z   =  d_r A_phi
             // A^phi =          0
-            double dhdr = -M*r/(R*R*R) + M*Rmax/(r*r*r);
-            double dhdz = -M*z/(R*R*R);
+            
+            //double dhdr = -M*r/(R*R*R) + M*Rmax/(r*r*r);
+            //double dhdz = -M*z/(R*R*R);
+            double dhdr = -M*r/((R-rs)*(R-rs)*R) + l2/(r*r*r);
+            double dhdz = -M*z/((R-rs)*(R-rs)*R);
            
             Br = -1.0/(gam-1.0) * rho/h * dhdz * B0;
             Bp = 0.0;
@@ -92,10 +101,12 @@ void initial( double * prim , double * x ){
         }
     }
 
-    double v[3], u[3];
+    double v[3], u[3], B[3];
     double vrpz[3] = {0.0, r*om, 0.0};
+    double Brpz[3] = {Br, 0.0, Bz};
     get_vec_from_rpz(x, vrpz, v);
     get_vec_contravariant(x, v, u);
+    get_vec_from_rpz(x, Brpz, B);
 
     prim[RHO] = rho;
     prim[PPP] = P;
@@ -105,9 +116,9 @@ void initial( double * prim , double * x ){
 
     if(NUM_C > BZZ)
     {
-        prim[BRR] = Br;
-        prim[BPP] = Bp;
-        prim[BZZ] = Bz;
+        prim[BRR] = B[0];
+        prim[BPP] = B[1];
+        prim[BZZ] = B[2];
     }
 
     if(NUM_N > 0)

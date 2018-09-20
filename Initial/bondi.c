@@ -50,7 +50,7 @@ void initial( double * prim , double * x ){
     double rho = rhoB;
     double P = PB;
 
-    if(R < rs)
+    if(R < R0)
     {
         rho = rhos;
         P = K * pow(rhos, gam);
