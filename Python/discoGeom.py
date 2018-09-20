@@ -6,7 +6,7 @@ def getXYZ(x1, x2, x3, opts, pars):
 
     x1, x2, x3 = np.broadcast_arrays(x1, x2, x3)
 
-    if opts['GEOMETRY'] == "Cylindrical":
+    if opts['GEOMETRY'] == "cylindrical":
         return getXYZcyl(x1, x2, x3, pars)
     else:
         return getXYZcart(x1, x2, x3, pars)
@@ -16,6 +16,7 @@ def getCellCentroids(dat, opts, pars):
     x2iph = dat[3]
     x3kph = dat[1]
     nx2 = dat[7]
+    index = dat[8]
     x2max = pars['Phi_Max']
     N = x2iph.shape[0]
 
@@ -29,11 +30,10 @@ def getCellCentroids(dat, opts, pars):
     x2 = np.empty(N)
     x3 = np.empty(N)
 
-    i = 0
     for k in range(nx3):
         for j in range(nx1):
-            a = i
-            b = i + nx2[k,j]
+            a = index[k,j]
+            b = index[k,j] + nx2[k,j]
 
             x1[a:b] = x11d[j]
             x3[a:b] = x31d[k]
@@ -46,13 +46,13 @@ def getCellCentroids(dat, opts, pars):
 
             x2[a:b] = getCentroid(x2m, x2p, 2, opts)
 
-            i += nx2[k,j]
-
     return x1, x2, x3
 
 def getCentroid(xm, xp, dim, opts):
-    if opts['GEOMETRY'] == "Cylindrical":
+    if opts['GEOMETRY'] == "cylindrical":
         return getCentroidcyl(xm, xp, dim)
+    elif opts['GEOMETRY'] == "spherical":
+        return getCentroidsph(xm, xp, dim)
     else:
         return getCentroidcart(xm, xp, dim)
 
@@ -62,11 +62,14 @@ def getDV(dat, opts, pars):
     x2iph = dat[3]
     x3kph = dat[1]
     nx2 = dat[7]
+    index = dat[8]
 
-    if opts['GEOMETRY'] == "Cylindrical":
-        return getDVcyl(x1jph, x2iph, x3kph, nx2, pars)
+    if opts['GEOMETRY'] == "cylindrical":
+        return getDVcyl(x1jph, x2iph, x3kph, nx2, index, pars)
+    elif opts['GEOMETRY'] == "spherical":
+        return getDVsph(x1jph, x2iph, x3kph, nx2, index, pars)
     else:
-        return getDVcart(x1jph, x2iph, x3kph, nx2, pars)
+        return getDVcart(x1jph, x2iph, x3kph, nx2, index, pars)
 
 def getVXYZ(x1, x2, x3, v1, v2, v3, opts):
 
@@ -79,14 +82,14 @@ def getBXYZ(x1, x2, x3, B1, B2, B3, opts):
 
 def getVecXYZ(x1, x2, x3, v1, v2, v3, opts):
 
-    if opts['GEOMETRY'] == "Cylindrical":
+    if opts['GEOMETRY'] == "cylindrical":
         return getVecXYZcyl(x1, x2, x3, v1, v2, v3)
     else:
         return getVecXYZcart(x1, x2, x3, v1, v2, v3)
 
 
 def getScaleFactors(x1, x2, x3, opts):
-    if opts['GEOMETRY'] == "Cylindrical":
+    if opts['GEOMETRY'] == "cylindrical":
         return getScaleFactorscyl(x1, x2, x3)
     else:
         return getScaleFactorscart(x1, x2, x3)
@@ -109,8 +112,24 @@ def getCentroidcyl(xm, xp, dim):
         xc = 0.5*(xm+xp)
     return xc
 
+def getCentroidsph(xm, xp, dim):
+    if dim == 1:
+        xc = 3.0*(xm*xm*xm + xm*xm*xp + xm*xp*xp + xp*xp*xp
+                    ) / (4.0*(xm*xm+xm*xp+xp*xp))
+    elif dim == 3:
+        xc = np.empty(xm.shape)
+        xc[xm==xp] = xm[xm==xp]
+        dif = xm!=xp
+        cp = np.cos(xp)
+        cm = np.cos(xm)
+        sp = np.sin(xp)
+        sm = np.sin(xm)
+        xc[dif] = ((xm*cm-xp*cp+sp-sm) / (cm-cp))[dif]
+    else:
+        xc = 0.5*(xm+xp)
+    return xc
 
-def getDVcart(xjph, yiph, zkph, ny, pars):
+def getDVcart(xjph, yiph, zkph, ny, index, pars):
 
     nz = ny.shape[0]
     nx = ny.shape[1]
@@ -124,11 +143,10 @@ def getDVcart(xjph, yiph, zkph, ny, pars):
     dy = np.empty(yiph.shape)
     dz = np.empty(yiph.shape)
 
-    i = 0
     for k in range(nz):
         for j in range(nx):
-            a = i
-            b = i+ny[k,j]
+            a = index[k,j]
+            b = index[k,j]+ny[k,j]
 
             dx[a:b] = dx1d[j]
             dz[a:b] = dz1d[k]
@@ -138,8 +156,6 @@ def getDVcart(xjph, yiph, zkph, ny, pars):
             ym[ym>yp] -= ymax
             dy[a:b] = yp-ym
 
-            i += ny[k,j]
-
     if nz > 1:
         dV = dx*dy*dz
     else:
@@ -147,7 +163,7 @@ def getDVcart(xjph, yiph, zkph, ny, pars):
 
     return dV
 
-def getDVcyl(rjph, piph, zkph, np, pars):
+def getDVcyl(rjph, piph, zkph, np, index, pars):
 
     nz = np.shape[0]
     nr = np.shape[1]
@@ -163,11 +179,10 @@ def getDVcyl(rjph, piph, zkph, np, pars):
     dp = np.empty(piph.shape)
     dz = np.empty(piph.shape)
 
-    i = 0
     for k in range(nz):
         for j in range(nr):
-            a = i
-            b = i+np[k,j]
+            a = index[k,j]
+            b = index[k,j]+np[k,j]
 
             r[a:b] = r1d[j]
             dr[a:b] = dr1d[j]
@@ -178,12 +193,47 @@ def getDVcyl(rjph, piph, zkph, np, pars):
             pm[pm>pp] -= pmax
             dp[a:b] = pp-pm
 
-            i += np[k,j]
-
     if nz > 1:
         dV = r*dr*dp*dz
     else:
         dV = r*dr*dp
+
+    return dV
+
+def getDVsph(rjph, piph, tkph, np, index, pars):
+
+    nt = np.shape[0]
+    nr = np.shape[1]
+
+    r21d = (rjph[1:]*rjph[1:] + rjph[1:]*rjph[:-1] + rjph[:-1]*rjph[:-1])/3.0
+    sinth1d = np.sin(0.5*(tkph[:-1]+tkpj[1:]))
+    dr1d = rjph[1:] - rjph[:-1]
+    sindth1d = 2.0*np.sin(0.5*(tkph[1:] - tkph[:-1]))
+
+    pmax = pars['Phi_Max']
+
+    r2 = np.empty(piph.shape)
+    sinth = np.empty(piph.shape)
+    dr = np.empty(piph.shape)
+    dp = np.empty(piph.shape)
+    sindth = np.empty(piph.shape)
+
+    for k in range(nt):
+        for j in range(nr):
+            a = index[k,j]
+            b = index[k,j]+np[k,j]
+
+            r2[a:b] = r21d[j]
+            dr[a:b] = dr1d[j]
+            sinth[a:b] = sinth1d[k]
+            sindth[a:b] = sindth1d[k]
+
+            pp = piph[a:b]
+            pm = np.roll(pp, 1)
+            pm[pm>pp] -= pmax
+            dp[a:b] = pp-pm
+
+    dV = r2*sinth*dr*dp*sindth
 
     return dV
 
@@ -192,6 +242,7 @@ def integrate(f, dat, opts, pars, dV=None):
         dV = getDV(dat, opts, pars)
 
     nphi = dat[7]
+    index = dat[8]
 
     mask = np.empty(f.shape, dtype=np.bool)
     mask[:] = True
@@ -201,17 +252,15 @@ def integrate(f, dat, opts, pars, dV=None):
 
 
 
-    i = 0
     for k in range(nz):
         for j in range(nr):
-            a = i
-            b = i + nphi[k,j]
+            a = index[k,j]
+            b = index[k,j] + nphi[k,j]
             if (j < 2 and pars["NoBC_Rmin"] == 0)\
                     or (j >= nr-2 and pars["NoBC_Rmax"] == 0)\
                     or (k < 2 and nz > 1 and pars["NoBC_Zmin"] == 0)\
                     or (k >= nz-2 and nz > 1 and pars["NoBC_Zmax"] == 0):
                 mask[a:b] = False
-            i += nphi[k,j]
 
     return (f[mask]*dV[mask]).sum()
 

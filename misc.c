@@ -42,6 +42,10 @@ double getmindt( struct domain * theDomain ){
    struct cell ** theCells = theDomain->theCells;
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int * Np = theDomain->Np;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
@@ -51,8 +55,8 @@ double getmindt( struct domain * theDomain ){
        dt = 1.0e100; //HUGE_VAL
 
    int i,j,k;
-   for( j=1 ; j<Nr-1 ; ++j ){
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);
@@ -296,16 +300,20 @@ void calc_prim( struct domain * theDomain ){
    struct cell ** theCells = theDomain->theCells;
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int * Np = theDomain->Np;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
 
    int i,j,k;
-   for( k=0 ; k<Nz ; ++k ){
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
       double zm = z_kph[k-1];
       double zp = z_kph[k];
       double z = get_centroid(zp, zm, 2);
-      for( j=0 ; j<Nr ; ++j ){
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
          int jk = j+Nr*k;
          double rm = r_jph[j-1];
          double rp = r_jph[j];
@@ -329,17 +337,21 @@ void calc_cons( struct domain * theDomain ){
    struct cell ** theCells = theDomain->theCells;
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int * Np = theDomain->Np;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
 
    int i,j,k;
-   for( k=0 ; k<Nz ; ++k ){
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
       double zm = z_kph[k-1];
       double zp = z_kph[k];
       double z = get_centroid(zp, zm, 2);
 
-      for( j=0 ; j<Nr ; ++j ){
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
          double rm = r_jph[j-1];
          double rp = r_jph[j];
          double r = get_centroid(rp, rm, 1);
@@ -367,17 +379,21 @@ void phi_flux( struct domain * theDomain , double dt ){
    struct cell ** theCells = theDomain->theCells;
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int * Np = theDomain->Np;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
    int i,j,k;
    plm_phi( theDomain );
-   for( k=0 ; k<Nz ; ++k ){
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
       double zp = z_kph[k];
       double zm = z_kph[k-1];
       double z = get_centroid(zp, zm, 2);
 
-      for( j=0 ; j<Nr ; ++j ){
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
          double rp = r_jph[j];
          double rm = r_jph[j-1];
          double r = get_centroid(rp, rm, 1);
@@ -404,6 +420,13 @@ void plm_trans( struct domain * , struct face * , int , int );
 void riemann_trans( struct face * , double , int );
 
 void trans_flux( struct domain * theDomain , double dt , int dim ){
+
+   int Nr = theDomain->Nr;
+   int Nz = theDomain->Nz;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
 
    int Nf;
    struct face * theFaces;
@@ -457,6 +480,10 @@ void add_source( struct domain * theDomain , double dt ){
    struct planet * thePlanets = theDomain->thePlanets;
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int * Np = theDomain->Np;
    int Npl = theDomain->Npl;
 
@@ -464,8 +491,8 @@ void add_source( struct domain * theDomain , double dt ){
    double * z_kph = theDomain->z_kph;
 
    int i,j,k,p;
-   for( j=0 ; j<Nr ; ++j ){
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);

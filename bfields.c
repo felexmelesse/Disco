@@ -377,6 +377,7 @@ void avg_Efields( struct domain * theDomain ){
    int Nf = theDomain->fIndex_r[theDomain->N_ftracks_r];
    struct face * theFaces = theDomain->theFaces_1;
    int n;
+   
    for( n=0 ; n<Nf ; ++n ){
       struct face * f = theFaces+n;
       struct cell * c1;
@@ -417,6 +418,7 @@ void avg_Efields( struct domain * theDomain ){
       f->E = 0.0;
       f->B = 0.0;
    }
+   
 
    if( NUM_EDGES == 8 ){
 //REPEAT THE ABOVE FOR VERTICALLY-ORIENTED FACES & RADIAL EDGES
@@ -465,6 +467,7 @@ void avg_Efields( struct domain * theDomain ){
       }
 
    }
+   
 
    //E ALONG THE POLE...
    if(theDomain->NgRa == 0)

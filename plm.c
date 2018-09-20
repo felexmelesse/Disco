@@ -79,6 +79,9 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
       }
    }
 
+   if(PLM == 0.0)
+       return;
+
    //Add weighted slopes
    int n;
    for( n=0 ; n<Nf ; ++n ){

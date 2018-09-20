@@ -27,8 +27,8 @@ def analyzeSingle(filename):
     vr = prim[:,2]
     vp = prim[:,3]
     vt = prim[:,4]
-    cs = np.sqrt(gam*P/rho)
 
+    cs = np.sqrt(gam*P/rho)
 
     us2 = GM/(2*rs)
     as2 = us2
@@ -92,6 +92,8 @@ def analyzeSingle(filename):
     
         B0 = pars['Init_Par3']
         BS = B0 * rs*rs/(R*R)
+        cAS = BS/np.sqrt(rhoS)
+        cfS = np.sqrt(csS*csS + cAS*cAS)
 
         fig, ax = plt.subplots(3,3,figsize=(14,12))
         ax[0,0].plot(r, rho, 'k+')
@@ -106,6 +108,7 @@ def analyzeSingle(filename):
         ax[0,1].set_ylabel(r'$P$')
         ax[0,2].plot(r, cs+vr, 'k+')
         ax[0,2].plot(R, csS+uS)
+        ax[0,2].plot(R, cfS+uS)
         ax[0,2].axhline(0.0, lw=2, ls='--', color='grey')
         ax[0,2].axvline(rs, lw=2, ls='--', color='grey')
         ax[0,2].set_xscale('log')

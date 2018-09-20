@@ -53,6 +53,7 @@ def loadCheckpoint(filename):
     index = f['Grid']['Index'][...]
     idPhi0 = f['Grid']['Id_phi0'][...]
     nphi = f['Grid']['Np'][...]
+    index = f['Grid']['Index'][...]
     t = f['Grid']['T'][0]
     riph = f['Grid']['r_jph'][...]
     ziph = f['Grid']['z_kph'][...]
@@ -64,7 +65,7 @@ def loadCheckpoint(filename):
         for j in range(index.shape[1]):
             primPhi0[k,j,:] = prim[idPhi0[k,j],:]
 
-    dat = (riph, ziph, primPhi0, piph, planetDat, Phi, idPhi0, nphi)
+    dat = (riph, ziph, primPhi0, piph, planetDat, Phi, idPhi0, nphi, index)
     opts = loadOpts(filename)
     pars = loadPars(filename)
 
