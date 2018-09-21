@@ -94,9 +94,10 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
     ax.set_xlabel(xlabel, fontsize=18)
     ax.set_ylabel(ylabel, fontsize=18)
 
-def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, vmin=None, vmax=None, 
-            noGhost=False, colorbar=True, xlabel=None, ylabel=None, log=False, 
-            rmax=None, planets=None, cmap=None):
+def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, opts, vmin=None, 
+                    vmax=None, noGhost=False, colorbar=True, xlabel=None, 
+                    ylabel=None, log=False, rmax=None, planets=None, 
+                    cmap=None):
 
     if cmap is None:
         try:
@@ -146,8 +147,11 @@ def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, vmin=None, vmax=None,
         norm = mpl.colors.LogNorm(vmin, vmax)
     else:
         norm = mpl.colors.Normalize(vmin, vmax)
+
+
+    x, y, z = dg.getXYZ(rjph_loc[None,:], 0.0, zkph_loc[:,None], opts, pars)
         
-    C = ax.pcolormesh(rjph_loc, zkph_loc, dat, 
+    C = ax.pcolormesh(x, z, dat, 
             cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
 
     if lim_float and rjph_loc.max() > rmax:
@@ -161,8 +165,10 @@ def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, vmin=None, vmax=None,
         ax.plot(xpl, ypl, color='grey', ls='', marker='o', mew=0, ms=5)
         
     ax.set_aspect('equal')
-    ax.set_xlim(rjph.min(), rmax)
-    ax.set_ylim(zkph.min(), zkph.max())
+    #ax.set_xlim(rjph.min(), rmax)
+    #ax.set_ylim(zkph.min(), zkph.max())
+    ax.set_xlim(x.min(), x.max())
+    ax.set_ylim(z.min(), z.max())
     
     if colorbar:
         cb = fig.colorbar(C)
@@ -171,7 +177,7 @@ def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, vmin=None, vmax=None,
     if xlabel == None:
         xlabel = r'$x$'
     if ylabel == None:
-        ylabel = r'$y$'
+        ylabel = r'$z$'
 
     ax.set_xlabel(xlabel, fontsize=18)
     ax.set_ylabel(ylabel, fontsize=18)

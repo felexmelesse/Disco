@@ -96,6 +96,10 @@ void B_faces_to_cells( struct domain * theDomain , int type ){
    
       int Nr = theDomain->Nr;
       int Nz = theDomain->Nz;
+      //int NgRa = theDomain->NgRa;
+      //int NgRb = theDomain->NgRb;
+      //int NgZa = theDomain->NgZa;
+      //int NgZb = theDomain->NgZb;
       int * Np = theDomain->Np;
       double * r_jph = theDomain->r_jph;
       double * z_kph = theDomain->z_kph;
@@ -176,6 +180,40 @@ void B_faces_to_cells( struct domain * theDomain , int type ){
             }
          }
       }
+      /*
+      if(NgRa == 0)
+      {
+          j=0;
+          for(k=0; k<Nz; k++)
+          {
+              int jk = j + Nr*k;
+              for(i=0; i<Np[jk]; i++)
+              {
+                  if(type == 0)
+                      theCells[jk][i].prim[BRR] *= 0.5;
+                  else
+                      theCells[jk][i].cons[BRR] *= 0.5;
+              }
+          }
+      }
+
+      if(NgRb == 0)
+      {
+          j=Nr-1;
+          for(k=0; k<Nz; k++)
+          {
+              int jk = j + Nr*k;
+              for(i=0; i<Np[jk]; i++)
+              {
+                  if(type == 0)
+                      theCells[jk][i].prim[BRR] *= 0.5;
+                  else
+                      theCells[jk][i].cons[BRR] *= 0.5;
+              }
+          }
+      }
+      */
+      
 
       if( NUM_FACES == 5 && Nz>1 ){
          for( j=0 ; j<Nr ; ++j ){
@@ -235,6 +273,39 @@ void B_faces_to_cells( struct domain * theDomain , int type ){
                }    
             }    
          }  
+        /*
+        if(NgZa == 0)
+        {
+            k=0;
+            for(j=0; j<Nr; j++)
+            {
+                int jk = j + Nr*k;
+                for(i=0; i<Np[jk]; i++)
+                {
+                    if(type == 0)
+                        theCells[jk][i].prim[BZZ] *= 0.5;
+                    else
+                        theCells[jk][i].cons[BZZ] *= 0.5;
+                }
+            }
+        }
+
+        if(NgZb == 0)
+        {
+            k=Nz-1;
+            for(j=0; j<Nr; j++)
+            {
+                int jk = j + Nr*k;
+                for(i=0; i<Np[jk]; i++)
+                {
+                    if(type == 0)
+                        theCells[jk][i].prim[BZZ] *= 0.5;
+                    else
+                        theCells[jk][i].cons[BZZ] *= 0.5;
+                }
+            }
+        }
+        */
       }
    }
 }

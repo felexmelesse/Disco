@@ -373,6 +373,7 @@ void calc_cons( struct domain * theDomain ){
 
 void plm_phi( struct domain * );
 void riemann_phi( struct cell * , struct cell * , double * , double );
+int set_B_flag();
 
 void phi_flux( struct domain * theDomain , double dt ){
 
@@ -386,14 +387,34 @@ void phi_flux( struct domain * theDomain , double dt ){
    int * Np = theDomain->Np;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
+
+   int bflag = set_B_flag();
+   int CT = theDomain->theParList.CT;
+   int jmin, jmax, kmin, kmax;
+   if(bflag && CT)
+   {
+       jmin = NgRa==0 ? 0  : NgRa-1;
+       jmax = NgRb==0 ? Nr : Nr-NgRb+1;
+       kmin = NgZa==0 ? 0  : NgZa-1;
+       kmax = NgZb==0 ? Nz : Nz-NgZb+1;
+   }
+   else
+   {
+       jmin = NgRa;
+       jmax = Nr-NgRb;
+       kmin = NgZa;
+       kmax = NgZb;
+   }
+
+
    int i,j,k;
    plm_phi( theDomain );
-   for( k=NgZa ; k<Nz-NgZb ; ++k ){
+   for( k=kmin ; k<kmax ; ++k ){
       double zp = z_kph[k];
       double zm = z_kph[k-1];
       double z = get_centroid(zp, zm, 2);
 
-      for( j=NgRa ; j<Nr-NgRb ; ++j ){
+      for( j=jmin ; j<jmax ; ++j ){
          double rp = r_jph[j];
          double rm = r_jph[j-1];
          double r = get_centroid(rp, rm, 1);
@@ -421,30 +442,85 @@ void riemann_trans( struct face * , double , int );
 
 void trans_flux( struct domain * theDomain , double dt , int dim ){
 
-   int Nr = theDomain->Nr;
-   int Nz = theDomain->Nz;
-   int NgRa = theDomain->NgRa;
-   int NgRb = theDomain->NgRb;
-   int NgZa = theDomain->NgZa;
-   int NgZb = theDomain->NgZb;
+    /*
+     * Need to calculate fluxes for all interior faces.
+     * For CT also need one level of fluxes outside the interior
+     * ie. need the z-fluxes directly outside the r-boundary and vice-versa
+     */ 
 
-   int Nf;
-   struct face * theFaces;
-   if( dim==1 ){
-      Nf = theDomain->fIndex_r[theDomain->N_ftracks_r];
-      theFaces = theDomain->theFaces_1;
-   }else{
-      Nf = theDomain->fIndex_z[theDomain->N_ftracks_z];
-      theFaces = theDomain->theFaces_2;
-   }
+    int Nr = theDomain->Nr;
+    int Nz = theDomain->Nz;
+    int NgRa = theDomain->NgRa;
+    int NgRb = theDomain->NgRb;
+    int NgZa = theDomain->NgZa;
+    int NgZb = theDomain->NgZb;
+    
+    int bflag = set_B_flag();
+    int CT = theDomain->theParList.CT;
 
-   plm_trans( theDomain , theFaces , Nf , dim );
+    int jmin, jmax, kmin, kmax, Nfr;
 
+    int *fI;
+    int Nf;
+    struct face * theFaces;
+    if( dim==1 )
+    {
+        Nf = theDomain->fIndex_r[theDomain->N_ftracks_r];
+        fI = theDomain->fIndex_r;
+        theFaces = theDomain->theFaces_1;
+        Nfr = Nr-1;
+        jmin = NgRa==0 ? 0 : NgRa-1;
+        jmax = NgRb==0 ? Nr-1 : Nr-NgRb;
+
+        if(bflag && CT)
+        {
+            kmin = NgZa==0 ? 0 : NgZa-1;
+            kmax = NgZb==0 ? Nz : Nz-NgZb+1;
+        }
+        else
+        {
+            kmin = NgZa;
+            kmax = Nz-NgZb;
+        }
+    }
+    else
+    {
+        Nf = theDomain->fIndex_z[theDomain->N_ftracks_z];
+        fI = theDomain->fIndex_z;
+        theFaces = theDomain->theFaces_2;
+        Nfr = Nr;
+        if(bflag && CT)
+        {
+            jmin = NgRa==0 ? 0  : NgRa-1;
+            jmax = NgRb==0 ? Nr : Nr-NgRb+1;
+        }
+        else
+        {
+            jmin = NgRa;
+            jmax = Nr-NgRb;
+        }
+        kmin = NgZa==0 ? 0  : NgZa-1;
+        kmax = NgZb==0 ? Nz-1 : Nz-NgZb;
+    }
+
+    plm_trans(theDomain, theFaces, Nf, dim);
+
+    int j, k;
+    for(k=kmin; k<kmax; k++)
+        for(j=jmin; j<jmax; j++)
+        {
+            int JK = j + Nfr*k;
+            int f;
+            for(f=fI[JK]; f<fI[JK+1]; f++)
+                riemann_trans(theFaces + f, dt, dim);
+        }
+
+   /*
    int f;
    for( f=0 ; f<Nf ; ++f ){
       riemann_trans( theFaces + f , dt , dim );
    }
-
+   */
 }
 
 
@@ -660,6 +736,7 @@ void print_welcome()
     printf("Git Version: %s\n\n", GIT_VERSION);
     printf("*Compile-time Options*\n");
     printf("HYDRO: %s\n", HYDRO);
+    printf("GEOMETRY: %s\n", GEOMETRY);
     printf("INITIAL: %s\n", INITIAL);
     printf("BOUNDARY: %s\n", BOUNDARY);
     printf("OUTPUT: %s\n", OUTPUT);

@@ -159,6 +159,14 @@ def getVarNames(filename):
             names.append('q{0:d}'.format(q))
             texnames.append(r'$q_{0:d}$'.format(q))
 
+    elif hydro == 'mhd_sph' and num_c <= 8:
+        names = ['rho', 'P', 'vr', 'om', 'vt', 'Br', 'Bp', 'Bt'][:num_c]
+        texnames = [r'$\rho$', r'$P$', r'$v^r$', r'$\Omega$', r'$v^\theta$', 
+                        r'$B^r$', r'$B^\phi$', r'$B^\theta$'][:num_c]
+        for q in range(num_n):
+            names.append('q{0:d}'.format(q))
+            texnames.append(r'$q_{0:d}$'.format(q))
+
     elif hydro == 'greuler' and num_c <= 5:
         names = ['rho', 'P', 'u_r', 'u_p', 'u_z'][:num_c]
         texnames = [r'$\rho$', r'$P$', r'$u_r$', r'$u_\phi$', r'$u_z$'][:num_c]

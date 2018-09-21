@@ -8,6 +8,8 @@ def getXYZ(x1, x2, x3, opts, pars):
 
     if opts['GEOMETRY'] == "cylindrical":
         return getXYZcyl(x1, x2, x3, pars)
+    if opts['GEOMETRY'] == "spherical":
+        return getXYZsph(x1, x2, x3, pars)
     else:
         return getXYZcart(x1, x2, x3, pars)
 
@@ -100,6 +102,12 @@ def getXYZcart(x, y, z, pars):
 def getXYZcyl(r, phi, z, pars):
     x = r*np.cos(phi)
     y = r*np.sin(phi)
+    return x, y, z
+
+def getXYZsph(r, phi, th, pars):
+    x = r*np.cos(phi)*np.sin(th)
+    y = r*np.sin(phi)*np.sin(th)
+    z = r*np.cos(th)
     return x, y, z
 
 def getCentroidcart(xm, xp, dim):
