@@ -378,7 +378,8 @@ void update_B_fluxes( struct domain * theDomain , double dt ){
          n0 = Nf[jk];
       }
 
-      if( NUM_AZ_EDGES == 4 && theDomain->Nz>1 ) make_edge_adjust( theDomain , dt );
+      if( NUM_AZ_EDGES == 4 && theDomain->Nz>1 ) 
+          make_edge_adjust( theDomain , dt );
    } 
 }
 
@@ -875,6 +876,8 @@ int get_which4( double phi , double phiR , double phiU , double phiUR , int * LR
    return( which4 );
 }
 
+void prim_to_E(double *prim, double *E, double *x);
+
 void make_edge_adjust( struct domain * theDomain , double dt ){
 
    struct cell ** theCells = theDomain->theCells;
@@ -923,6 +926,13 @@ void make_edge_adjust( struct domain * theDomain , double dt ){
          int iR  = I0[jkR ];
          int iU  = I0[jkU ];
          int iUR = I0[jkUR];
+         
+         /*
+         double rL = get_centroid(r_jph[j],   r_jph[j-1], 1);
+         double rR = get_centroid(r_jph[j+1], r_jph[j],   1);
+         double zD = get_centroid(z_kph[k],   z_kph[k-1], 2);
+         double zU = get_centroid(z_kph[k+1], z_kph[k],   2);
+         */
 
          int Ne = Np[jk] + Np[jkR] + Np[jkU] + Np[jkUR];
          int e;
@@ -936,8 +946,16 @@ void make_edge_adjust( struct domain * theDomain , double dt ){
             int LR_alt;
             int UD_alt;
             int buffer;
-            int which4      = get_which4( c->piph         , cR->piph          , cU->piph          , cUR->piph           , &LR_alt , &UD_alt , 0 , Pmax );
-            int which4_back = get_which4( c->piph-c->dphi , cR->piph-cR->dphi , cU->piph-cU->dphi , cUR->piph-cUR->dphi , &buffer , &buffer , 1 , Pmax );
+            int which4      = get_which4(   c->piph,
+                                            cR->piph,
+                                            cU->piph,
+                                            cUR->piph, 
+                                            &LR_alt , &UD_alt , 0 , Pmax );
+            int which4_back = get_which4(   c->piph - c->dphi,
+                                            cR->piph - cR->dphi,
+                                            cU->piph-cU->dphi, 
+                                            cUR->piph-cUR->dphi,
+                                            &buffer , &buffer , 1 , Pmax );
 
             double * PhiL;
             double * PhiR;
@@ -1039,6 +1057,45 @@ void make_edge_adjust( struct domain * theDomain , double dt ){
             }else{
                xm[1] = cUR->piph- cUR->dphi;
             }
+
+            // Gardiner & Stone adjustment
+            /*
+            double Ec = 0.0;
+            double dphi = get_dp(xp[1], xm[1]);
+            double phi = xp[1] - 0.5*dphi;
+            double x[3] = {xp[0], phi, xp[2]};
+
+            int q;
+            double prim[NUM_Q], Ecell[3];
+            // Cell c
+            double dphic = get_signed_dp(phi, c->piph-0.5*c->dphi);
+            for(q=0; q<NUM_Q; q++)
+                prim[q] = c->prim[q] + dphic * c->gradp[q];
+            prim_to_E(prim, Ecell, x);
+            Ec += (x[0]-rL)*(x[2]-zD)*Ecell[1];
+            // Cell cU
+            dphic = get_signed_dp(phi, cU->piph-0.5*cU->dphi);
+            for(q=0; q<NUM_Q; q++)
+                prim[q] = cU->prim[q] + dphic * cU->gradp[q];
+            prim_to_E(prim, Ecell, x);
+            Ec += (x[0]-rL)*(zU-x[2])*Ecell[1];
+            // Cell cR
+            dphic = get_signed_dp(phi, cR->piph-0.5*cR->dphi);
+            for(q=0; q<NUM_Q; q++)
+                prim[q] = cR->prim[q] + dphic * cR->gradp[q];
+            prim_to_E(prim, Ecell, x);
+            Ec += (rR-x[0])*(x[2]-zD)*Ecell[1];
+            // Cell cUR
+            dphic = get_signed_dp(phi, cUR->piph-0.5*cUR->dphi);
+            for(q=0; q<NUM_Q; q++)
+                prim[q] = cUR->prim[q] + dphic * cUR->gradp[q];
+            prim_to_E(prim, Ecell, x);
+            Ec += (rR-x[0])*(zU-x[2])*Ecell[1];
+            Ec /= (rR-rL)*(zU-zD);
+
+            E = 2*E-Ec;  //Gardiner & Stone adjustment (their Ez0 scheme)
+            */
+            
 
             double dl = get_dL( xp , xm , 0 );
 //if( e==0 ) printf("dl = %e which4 = %d, which4_back = %d, phip = %e phim = %e dphi=%e \n",dl,which4,which4_back,xp[1],xm[1],xp[1]-xm[1]);

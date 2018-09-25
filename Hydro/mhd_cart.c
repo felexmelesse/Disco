@@ -228,6 +228,20 @@ void visc_flux( double * prim , double * gprim , double * flux , double * x , do
       flux[q] = 0.0;
 }
 
+void prim_to_E(double *prim, double *E, double *x)
+{
+    double vx = prim[URR];
+    double vy = prim[UPP];
+    double vz = prim[UZZ];
+    double Bx = prim[BRR];
+    double By = prim[BPP];
+    double Bz = prim[BZZ];
+
+    E[0] = -vy*Bz+vz*By;
+    E[1] = -vz*Bx+vx*Bz;
+    E[2] = -vx*By+vy*Bx;
+}
+
 void flux_to_E( double * Flux , double * Ustr , double * x , double * E1_riemann , double * B1_riemann , double * E2_riemann , double * B2_riemann , int dim ){
 
    if( dim==0 ){

@@ -76,10 +76,10 @@ void generate_sendbuffer( struct domain * theDomain , int rnum , int znum , int 
 
    int iL = 0;
    int iR = 0;
-   for( j=0 ; j<rnum ; ++j ){
-      nijk[0]=j;
-      for( k=0 ; k<znum ; ++k ){
-         nijk[1]=k;
+   for( k=0 ; k<znum ; ++k ){
+      nijk[1]=k;
+      for( j=0 ; j<rnum ; ++j ){
+         nijk[0]=j;
          nijk[dim] += dn1;
 
          int jk = nijk[0]+Nr*nijk[1];
@@ -130,10 +130,10 @@ void generate_intbuffer( struct domain * theDomain , int rnum , int znum , int d
 
    int iL = 0;
    int iR = 0; 
-   for( j=0 ; j<rnum ; ++j ){
-      nijk[0]=j;
-      for( k=0 ; k<znum ; ++k ){
-         nijk[1]=k;
+   for( k=0 ; k<znum ; ++k ){
+      nijk[1]=k;
+      for( j=0 ; j<rnum ; ++j ){
+         nijk[0]=j;
          nijk[dim] += dn1; 
 
          int jk = nijk[0]+Nr*nijk[1];
