@@ -53,7 +53,7 @@ struct param_list{
    int LogZoning, R_Periodic, Z_Periodic;
    double LogRadius;
    double MaxShort, MaxLong;
-   int Mesh_Motion, Riemann_Solver;
+   int Mesh_Motion, Riemann_Solver, Timestep;
    int Absorb_BC, Initial_Regrid, visc_flag, include_atmos;
 
    double CFL, PLM, maxDT;

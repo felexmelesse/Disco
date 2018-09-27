@@ -39,6 +39,7 @@ NoBC_Zmin       0   //1 = Coordinate boundary (like r=0 origin).
 NoBC_Zmax       0   //    No ghost zones or explicit BC applied.
 
 //Numerical Parameters
+Timestep                0   // 0=RK2, 1=FE
 CFL			            0.2
 PLM			            1.5
 Max_DT                  0.0 //If > 0.0, the maximum allowed time step.

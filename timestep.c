@@ -11,6 +11,7 @@ void timestep( struct domain * theDomain , double dt ){
    int Nz = theDomain->Nz;
    int * Np = theDomain->Np;
    int Npl = theDomain->Npl;
+   int stepper = theDomain->theParList.Timestep;
 
    int i,jk,p;
 
@@ -25,9 +26,15 @@ void timestep( struct domain * theDomain , double dt ){
       planet_RK_copy( theDomain->thePlanets + p );
    }
 
-//   onestep( theDomain , 0.0 ,     dt , 1 , 0 , dt );
-//   onestep( theDomain , 0.5 , 0.5*dt , 0 , 1 , dt );
-   onestep( theDomain , 0.0 ,     dt , 1 , 1 , dt );
+   if(stepper == 1)
+   {
+      onestep( theDomain , 0.0 ,     dt , 1 , 1 , dt );
+   }
+   else
+   {
+      onestep( theDomain , 0.0 ,     dt , 1 , 0 , dt );
+      onestep( theDomain , 0.5 , 0.5*dt , 0 , 1 , dt );
+   }
 
    add_diagnostics( theDomain , dt );
    theDomain->t += dt;   

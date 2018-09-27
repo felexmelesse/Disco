@@ -91,6 +91,7 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Log_Radius"            , VAR_DOUB , &(theList->LogRadius)       );
          err += readvar( pfile , "Max_Aspect_Short"      , VAR_DOUB , &(theList->MaxShort)        );
          err += readvar( pfile , "Max_Aspect_Long"       , VAR_DOUB , &(theList->MaxLong)         );
+         err += readvar( pfile , "Timestep"                   , VAR_INT , &(theList->Timestep)             );
          err += readvar( pfile , "CFL"                   , VAR_DOUB , &(theList->CFL)             );
          err += readvar( pfile , "Max_DT"                   , VAR_DOUB , &(theList->maxDT)             );
          err += readvar( pfile , "PLM"                   , VAR_DOUB , &(theList->PLM)             );
