@@ -302,3 +302,165 @@ def getVecXYZcyl(r, phi, z, vr, vp, vz):
     vy = sp*vr + cp*vp
 
     return vx, vy, vz
+
+def getSignedDphi(phip, phim, pars):
+
+    pmax = pars['Phi_Max']
+
+    dphi = phip-phim
+    while dphi > 0.5*pmax:
+        dphi -= pmax
+    while dphi < -0.5*pmax:
+        dphi += pmax
+
+    return dphi
+
+def calcDivB(dat, opts, pars, dV=None):
+    if dV is None:
+        dV = getDV(dat, opts, pars)
+
+    Phi = dat[5]
+    nphi = dat[7]
+    index = dat[8]
+    piph = dat[3]
+    idPhi0 = dat[6]
+
+    nz = nphi.shape[0]
+    nr = nphi.shape[1]
+
+    divB = np.zeros(piph.shape)
+
+    PhiP = Phi[:,0]
+    PhiRm = Phi[:,1]
+    PhiRp = Phi[:,2]
+    PhiZm = Phi[:,3]
+    PhiZp = Phi[:,4]
+
+    # phi direction
+    for k in range(nz):
+        for j in range(nr):
+            a = index[k,j]
+            b = index[k,j] + nphi[k,j]
+
+            divB[a:b] += PhiP[a:b] - np.roll(PhiP[a:b], 1)
+
+    # r direction
+    for k in range(nz):
+        for jL in range(nr-1):
+            jR = jL+1
+            aL = index[k,jL]
+            bL = index[k,jL] + nphi[k,jL]
+            aR = index[k,jR]
+            bR = index[k,jR] + nphi[k,jR]
+            piphL = piph[aL:bL]
+            piphR = piph[aR:bR]
+            PhiRL = PhiRp[aL:bL]
+            PhiRR = PhiRm[aR:bR]
+
+            iL0 = idPhi0[k,jL] - aL
+            iR0 = idPhi0[k,jR] - aR
+            iL = iL0
+            iR = iR0
+            done = False
+
+            while not done:
+                phiL = piphL[iL]
+                phiR = piphR[iR]
+
+                dp = getSignedDphi(phiL, phiR, pars)
+
+                if dp < 0.0:
+                    phi_back = np.roll(piphR, 1)
+                    dp1 = getSignedDphi(phiL, phi_back[iR], pars)
+                    if dp1 <= 0.0:
+                        print("Uh Oh")
+                if dp > 0.0:
+                    phi_back = np.roll(piphL, 1)
+                    dp1 = getSignedDphi(phiR, phi_back[iL], pars)
+                    if dp1 <= 0.0:
+                        print("Oh Uh")
+
+                if dp == 0.0:
+                    divB[aL+iL] += PhiRL[iL]
+                    divB[aR+iR] -= PhiRL[iL]
+                    iL += 1
+                    iR += 1
+                elif dp < 0.0:
+                    divB[aL+iL] += PhiRL[iL]
+                    divB[aR+iR] -= PhiRL[iL]
+                    iL += 1
+                else:
+                    divB[aL+iL] += PhiRR[iR]
+                    divB[aR+iR] -= PhiRR[iR]
+                    iR += 1
+
+                if iL == nphi[k,jL]:
+                    iL = 0
+                if iR == nphi[k,jR]:
+                    iR = 0
+
+                if iL == iL0 and iR == iR0:
+                    done = True
+    # z direction
+    for kL in range(nz-1):
+        for j in range(nr):
+            kR = kL+1
+            aL = index[kL,j]
+            bL = index[kL,j] + nphi[kL,j]
+            aR = index[kR,j]
+            bR = index[kR,j] + nphi[kR,j]
+            piphL = piph[aL:bL]
+            piphR = piph[aR:bR]
+            PhiZL = PhiZp[aL:bL]
+            PhiZR = PhiZm[aR:bR]
+
+            iL0 = idPhi0[kL,j] - aL
+            iR0 = idPhi0[kR,j] - aR
+            iL = iL0
+            iR = iR0
+            done = False
+
+            while not done:
+                phiL = piphL[iL]
+                phiR = piphR[iR]
+
+                dp = getSignedDphi(phiL, phiR, pars)
+                
+                if dp < 0.0:
+                    phi_back = np.roll(piphR, 1)
+                    dp1 = getSignedDphi(phiL, phi_back[iR], pars)
+                    if dp1 <= 0.0:
+                        print("Uh Oh")
+                if dp > 0.0:
+                    phi_back = np.roll(piphL, 1)
+                    dp1 = getSignedDphi(phiR, phi_back[iL], pars)
+                    if dp1 <= 0.0:
+                        print("Oh Uh")
+
+                if dp == 0.0:
+                    divB[aL+iL] += PhiZL[iL]
+                    divB[aR+iR] -= PhiZL[iL]
+                    iL += 1
+                    iR += 1
+                elif dp < 0.0:
+                    divB[aL+iL] += PhiZL[iL]
+                    divB[aR+iR] -= PhiZL[iL]
+                    iL += 1
+                else:
+                    divB[aL+iL] += PhiZR[iR]
+                    divB[aR+iR] -= PhiZR[iR]
+                    iR += 1
+
+                if iL == nphi[kL,j]:
+                    iL = 0
+                if iR == nphi[kR,j]:
+                    iR = 0
+
+                if iL == iL0 and iR == iR:
+                    done = True
+
+    divB /= dV
+
+    return divB
+
+

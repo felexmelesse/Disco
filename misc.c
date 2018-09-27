@@ -463,6 +463,7 @@ void trans_flux( struct domain * theDomain , double dt , int dim ){
     int *fI;
     int Nf;
     struct face * theFaces;
+
     if( dim==1 )
     {
         Nf = theDomain->fIndex_r[theDomain->N_ftracks_r];

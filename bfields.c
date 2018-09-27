@@ -11,6 +11,7 @@ void B_faces_to_cells( struct domain * , int );
 double bfield_scale_factor(double x, int dim);
 void get_centroid_arr(double *, double *, double *);
 double get_scale_factor(double *, int);
+void calc_prim(struct domain *);
  
 void set_B_fields( struct domain * theDomain ){
 

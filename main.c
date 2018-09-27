@@ -50,6 +50,7 @@ int main( int argc , char * argv[] ){
 /*
    if( theDomain.theParList.Initial_Regrid && !(theDomain.theParList.restart_flag) ) regrid( &theDomain );
 */
+
    if( theDomain.Nr > 1 ){
       exchangeData( &theDomain , 0 );
       if( !theDomain.theParList.R_Periodic)
@@ -60,10 +61,6 @@ int main( int argc , char * argv[] ){
       if( !theDomain.theParList.Z_Periodic)
          boundary_trans( &theDomain , 2);
    }
-
-   int restart_flag = theDomain.theParList.restart_flag;
-   if( set_B_flag() && NUM_FACES >= 3 && !restart_flag) 
-       set_B_fields( &theDomain );
 
    if( theDomain.rank==0 && !(theDomain.theParList.restart_flag) ){
       FILE * rFile = fopen("report.dat","w");

@@ -106,10 +106,12 @@ void restart( struct domain * );
 void calc_dp( struct domain * );
 void set_wcell( struct domain * );
 void adjust_gas( struct planet * , double * , double * , double );
+int set_B_flag();
 void set_B_fields( struct domain * );
 void subtract_omega( double * );
 void addNoise(double *prim, double *x);
 void get_centroid_arr(double *, double *, double *);
+void exchangeData(struct domain *, int);
 
 void setupCells( struct domain * theDomain ){
 
@@ -178,10 +180,38 @@ void setupCells( struct domain * theDomain ){
             if(noiseType != 0)
                 addNoise(c->prim, x);
             prim2cons( c->prim , c->cons , x , dV );
-            cons2prim( c->cons , c->prim , x , dV );
             c->real = 1;
          }    
       }    
+   }
+
+   if(!restart_flag && set_B_flag() && theDomain->theParList.CT)
+   {
+      // Communicate piph values to ghost zones.
+      exchangeData(theDomain, 0);
+      if( Nz > 1 )
+         exchangeData(theDomain, 1);
+
+      set_B_fields(theDomain);
+   }
+
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
+      double z = get_centroid( z_kph[k], z_kph[k-1], 2);
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
+         double r = get_centroid( r_jph[j], r_jph[j-1], 1);
+         int jk = j+Nr*k;
+         for( i=0 ; i<Np[jk] ; ++i ){
+            struct cell * c = &(theCells[jk][i]);
+            double phip = c->piph;
+            double phim = phip-c->dphi;
+            double xp[3] = {r_jph[j  ],phip,z_kph[k  ]};
+            double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
+            double dV = get_dV( xp , xm );
+            double phi = c->piph-.5*c->dphi;
+            double x[3] = {r, phi, z};
+            cons2prim( c->cons , c->prim , x , dV );
+         }
+      }
    }
 
    set_wcell( theDomain );
