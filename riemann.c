@@ -157,8 +157,10 @@ void riemann_trans( struct face * F , double dt , int dim ){
       cR->B[2] += .5*Brz*fracR;
    }
    if( NUM_AZ_EDGES == 4 && dim==1 ){
-      cL->E_phi[1] = Ephi;
-      cR->E_phi[0] = Ephi;
+      if(F->LRtype==0)
+         cL->E_phi[1] = Ephi;
+      else
+         cR->E_phi[0] = Ephi;
    }
    if( NUM_EDGES == 8 && dim==2){
       cL->E[5] += .5*Erz*fracL;
@@ -174,8 +176,10 @@ void riemann_trans( struct face * F , double dt , int dim ){
       cR->B[6] += .5*Brz*fracR;
    }
    if( NUM_AZ_EDGES == 4 && dim==2 ){
-      cL->E_phi[3] = Ephi;
-      cR->E_phi[2] = Ephi;
+      if(F->LRtype==0)
+         cL->E_phi[3] = Ephi;
+      else
+         cR->E_phi[2] = Ephi;
    }
 }
 

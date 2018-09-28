@@ -9,6 +9,7 @@ struct cell_lite{
    double cons[NUM_Q];
    double RKcons[NUM_Q];
    double piph;
+   double dphi;
    double wiph;
    double Phi[NUM_FACES];
    double RK_Phi[NUM_FACES];
@@ -18,18 +19,19 @@ struct cell_lite{
 void generate_mpi_cell( MPI_Datatype * cell_mpi ){
 
    struct cell_lite test;
-   int count = 7;
-   int blocksize[]      = {NUM_Q,NUM_Q,NUM_Q,1,1,NUM_FACES,NUM_FACES};
-   MPI_Datatype types[] = {MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE};
-   MPI_Aint offsets[7];
+   int count = 8;
+   int blocksize[]      = {NUM_Q,NUM_Q,NUM_Q,1,1,1,NUM_FACES,NUM_FACES};
+   MPI_Datatype types[] = {MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE};
+   MPI_Aint offsets[8];
 
    offsets[0] = (char *)&(test.prim)   - (char *)(&test);
    offsets[1] = (char *)&(test.cons)   - (char *)(&test);
    offsets[2] = (char *)&(test.RKcons) - (char *)(&test);
    offsets[3] = (char *)&(test.piph)   - (char *)(&test);
-   offsets[4] = (char *)&(test.wiph)   - (char *)(&test);
-   offsets[5] = (char *)&(test.Phi)    - (char *)(&test);
-   offsets[6] = (char *)&(test.RK_Phi) - (char *)(&test);
+   offsets[4] = (char *)&(test.dphi)   - (char *)(&test);
+   offsets[5] = (char *)&(test.wiph)   - (char *)(&test);
+   offsets[6] = (char *)&(test.Phi)    - (char *)(&test);
+   offsets[7] = (char *)&(test.RK_Phi) - (char *)(&test);
 
    MPI_Type_create_struct( count , blocksize , offsets , types , cell_mpi );
    MPI_Type_commit( cell_mpi );
@@ -44,6 +46,7 @@ void copy_cell_to_lite( struct cell * c , struct cell_lite * cl ){
    memcpy( cl->Phi    , c->Phi    , NUM_FACES*sizeof(double) );
    memcpy( cl->RK_Phi , c->RK_Phi , NUM_FACES*sizeof(double) );
    cl->piph   = c->piph;
+   cl->dphi   = c->dphi;
    cl->wiph   = c->wiph; 
 
 }
@@ -56,6 +59,7 @@ void copy_lite_to_cell( struct cell_lite * cl , struct cell * c ){
    memcpy( c->Phi    , cl->Phi    , NUM_FACES*sizeof(double) );
    memcpy( c->RK_Phi , cl->RK_Phi , NUM_FACES*sizeof(double) );
    c->piph   = cl->piph;
+   c->dphi   = cl->dphi;
    c->wiph   = cl->wiph;
 
 }
