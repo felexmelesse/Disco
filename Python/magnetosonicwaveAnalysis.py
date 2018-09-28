@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import discoUtil as du
+import discoPlotUtil as dpu
 import discoGeom as dg
 import calc as ca
 
@@ -13,7 +14,7 @@ def rhoProf(x, a, x0, L, rho0):
     rho[:] = rho0
     inn = np.fabs(x-x0)<L
     xin = x[inn]
-    f = (xin-x0)*(xin-x0)/(L*L) - 1.0
+    f = 1.0 - (xin-x0)*(xin-x0)/(L*L)
     rho[inn] *= 1.0 + a*f*f*f*f
 
     return rho
@@ -121,6 +122,7 @@ def analyzeSingle(filename):
 
 
     dV = dg.getDV(dat, opts, pars)
+
 
     errRho = dg.integrate(np.fabs(rho-rhoS), dat, opts, pars, dV)
     errP = dg.integrate(np.fabs(P-PS), dat, opts, pars, dV)

@@ -363,17 +363,17 @@ void update_B_fluxes( struct domain * theDomain , double dt ){
             double dl = f->dl;
             if( f->LRtype == 0 ){ 
                E = f->L->E[5];
-               f->L->Phi[4] -= E*dl*dt;
-               f->L->Phi[0] += E*dl*dt;
+               f->L->Phi[4] += E*dl*dt;
+               f->L->Phi[0] -= E*dl*dt;
             }else{
                E = f->R->E[4];
-               f->R->Phi[3] -= E*dl*dt;
-               f->R->Phi[0] -= E*dl*dt;
+               f->R->Phi[3] += E*dl*dt;
+               f->R->Phi[0] += E*dl*dt;
             }    
             if( fp->LRtype == 0 ){ 
-               fp->L->Phi[4] += E*dl*dt;
+               fp->L->Phi[4] -= E*dl*dt;
             }else{
-               fp->R->Phi[3] += E*dl*dt;
+               fp->R->Phi[3] -= E*dl*dt;
             }    
          }    
          n0 = Nf[jk];
@@ -822,6 +822,9 @@ double get_dL( double * , double * , int );
 void add_E_phi( double * , double * , double * , double * , double );
 
 int phi_switch( double dphi , double Pmax , int mode ){
+    // Returns "sign" of dphi, taking periodicity into account
+    //mode == 0: return 1 if dphi > 0.0, 0 otherwise
+    //mode == 1: return 1 if dphi < 0.0, 0 otherwise
 
    while( dphi > .5*Pmax ) dphi -= Pmax;
    while( dphi <-.5*Pmax ) dphi += Pmax;
@@ -836,29 +839,39 @@ int phi_switch( double dphi , double Pmax , int mode ){
 
 int get_which4( double phi , double phiR , double phiU , double phiUR , int * LR_alt , int * UD_alt , int mode , double Pmax ){
 
+    // Determine whether phi(0), phiR(1), phiU(2), or phiUR(3) is smallest,
+    // taking into account periodicity, and return its code (0,1,2,or 3).
+    //
+    // LR_alt = the LR toggle for the top or bottom, whichever which4 isnt
+    // UD_alt = the UD toggle for the left or right, whichever which4 isnt
+    //
+    // if mode == 1, returns code for largest phi, LR_alt and UD_alt not set.
+    
+    //comments apply to mode==0 case
+
    int which4;
    double dphi;
    
    dphi = phi - phiR;
-   int LR_D = phi_switch( dphi , Pmax , mode );
+   int LR_D = phi_switch( dphi , Pmax , mode );  // =1 if phi > phiR
 
    dphi = phiU - phiUR;
-   int LR_U = phi_switch( dphi , Pmax , mode );
+   int LR_U = phi_switch( dphi , Pmax , mode );  // =1 if phiU > phiUR
 
    double phi1 = phi;
-   if( LR_D ) phi1 = phiR;
+   if( LR_D ) phi1 = phiR;  //phi1 is the smaller of phi, phiR
    double phi2 = phiU;
-   if( LR_U ) phi2 = phiUR;
+   if( LR_U ) phi2 = phiUR; //phi2 is the smaller of phiU, phiUR
 
    dphi = phi1-phi2;
-   int UD = phi_switch( dphi , Pmax , mode );
+   int UD = phi_switch( dphi , Pmax , mode );   // =1 if phi1 > phi2
 
    if( UD==0 ){
-      if( LR_D==0 ) which4 = 0;
-      else which4 = 1;
+      if( LR_D==0 ) which4 = 0; // phi is smallest
+      else which4 = 1;          // phiR is smallest
    }else{
-      if( LR_U==0 ) which4 = 2;
-      else which4 = 3;
+      if( LR_U==0 ) which4 = 2; // phiU is smallest
+      else which4 = 3;          // phiUR is smallest
    }
 
    if( mode == 0 ){
@@ -946,7 +959,6 @@ void make_edge_adjust( struct domain * theDomain , double dt ){
 
             int LR_alt;
             int UD_alt;
-            int buffer;
             int which4      = get_which4(   c->piph,
                                             cR->piph,
                                             cU->piph,
@@ -956,7 +968,7 @@ void make_edge_adjust( struct domain * theDomain , double dt ){
                                             cR->piph - cR->dphi,
                                             cU->piph-cU->dphi, 
                                             cUR->piph-cUR->dphi,
-                                            &buffer , &buffer , 1 , Pmax );
+                                            NULL , NULL , 1 , Pmax );
 
             double * PhiL;
             double * PhiR;
@@ -1022,7 +1034,7 @@ void make_edge_adjust( struct domain * theDomain , double dt ){
             }else{
                PhiR = cUR->Phi+3;
                PhiU = cUR->Phi+1;
-               E = .25*( cU->E_phi[2] + cU->E_phi[0] );
+               E = .25*( cUR->E_phi[2] + cUR->E_phi[0] );
                if( LR_alt==0 ){
                   PhiD = c->Phi+2;
                   E += .25*c->E_phi[1];
@@ -1032,10 +1044,10 @@ void make_edge_adjust( struct domain * theDomain , double dt ){
                }
                if( UD_alt==0 ){
                   PhiL = c->Phi+4;
-                  E += .25*cR->E_phi[3];
+                  E += .25*c->E_phi[3];
                }else{
                   PhiL = cU->Phi+3;
-                  E += .25*cUR->E_phi[2];
+                  E += .25*cU->E_phi[2];
                }
             } 
 

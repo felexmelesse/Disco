@@ -402,6 +402,7 @@ def calcDivB(dat, opts, pars, dV=None):
                 if iL == iL0 and iR == iR0:
                     done = True
     # z direction
+
     for kL in range(nz-1):
         for j in range(nr):
             kR = kL+1
@@ -413,6 +414,9 @@ def calcDivB(dat, opts, pars, dV=None):
             piphR = piph[aR:bR]
             PhiZL = PhiZp[aL:bL]
             PhiZR = PhiZm[aR:bR]
+
+            pimhL = np.roll(piphL, 1)
+            pimhR = np.roll(piphR, 1)
 
             iL0 = idPhi0[kL,j] - aL
             iR0 = idPhi0[kR,j] - aR
@@ -427,17 +431,16 @@ def calcDivB(dat, opts, pars, dV=None):
                 dp = getSignedDphi(phiL, phiR, pars)
                 
                 if dp < 0.0:
-                    phi_back = np.roll(piphR, 1)
-                    dp1 = getSignedDphi(phiL, phi_back[iR], pars)
+                    dp1 = getSignedDphi(phiL, pimhR[iR], pars)
                     if dp1 <= 0.0:
                         print("Uh Oh")
                 if dp > 0.0:
-                    phi_back = np.roll(piphL, 1)
-                    dp1 = getSignedDphi(phiR, phi_back[iL], pars)
+                    dp1 = getSignedDphi(phiR, pimhL[iL], pars)
                     if dp1 <= 0.0:
                         print("Oh Uh")
 
                 if dp == 0.0:
+                    print("quad?")
                     divB[aL+iL] += PhiZL[iL]
                     divB[aR+iR] -= PhiZL[iL]
                     iL += 1
@@ -456,7 +459,7 @@ def calcDivB(dat, opts, pars, dV=None):
                 if iR == nphi[kR,j]:
                     iR = 0
 
-                if iL == iL0 and iR == iR:
+                if iL == iL0 and iR == iR0:
                     done = True
 
     divB /= dV
