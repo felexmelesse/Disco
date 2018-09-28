@@ -39,10 +39,10 @@ NoBC_Zmin       0   //1 = Coordinate boundary (like r=0 origin).
 NoBC_Zmax       0   //    No ghost zones or explicit BC applied.
 
 //Numerical Parameters
-Timestep                0   // 0=RK2, 1=FE
 CFL			            0.2
 PLM			            1.5
 Max_DT                  0.0 //If > 0.0, the maximum allowed time step.
+Timestep                0   // 0=RK2, 1=FE
 Riemann_Solver		    0	//0=HLL, 1=HLLC, 2=HLLD
 Mesh_Motion		        3	//0=Fixed, 1=By Cell, 2=Riemann, 3=Avg, 4=Exact
 Exact_Mesh_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep

@@ -294,20 +294,20 @@ void flux_to_E( double * Flux , double * Ustr , double * x , double * E1_riemann
 
    if( dim==0 ){
        //PHI
-      *E1_riemann = Flux[BRR]*irfac;   //Ez 
-      *B1_riemann = Ustr[BRR]*irfac; // Br
-      *E2_riemann = Flux[BZZ];    //Er 
-      *B2_riemann = Ustr[BZZ];  //-Bz
+      *E1_riemann =  Flux[BRR]*irfac;   // Ez 
+      *B1_riemann =  Ustr[BRR]*irfac;   // Br
+      *E2_riemann = -Flux[BZZ];         // Er 
+      *B2_riemann =  Ustr[BZZ];         // Bz
    }else if( dim==1 ){
        //R
-      *E1_riemann = -Flux[BPP]*r;  //Ez 
-      *B1_riemann = Ustr[BRR]*irfac; // Br
-      *E2_riemann = Flux[BZZ];     //Ephi
+      *E1_riemann = -Flux[BPP]*r;       // Ez 
+      *B1_riemann =  Ustr[BRR]*irfac;   // Br
+      *E2_riemann =  Flux[BZZ];         // Ephi
    }else{
        //Z
-      *E1_riemann = -Flux[BPP]*r;   //Er 
-      *B1_riemann =  Ustr[BZZ];  //-Bz
-      *E2_riemann = -Flux[BRR]*irfac;  //Ephi
+      *E1_riemann =  Flux[BPP]*r;       // Er 
+      *B1_riemann =  Ustr[BZZ];         // Bz
+      *E2_riemann = -Flux[BRR]*irfac;   // Ephi
    }
 
 }
