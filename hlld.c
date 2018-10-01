@@ -321,6 +321,10 @@ void get_Ustar_HLLD( double w , double * pL , double * pR , double * F , double 
             F[q] += vel[1]*( U[q] - UsL[q] ) + vel[0]*( UsL[q] - UL[q] );
          }
       }
+      for(q=8; q<NUM_Q; q++){
+         U[q] = pL[q] * U[DEN];
+         F[q] = pL[q] * F[DEN];
+      }
    }else{
       //Right Side
       double UR[8];
@@ -345,6 +349,10 @@ void get_Ustar_HLLD( double w , double * pL , double * pR , double * F , double 
          for( q=0 ; q<8 ; ++q ){
             F[q] += vel[3]*( U[q] - UsR[q] ) + vel[4]*( UsR[q] - UR[q] );
          }
+      }
+      for(q=8; q<NUM_Q; q++){
+         U[q] = pR[q] * U[DEN];
+         F[q] = pR[q] * F[DEN];
       }
    }
 

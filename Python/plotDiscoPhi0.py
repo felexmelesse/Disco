@@ -18,6 +18,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, bounds=None,
     zkph = dat[1]
     primPhi0 = dat[2]
     pars = du.loadPars(file)
+    opts = du.loadOpts(file)
 
     if planets:
         planetDat = dat[4]
@@ -52,8 +53,8 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, bounds=None,
                 fig, ax = plt.subplots(1,1, figsize=(12,9))
 
                 dp.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:,:,q], 
-                                vartex[q], 
-                                pars, vmin=vmin, vmax=vmax, rmax=rmax,
+                                vartex[q], pars, opts, 
+                                vmin=vmin, vmax=vmax, rmax=rmax,
                                 planets=planetDat)
                 fig.suptitle(title, fontsize=24)
                 plotname = "plot_phi0_{0:s}_lin_{1:s}.png".format(name, varnames[q])
@@ -66,8 +67,8 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, bounds=None,
                 fig, ax = plt.subplots(1,1, figsize=(12,9))
 
                 dp.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:,:,q], 
-                                vartex[q],
-                                pars, vmin=vmin, vmax=vmax, rmax=rmax, 
+                                vartex[q], pars, opts,
+                                vmin=vmin, vmax=vmax, rmax=rmax, 
                                 planets=planetDat, log=True)
                 fig.suptitle(title, fontsize=24)
                 plotname = "plot_phi0_{0:s}_log_{1:s}.png".format(name, varnames[q])

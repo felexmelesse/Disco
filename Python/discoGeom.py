@@ -208,13 +208,13 @@ def getDVcyl(rjph, piph, zkph, np, index, pars):
 
     return dV
 
-def getDVsph(rjph, piph, tkph, np, index, pars):
+def getDVsph(rjph, piph, tkph, nphi, index, pars):
 
-    nt = np.shape[0]
-    nr = np.shape[1]
+    nt = nphi.shape[0]
+    nr = nphi.shape[1]
 
     r21d = (rjph[1:]*rjph[1:] + rjph[1:]*rjph[:-1] + rjph[:-1]*rjph[:-1])/3.0
-    sinth1d = np.sin(0.5*(tkph[:-1]+tkpj[1:]))
+    sinth1d = np.sin(0.5*(tkph[:-1]+tkph[1:]))
     dr1d = rjph[1:] - rjph[:-1]
     sindth1d = 2.0*np.sin(0.5*(tkph[1:] - tkph[:-1]))
 
@@ -229,7 +229,7 @@ def getDVsph(rjph, piph, tkph, np, index, pars):
     for k in range(nt):
         for j in range(nr):
             a = index[k,j]
-            b = index[k,j]+np[k,j]
+            b = index[k,j]+nphi[k,j]
 
             r2[a:b] = r21d[j]
             dr[a:b] = dr1d[j]
@@ -465,5 +465,69 @@ def calcDivB(dat, opts, pars, dV=None):
     divB /= dV
 
     return divB
+
+def getDA1(x1, x2ph, x3f, dat, opts, pars):
+
+    x2max = pars['Phi_Max']
+    index = dat[8]
+    nx2 = dat[7]
+    x2mh = np.empty(x2ph.shape)
+    x3mh = np.empty(x2ph.shape)
+    x3ph = np.empty(x2ph.shape)
+    for k in range(index.shape[0]):
+        for j in range(index.shape[1]):
+            a = index[k,j]
+            b = index[k,j] + nx2[k,j]
+            x2mh[a:b] = np.roll(x2ph[a:b], 1)
+            x3mh[a:b] = x3f[k]
+            x3ph[a:b] = x3f[k+1]
+    x2mh[x2mh>x2ph] -= x2max
+
+    if opts['GEOMETRY'] == "cylindrical":
+        return getDA1cyl(x1, x2ph, x2mh, x3ph, x3mh)
+    elif opts['GEOMETRY'] == "spherical":
+        return getDA1sph(x1, x2ph, x2mh, x3ph, x3mh)
+    else:
+        return getDA1cart(x1, x2ph, x2mh, x3ph, x3mh)
+
+def getDA1cart(x1, x2ph, x2mh, x3ph, x3mh):
+    return (x2ph-x2mh)*(x3ph-x3mh)
+
+def getDA1cyl(x1, x2ph, x2mh, x3ph, x3mh):
+    return x1*(x2ph-x2mh)*(x3ph-x3mh)
+
+def getDA1sph(x1, x2ph, x2mh, x3ph, x3mh):
+    sinth = np.sin(0.5*(x3ph+x3mh))
+    sindth = 2*np.sin(0.5*(x3ph-x3mh))
+    return x1*x1*sinth*sindth*(x2ph-x2mh)
+
+
+def integrateTrans1(x1, f, dat, opts, pars, dA=None):
+
+    if dA is None:
+        dA = getDA1(x1, dat[3], dat[1], dat, opts, pars)
+
+    mask = np.empty(f.shape, dtype=np.bool) 
+    mask[:] = True
+    x1ph = dat[0]
+    index = dat[8]
+    n1 = index.shape[1]
+    n2 = dat[7]
+    n3 = index.shape[0]
+
+    for k in range(n3):
+        for j in range(n1):
+            a = index[k,j]
+            b = index[k,j] + n2[k,j]
+            if (k < 2 and n3 > 1 and pars["NoBC_Zmin"] == 0)\
+                    or (k >= n3-2 and n3 > 1 and pars["NoBC_Zmax"] == 0):
+                mask[a:b] = False
+
+    I = np.empty(n1)
+    for j in range(n1):
+        ind = (x1<x1ph[j+1]) & (x1>x1ph[j])
+        I[j] = (f[mask]*dA[mask])[ind].sum()
+
+    return I
 
 

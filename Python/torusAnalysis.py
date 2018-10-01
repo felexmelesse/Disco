@@ -1,0 +1,248 @@
+import sys
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import discoUtil as du
+import discoPlotUtil as dp
+import discoGeom as dg
+
+figsize = (9,12)
+figsizeR = (8,6)
+
+def makeGridPlots(rjph, zkph, pars, opts, title, name, fv, bounds, texlabels, 
+                    labels, linear, log):
+
+    for i in range(len(fv)):
+        if linear[i]:
+            fig, ax = plt.subplots(1,1, figsize=figsize)
+            dp.plotPhiSlice(fig, ax, rjph, zkph, fv[i], texlabels[i], 
+                            pars, opts, vmin=bounds[i,0], vmax=bounds[i,1],
+                            log=False)
+            fig.suptitle(title, fontsize=24)
+            plotname = "plot_torus_{0:s}_lin_{1:s}.png".format(
+                            name, labels[i])
+            print("Saving " + plotname)
+            fig.savefig(plotname, dpi=200)
+            plt.close(fig)
+        if log[i]:
+            fig, ax = plt.subplots(1,1, figsize=figsize)
+            dp.plotPhiSlice(fig, ax, rjph, zkph, fv[i], texlabels[i], 
+                            pars, opts, vmin=bounds[i,0], vmax=bounds[i,1],
+                            log=True)
+            fig.suptitle(title, fontsize=24)
+            plotname = "plot_torus_{0:s}_log_{1:s}.png".format(
+                            name, labels[i])
+            print("Saving " + plotname)
+            fig.savefig(plotname)
+            plt.close(fig)
+
+def makeRadialPlots(r, title, name, fv, bounds, texlabels, labels, linear, 
+                    log):
+
+    for i in range(len(fv)):
+        if linear[i]:
+            fig, ax = plt.subplots(1,1, figsize=figsizeR)
+            ax.plot(r, fv[i], '+')
+            ax.set_ylim(bounds[i,0], bounds[i,1])
+            ax.set_xlabel(r'$r$')
+            ax.set_ylabel(texlabels[i])
+            fig.suptitle(title, fontsize=24)
+            plotname = "plot_torus_r_{0:s}_lin_{1:s}.png".format(
+                            name, labels[i])
+            print("Saving " + plotname)
+            fig.savefig(plotname, dpi=200)
+            plt.close(fig)
+        if log[i]:
+            fig, ax = plt.subplots(1,1, figsize=figsizeR)
+            ax.plot(r, fv[i], '+')
+            ax.set_ylim(bounds[i,0], bounds[i,1])
+            ax.set_xlabel(r'$r$')
+            ax.set_ylabel(texlabels[i])
+            ax.set_yscale("log")
+            fig.suptitle(title, fontsize=24)
+            plotname = "plot_torus_r_{0:s}_log_{1:s}.png".format(
+                            name, labels[i])
+            print("Saving " + plotname)
+            fig.savefig(plotname)
+            plt.close(fig)
+
+def makeTemporalPlots(t, fv, texlabels, labels, linear, log):
+
+    for i in range(len(fv)):
+        if linear[i]:
+            fig, ax = plt.subplots(1,1, figsize=figsizeR)
+            ax.plot(t, fv[i], '+')
+            ax.set_xlabel(r'$t$')
+            ax.set_ylabel(texlabels[i])
+            plotname = "plot_torus_t_lin_{0:s}.png".format(labels[i])
+            print("Saving " + plotname)
+            fig.savefig(plotname, dpi=200)
+            plt.close(fig)
+        if log[i]:
+            fig, ax = plt.subplots(1,1, figsize=figsizeR)
+            ax.plot(t, fv[i], '+')
+            ax.set_xlabel(r'$t$')
+            ax.set_ylabel(texlabels[i])
+            ax.set_yscale("log")
+            plotname = "plot_torus_t_log_{0:s}.png".format(labels[i])
+            print("Saving " + plotname)
+            fig.savefig(plotname, dpi=200)
+            plt.close(fig)
+
+
+def analyze(file, bounds=None, boundsR=None, checkBounds=False, plot=True):
+
+    print("Loading " + file)
+
+    pars = du.loadPars(file)
+    opts = du.loadOpts(file)
+    t, r, phi, th, prim, dat = du.loadCheckpoint(file)
+    rjph = dat[0]
+    zkph = dat[1]
+    iPhi0 = dat[6]
+
+    title = "DISCO t = {0:.1f}".format(t)
+    name = file.split('/')[-1].split('.')[0].split('_')[-1]
+
+    rho = prim[:,0]
+    P = prim[:,1]
+    vr = prim[:,2]
+    vp = prim[:,3]
+    vt = prim[:,4]
+    Br = prim[:,5]
+    Bp = prim[:,6]
+    Bt = prim[:,7]
+    gam = pars['Adiabatic_Index']
+
+    cs = np.sqrt(gam*P/rho)
+    v2 = vr*vr + r*r*vt*vt + r*r*np.sin(th)*np.sin(th)*vp*vp
+    B2 = Br*Br + Bt*Bt + Bp*Bp
+    Tg = P/rho
+    ibeta = 0.5*B2 / P
+
+    sinth = np.sin(th)
+    R = dg.getCentroid(rjph[:-1], rjph[1:], 1, opts)
+
+    j = rho*r*r*sinth*sinth*vp
+    e = 0.5*rho*v2 + P/(gam-1) + 0.5*B2
+
+    fv = [cs[iPhi0], B2[iPhi0], Tg[iPhi0], ibeta[iPhi0]]
+    texlabels = [r"$c_s$", r"$B^2$", r"$P/\rho$", r"$\beta^{-1}$"]
+    labels = ["cs", "B2", "PoRho", "ibeta"]
+    linear = [True, True, True, True]
+    log = [True, True, True, True]
+
+    csmin = cs.min()
+    csmax = cs.max()
+    B2min = B2.min()
+    if B2min < 1.0e-10:
+        B2min = 1.0e-10
+    B2max = B2.max()
+    Tgmin = Tg.min()
+    Tgmax = Tg.max()
+    ibmin = ibeta.min()
+    ibmax = ibeta.max()
+    if ibmin < 1.0e-10:
+        ibmin = 1.0e-10
+
+    mybounds = np.array([ 
+                    [csmin, csmax],
+                    [B2min, B2max],
+                    [Tgmin, Tgmax],
+                    [ibmin, ibmax]])
+    if bounds is None:
+        bounds = mybounds
+    elif checkBounds:
+        bounds[:,0] = np.minimum(bounds[:,0], mybounds[:,0])
+        bounds[:,1] = np.maximum(bounds[:,1], mybounds[:,1])
+
+    if plot:
+        makeGridPlots(rjph, zkph, pars, opts, title, name, fv, bounds, 
+                        texlabels, labels, linear, log)
+
+    dAr = dg.getDA1(r, dat[3], dat[1], dat, opts, pars)
+    Mdot = dg.integrateTrans1(r, rho*vr, dat, opts, pars, dAr)
+    phiB = dg.integrateTrans1(r, 0.5*np.abs(Br), dat, opts, pars, dAr)
+    Jdot = dg.integrateTrans1(r, j*vr - r*sinth*Bp*Br, dat, opts, pars, dAr)
+    Edot = dg.integrateTrans1(r, (e + P+0.5*B2)*vr, dat, opts, pars, dAr)
+    Mdotmin = Mdot.min()
+    Mdotmax = Mdot.max()
+    Jdotmin = Jdot.min()
+    Jdotmax = Jdot.max()
+    phiBmin = phiB.min()
+    phiBmax = phiB.max()
+    Edotmin = Edot.min()
+    Edotmax = Edot.max()
+
+    fvR = [Mdot, Jdot, phiB, Edot]
+    texlabelsR = [r"$\dot{M}$", r"$\dot{J}$", r"$\phi_B$", r"\dot{E}"]
+    labelsR = ["Mdot", "Jdot", "phiB", "Edot"]
+    linearR = [True, True, True, True]
+    logR = [False, False, False, False]
+    myboundsR = np.array([ 
+                    [Mdotmin, Mdotmax],
+                    [Jdotmin, Jdotmax],
+                    [phiBmin, phiBmax],
+                    [Edotmin, Edotmax]])
+
+    if boundsR is None:
+        boundsR = myboundsR
+    elif checkBounds:
+        boundsR[:,0] = np.minimum(boundsR[:,0], myboundsR[:,0])
+        boundsR[:,1] = np.maximum(boundsR[:,1], myboundsR[:,1])
+
+    if plot:
+        makeRadialPlots(R, title, name, fvR, boundsR, 
+                        texlabelsR, labelsR, linearR, logR)
+
+    dV = dg.getDV(dat, opts, pars)
+    M = dg.integrate(rho, dat, opts, pars, dV)
+    J = dg.integrate(j, dat, opts, pars, dV)
+    E = dg.integrate(e, dat, opts, pars, dV)
+    EB = dg.integrate(0.5*B2, dat, opts, pars, dV)
+
+    return t, (M, J, E, EB)
+ 
+
+def analyzeAll(filenames):
+
+    T = []
+    dat = []
+
+    bounds = np.empty((4,2))
+    bounds[:,0] = np.inf
+    bounds[:,1] = -np.inf
+    boundsR = np.empty((4,2))
+    boundsR[:,0] = np.inf
+    boundsR[:,1] = -np.inf
+
+    for f in filenames:
+        analyze(f, bounds=bounds, boundsR=boundsR, checkBounds=True, 
+                plot=False)
+
+    for f in filenames:
+        t, ret = analyze(f, bounds=bounds, boundsR=boundsR, 
+                            checkBounds=False, plot=True)
+        T.append(t)
+        dat.append(ret)
+
+    T = np.array(T)
+    dat = np.array(dat).T
+
+    texlabels = [r"$M$", r"$J$", r"$E$", r"$E_B$"]
+    labels = ["M", "J", "E", "enB"]
+    linear = [True, True, True, True]
+    log = [True, True, True, True]
+
+    makeTemporalPlots(T, dat, texlabels, labels, linear, log)
+
+if __name__ == "__main__":
+
+    if len(sys.argv) < 2:
+        print("Need some checkpoints please!")
+        sys.exit()
+
+    filenames = sys.argv[1:]
+
+    analyzeAll(filenames)
+
