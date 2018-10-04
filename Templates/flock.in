@@ -6,7 +6,7 @@
 INITIAL  = flock
 HYDRO    = mhd
 GEOMETRY = cylindrical
-BOUNDARY = fixed
+BOUNDARY = zerograd
 OUTPUT   = h5out
 RESTART  = h5in
 PLANETS  = sun

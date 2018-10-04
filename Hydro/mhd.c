@@ -12,6 +12,7 @@ static double PRE_FLOOR = 0.0;
 static double explicit_viscosity = 0.0;
 static int include_viscosity = 0;
 static int isothermal = 0;
+static int polar_sources = 0;
 
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
@@ -20,6 +21,8 @@ void setHydroParams( struct domain * theDomain ){
    PRE_FLOOR = theDomain->theParList.Pressure_Floor;
    explicit_viscosity = theDomain->theParList.viscosity;
    include_viscosity = theDomain->theParList.visc_flag;
+   if(theDomain->NgRa == 0)
+       polar_sources = 1;
 }
 
 int set_B_flag(void){
@@ -247,8 +250,16 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    double B2 = Br*Br+Bp*Bp+Bz*Bz;
  
    //double centrifugal = ( rho*omega*omega*r2_3 - Bp*Bp )/r_1*sin(.5*dphi)/(.5*dphi);
-   double centrifugal = ( rho*omega*omega*r2_3 )/r_1*sin(.5*dphi)/(.5*dphi);
-   centrifugal -= Bp*Bp/r_1;
+   double centrifugal;
+   if(polar_sources)
+   {
+      centrifugal = ( rho*omega*omega*r2_3 )/r_1*sin(.5*dphi)/(.5*dphi);
+      centrifugal -= Bp*Bp/r_1;
+   }
+   else
+   {
+       centrifugal = rho*omega*omega*r - Bp*Bp/r;
+   }
    double press_bal   = (Pp+.5*B2)/r_1;
 
    cons[SRR] += dVdt*( centrifugal + press_bal );

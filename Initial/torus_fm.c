@@ -79,21 +79,31 @@ void initial( double * prim , double * x ){
             Bp = 0.0;
             Bz = B0;
         }
-        else if(field_choice == 1 && rho > 0.2)
+        else if(field_choice == 1)
         {
             // A_phi ~ max(rho/rho_max - 0.2, 0)
             // B^r   = -d_z A_phi
             // B^z   =  d_r A_phi
-            // A^phi =          0
+            // B^phi =          0
+            // smooth max() function as (0.2^alpha + rho^alpha)^(1/alpha)
             
+            double alpha = 4;
+            double rho_cut = 0.2;
+            double dfrho = pow(1 + pow(rho_cut/rho, alpha), 1./alpha - 1);
+            if (h < 0.0 || rho<rho_atm || R<Rin)
+                dfrho = 0.0;
             //double dhdr = -M*r/(R*R*R) + M*Rmax/(r*r*r);
             //double dhdz = -M*z/(R*R*R);
+            //dfrho = rho>0.2 ? 1.0 : 0.0;
             double dhdr = -M*r/((R-rs)*(R-rs)*R) + l2/(r*r*r);
             double dhdz = -M*z/((R-rs)*(R-rs)*R);
+            double drhodh = 1.0/(gam-1.0) * rho/h;
+            double dAdr = B0*Rmax*Rmax * dfrho*drhodh*dhdr;
+            double dAdz = B0*Rmax*Rmax * dfrho*drhodh*dhdz;
            
-            Br = -1.0/(gam-1.0) * rho/h * dhdz * B0;
-            Bp = 0.0;
-            Bz =  1.0/(gam-1.0) * rho/h * dhdr * B0;
+            Br = -dAdz / r;
+            Bp =  0.0;
+            Bz =  dAdr / r;
         }
         else
         {

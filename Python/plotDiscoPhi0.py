@@ -50,7 +50,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, bounds=None,
 
             if q in vars:
 
-                fig, ax = plt.subplots(1,1, figsize=(12,9))
+                fig, ax = plt.subplots(1,1, figsize=(9,12))
 
                 dp.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:,:,q], 
                                 vartex[q], pars, opts, 
@@ -64,7 +64,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, bounds=None,
                 plt.close(fig)
 
             if q in logvars:
-                fig, ax = plt.subplots(1,1, figsize=(12,9))
+                fig, ax = plt.subplots(1,1, figsize=(9,12))
 
                 dp.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:,:,q], 
                                 vartex[q], pars, opts,

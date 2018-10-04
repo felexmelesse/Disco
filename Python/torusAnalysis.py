@@ -114,23 +114,34 @@ def analyze(file, bounds=None, boundsR=None, checkBounds=False, plot=True):
     Bt = prim[:,7]
     gam = pars['Adiabatic_Index']
 
+    sinth = np.sin(th)
+
     cs = np.sqrt(gam*P/rho)
-    v2 = vr*vr + r*r*vt*vt + r*r*np.sin(th)*np.sin(th)*vp*vp
+    v2 = vr*vr + r*r*vt*vt + r*r*sinth*sinth*vp*vp
     B2 = Br*Br + Bt*Bt + Bp*Bp
     Tg = P/rho
     ibeta = 0.5*B2 / P
+    cA2 = B2/rho
+    cA = np.sqrt(cA2)
+    l = r*sinth*vp
+    machS = np.sqrt(v2)/cs
+    machA = np.sqrt(v2)/np.maximum(cA, 1.0e-5)
+    mach = np.sqrt(v2)/np.sqrt(cs*cs + cA2)
 
-    sinth = np.sin(th)
     R = dg.getCentroid(rjph[:-1], rjph[1:], 1, opts)
 
     j = rho*r*r*sinth*sinth*vp
     e = 0.5*rho*v2 + P/(gam-1) + 0.5*B2
 
-    fv = [cs[iPhi0], B2[iPhi0], Tg[iPhi0], ibeta[iPhi0]]
-    texlabels = [r"$c_s$", r"$B^2$", r"$P/\rho$", r"$\beta^{-1}$"]
-    labels = ["cs", "B2", "PoRho", "ibeta"]
-    linear = [True, True, True, True]
-    log = [True, True, True, True]
+    fv = [cs[iPhi0], B2[iPhi0], Tg[iPhi0], ibeta[iPhi0], cA[iPhi0], l[iPhi0],
+            mach[iPhi0], machS[iPhi0], machA[iPhi0]]
+    texlabels = [r"$c_s$", r"$B^2$", r"$P/\rho$", r"$\beta^{-1}$", r"$c_A$",
+                    r"$\ell$", r"$\mathcal{M}$", r"$\mathcal{M}_s$", 
+                    r"$\mathcal{M}_A$"]
+    labels = ["cs", "B2", "PoRho", "ibeta", "cA", "l", "mach", "machS",
+                "machA"]
+    linear = [True, True, True, True, True, True, True, True, True]
+    log = [True, True, True, True, True, False, True, True, True]
 
     csmin = cs.min()
     csmax = cs.max()
@@ -144,12 +155,36 @@ def analyze(file, bounds=None, boundsR=None, checkBounds=False, plot=True):
     ibmax = ibeta.max()
     if ibmin < 1.0e-10:
         ibmin = 1.0e-10
+    cAmin = cA.min()
+    cAmax = cA.max()
+    if cAmin < 1.0e-5:
+        cAmin = 1.0e-5
+    lmin = l.min()
+    lmax = l.max()
+    machmin = mach.min()
+    machmax = mach.max()
+    machSmin = machS.min()
+    machSmax = machS.max()
+    machAmin = machA.min()
+    machAmax = machA.max()
+    if machmin < 1.0e-5:
+        machmin = 1.0e-5
+    if machSmin < 1.0e-5:
+        machSmin = 1.0e-5
+    if machAmin < 1.0e-5:
+        machAmin = 1.0e-5
 
     mybounds = np.array([ 
                     [csmin, csmax],
                     [B2min, B2max],
                     [Tgmin, Tgmax],
-                    [ibmin, ibmax]])
+                    [ibmin, ibmax],
+                    [cAmin, cAmax],
+                    [lmin, lmax],
+                    [machmin, machmax],
+                    [machSmin, machSmax],
+                    [machAmin, machAmax]])
+
     if bounds is None:
         bounds = mybounds
     elif checkBounds:
@@ -175,7 +210,7 @@ def analyze(file, bounds=None, boundsR=None, checkBounds=False, plot=True):
     Edotmax = Edot.max()
 
     fvR = [Mdot, Jdot, phiB, Edot]
-    texlabelsR = [r"$\dot{M}$", r"$\dot{J}$", r"$\phi_B$", r"\dot{E}"]
+    texlabelsR = [r"$\dot{M}$", r"$\dot{J}$", r"$\phi_B$", r"$\dot{E}$"]
     labelsR = ["Mdot", "Jdot", "phiB", "Edot"]
     linearR = [True, True, True, True]
     logR = [False, False, False, False]
@@ -209,7 +244,7 @@ def analyzeAll(filenames):
     T = []
     dat = []
 
-    bounds = np.empty((4,2))
+    bounds = np.empty((9,2))
     bounds[:,0] = np.inf
     bounds[:,1] = -np.inf
     boundsR = np.empty((4,2))
