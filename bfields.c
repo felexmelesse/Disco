@@ -684,8 +684,8 @@ void subtract_advective_B_fluxes( struct domain * theDomain ){
             c->E[1] -= hR*wp * c->B[1];
 
             if( NUM_EDGES == 8 ){
-               c->E[4] -= hD*wm * c->B[4];
-               c->E[5] -= hU*wp * c->B[5];
+               c->E[4] += hD*wm * c->B[4];
+               c->E[5] += hU*wp * c->B[5];
             }
          }
       }
