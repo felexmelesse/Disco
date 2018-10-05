@@ -101,6 +101,10 @@ double get_om1( double *x){
 
     return om1;
 }
+  
+double get_om2( double *x){
+    return 0.0;
+}
 
 double get_cs2( double *x ){
     double r = x[0];

@@ -4,13 +4,13 @@ Restart			0	//Restart from input.h5
 
 //Time Range//
 T_Start			0.0 //1.0
-T_End			2.0 //0.12 //100000.0
+T_End			12.0 //0.12 //100000.0
 T_Times_2pi		1
 
 //Output Frequency//
 Num_Reports		    4e4
 Num_Snapshots		0
-Num_Checkpoints		8
+Num_Checkpoints		24
 Use_Logtime		    0
 
 //Grid Dimensions//
