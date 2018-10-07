@@ -4,12 +4,12 @@
 
 # Build options
 INITIAL  = torus_fm
-HYDRO    = mhd
-GEOMETRY = cylindrical
-BOUNDARY = fixed3d
+HYDRO    = mhd_sph
+GEOMETRY = spherical
+BOUNDARY = outflow3d
 OUTPUT   = h5out
 RESTART  = h5in
-PLANETS  = sun
+PLANETS  = bh
 HLLD     = hlld
 ANALYSIS = diag_euler
 

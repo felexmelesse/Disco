@@ -6,6 +6,8 @@ Makefile_dir.in*
 Makefile_opt.in*
 in.par*
 bins/
+latest
+abort
 
 # Output files
 *.dat

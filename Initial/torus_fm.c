@@ -94,7 +94,7 @@ void initial( double * prim , double * x ){
                 dfrho = 0.0;
             //double dhdr = -M*r/(R*R*R) + M*Rmax/(r*r*r);
             //double dhdz = -M*z/(R*R*R);
-            //dfrho = rho>0.2 ? 1.0 : 0.0;
+            dfrho = rho>0.2 ? 1.0 : 0.0;
             double dhdr = -M*r/((R-rs)*(R-rs)*R) + l2/(r*r*r);
             double dhdz = -M*z/((R-rs)*(R-rs)*R);
             double drhodh = 1.0/(gam-1.0) * rho/h;
