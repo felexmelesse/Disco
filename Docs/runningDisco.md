@@ -24,6 +24,23 @@ $ make
 
 Voila! You have a Disco binary to run.
 
+#### Setting up *discopy* ####
+
+Disco includes a Python package called `discopy` to interface with the data files, make geometry-aware plots, and perform simple analysis. The package is compatible with both Python2 and Python3.
+
+To install `discopy` navigate to the `Python` directory and run the `setup.py` file.  This will install `discopy` into your system `site-packages` and allow you to import `discopy` from anywhere on your system.  
+
+```bash
+$ cd Python/
+$ python setup.py
+```
+
+If you plan on modifying `discopy` consider adding the `develop` argument to your `setup.py` call, this only installs symlinks into the system `site-packages` directory, allowing your changes to instantly be reflected in the module without having to re-run `setup.py`.
+
+```bash
+$ python setup.py develop
+```
+
 ### Running Disco ###
 
 Disco reads in runtime parameters from a file called `in.par` which must exist in the working directory where you run the executable.  A generic template `in.par` exists in the source directory as `in.par.template`. Copy this into `in.par` and change as you wish.  

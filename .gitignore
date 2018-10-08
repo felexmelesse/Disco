@@ -21,6 +21,7 @@ abort
 .DS_Store
 *.pyc
 *.so
+Python/*.egg-info
 
 # Viewer files
 Viewer/Movies/

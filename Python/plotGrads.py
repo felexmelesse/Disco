@@ -5,19 +5,19 @@ import argparse as ap
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import discoUtil as du
+import discopy.util as util
 import plotDiscoEq as pde
 
 def plotGradients(filename):
 
     print("  Loading "+filename)
-    t, r, phi, z, prim, dat = du.loadCheckpoint(filename)
+    t, r, phi, z, prim, dat = util.loadCheckpoint(filename)
     rjph = dat[0]
     zkph = dat[1]
     primPhi0 = dat[2]
     piph = dat[3]
     nphi = dat[7]
-    pars = du.loadPars(filename)
+    pars = util.loadPars(filename)
 
     k = int(zkph.shape[0]/2-1)
 
@@ -36,7 +36,7 @@ def plotGradients(filename):
 
     planetDat = dat[4]
 
-    varnames, vartex, num_c, num_n = du.getVarNames(filename)
+    varnames, vartex, num_c, num_n = util.getVarNames(filename)
     nq = num_c + num_n
 
     title = "DISCO t = {0:.1f}".format(t)

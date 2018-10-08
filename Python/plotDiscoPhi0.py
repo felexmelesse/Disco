@@ -5,27 +5,27 @@ import h5py as h5
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import discoUtil as du
-import discoPlotUtil as dp
+import discopy.util as util
+import discopy.plot as plot
 
 def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, bounds=None, 
                     rmax=None, planets=False):
     
     print("Loading {0:s}...".format(file))
 
-    t, r, phi, z, prim, dat = du.loadCheckpoint(file)
+    t, r, phi, z, prim, dat = util.loadCheckpoint(file)
     rjph = dat[0]
     zkph = dat[1]
     primPhi0 = dat[2]
-    pars = du.loadPars(file)
-    opts = du.loadOpts(file)
+    pars = util.loadPars(file)
+    opts = util.loadOpts(file)
 
     if planets:
         planetDat = dat[4]
     else:
         planetDat = None
 
-    varnames, vartex, num_c, num_n = du.getVarNames(file)
+    varnames, vartex, num_c, num_n = util.getVarNames(file)
     nq = num_c + num_n
 
     title = "DISCO t = {0:.1f}".format(t)
@@ -52,7 +52,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, bounds=None,
 
                 fig, ax = plt.subplots(1,1, figsize=(9,12))
 
-                dp.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:,:,q], 
+                plot.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:,:,q], 
                                 vartex[q], pars, opts, 
                                 vmin=vmin, vmax=vmax, rmax=rmax,
                                 planets=planetDat)
@@ -66,7 +66,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, bounds=None,
             if q in logvars:
                 fig, ax = plt.subplots(1,1, figsize=(9,12))
 
-                dp.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:,:,q], 
+                plot.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:,:,q], 
                                 vartex[q], pars, opts,
                                 vmin=vmin, vmax=vmax, rmax=rmax, 
                                 planets=planetDat, log=True)
@@ -84,13 +84,13 @@ def getBounds(use_bounds, names, files):
 
     if use_bounds is not None:
         if use_bounds is True:
-            bounds = dp.calcBounds(files)
+            bounds = plot.calcBounds(files)
         else:
             if os.path.isfile(use_bounds):
-                bounds = dp.readBoundsFile(use_bounds, num_q)
+                bounds = plot.readBoundsFile(use_bounds, num_q)
             else:
-                bounds = dp.calcBounds(files)
-                dp.writeBoundsFile(use_bounds, names, bounds)
+                bounds = plot.calcBounds(files)
+                plot.writeBoundsFile(use_bounds, names, bounds)
     else:
         bounds = None
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
     files = args.checkpoints
 
-    names, texnames, num_c, num_n = du.getVarNames(files[0])
+    names, texnames, num_c, num_n = util.getVarNames(files[0])
 
     bounds = getBounds(use_bounds, names, files)
 

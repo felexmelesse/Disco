@@ -3,8 +3,8 @@ import math
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import discoUtil as du
-import discoGeom as dg
+import discopy.util as util
+import discopy.geom as geom
 
 def psiProf(x, pars):
 
@@ -63,10 +63,10 @@ def calcAlfvenWave(t, x, pars):
 
 def analyzeSingle(filename):
 
-    opts = du.loadOpts(filename)
-    pars = du.loadPars(filename)
+    opts = util.loadOpts(filename)
+    pars = util.loadPars(filename)
     print("Loading " + filename)
-    t, x1, x2, x3, prim, dat = du.loadCheckpoint(filename)
+    t, x1, x2, x3, prim, dat = util.loadCheckpoint(filename)
 
     nx = pars['Num_R']
     gam = pars['Adiabatic_Index']
@@ -81,9 +81,9 @@ def analyzeSingle(filename):
     B3 = prim[:,7]
     eS = P * np.power(rho, -gam)
 
-    x, y, z = dg.getXYZ(x1, x2, x3, opts, pars)
-    vx, vy, vz = dg.getVXYZ(x1, x2, x3, v1, v2, v3, opts)
-    Bx, By, Bz = dg.getBXYZ(x1, x2, x3, B1, B2, B3, opts)
+    x, y, z = geom.getXYZ(x1, x2, x3, opts, pars)
+    vx, vy, vz = geom.getVXYZ(x1, x2, x3, v1, v2, v3, opts)
+    Bx, By, Bz = geom.getBXYZ(x1, x2, x3, B1, B2, B3, opts)
 
     gam = pars['Adiabatic_Index']
     phi0 = pars['Init_Par5'] * np.pi
@@ -107,17 +107,17 @@ def analyzeSingle(filename):
     rhoS, PS, ViS, VjS, VkS, BiS, BjS, BkS = calcAlfvenWave(t, X, pars)
     eSS = PS * np.power(rhoS, -gam)
 
-    dV = dg.getDV(dat, opts, pars)
+    dV = geom.getDV(dat, opts, pars)
 
-    errRho = dg.integrate(np.fabs(rho-rhoS), dat, opts, pars, dV)
-    errP = dg.integrate(np.fabs(P-PS), dat, opts, pars, dV)
-    errVx = dg.integrate(np.fabs(vx-(ix*ViS+jx*VjS+kx*VkS)), dat,opts,pars,dV)
-    errVy = dg.integrate(np.fabs(vy-(iy*ViS+jy*VjS+ky*VkS)), dat,opts,pars,dV)
-    errVz = dg.integrate(np.fabs(vz-(iz*ViS+jz*VjS+kz*VkS)), dat,opts,pars,dV)
-    errBx = dg.integrate(np.fabs(Bx-(ix*BiS+jx*BjS+kx*BkS)), dat,opts,pars,dV)
-    errBy = dg.integrate(np.fabs(By-(iy*BiS+jy*BjS+ky*BkS)), dat,opts,pars,dV)
-    errBz = dg.integrate(np.fabs(Bz-(iz*BiS+jz*BjS+kz*BkS)), dat,opts,pars,dV)
-    errS = dg.integrate(np.fabs(eS-eSS), dat, opts, pars, dV)
+    errRho = geom.integrate(np.fabs(rho-rhoS), dat, opts, pars, dV)
+    errP = geom.integrate(np.fabs(P-PS), dat, opts, pars, dV)
+    errVx = geom.integrate(np.fabs(vx-(ix*ViS+jx*VjS+kx*VkS)), dat,opts,pars,dV)
+    errVy = geom.integrate(np.fabs(vy-(iy*ViS+jy*VjS+ky*VkS)), dat,opts,pars,dV)
+    errVz = geom.integrate(np.fabs(vz-(iz*ViS+jz*VjS+kz*VkS)), dat,opts,pars,dV)
+    errBx = geom.integrate(np.fabs(Bx-(ix*BiS+jx*BjS+kx*BkS)), dat,opts,pars,dV)
+    errBy = geom.integrate(np.fabs(By-(iy*BiS+jy*BjS+ky*BkS)), dat,opts,pars,dV)
+    errBz = geom.integrate(np.fabs(Bz-(iz*BiS+jz*BjS+kz*BkS)), dat,opts,pars,dV)
+    errS = geom.integrate(np.fabs(eS-eSS), dat, opts, pars, dV)
 
     return t, nx, errRho, errP, errVx, errVy, errVz, errBx, errBy, errBz, errS
 

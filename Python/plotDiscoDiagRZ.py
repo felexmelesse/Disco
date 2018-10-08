@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
-import discoUtil as du
+import discopy.util as util
 
 xscale = "log"
 yscale = "log"
@@ -19,7 +19,7 @@ def plotCheckpoint(file):
     
     print("Loading {0:s}...".format(file))
 
-    t, r, z, diag, rjph, zkph = du.loadDiagRZ(file)
+    t, r, z, diag, rjph, zkph = util.loadDiagRZ(file)
 
     nq = diag.shape[-1]
 

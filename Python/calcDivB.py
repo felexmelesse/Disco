@@ -1,22 +1,22 @@
 import sys
 import numpy as np
-import discoUtil as du
-import discoGeom as dg
+import discopy.util as util
+import discopy.geom as geom
 
-def calc(filename, plot=False, trim=False):
+def calc(filename, makePlot=False, trim=False):
 
-    t, r, phi, z,prim, dat = du.loadCheckpoint(filename)
-    opts = du.loadOpts(filename)
-    pars = du.loadPars(filename)
+    t, r, phi, z,prim, dat = util.loadCheckpoint(filename)
+    opts = util.loadOpts(filename)
+    pars = util.loadPars(filename)
 
-    divB = dg.calcDivB(dat, opts, pars)
+    divB = geom.calcDivB(dat, opts, pars)
 
-    IdivB = dg.integrate(np.abs(divB), dat, opts, pars)
+    IdivB = geom.integrate(np.abs(divB), dat, opts, pars)
 
     print(IdivB)
 
-    if plot:
-        import discoPlotUtil as dp
+    if makePlot:
+        import discopy.plot as plot
         import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots(1,1, figsize=(9,9))
@@ -37,7 +37,7 @@ def calc(filename, plot=False, trim=False):
             zkph = zkph[2:-2]
             divB0 = divB0[2:-2,2:-2]
 
-        dp.plotPhiSlice(fig, ax, rjph, zkph, divB0, 
+        plot.plotPhiSlice(fig, ax, rjph, zkph, divB0, 
                             r"$\nabla \cdot B$",
                             pars, opts)
         name = ".".join(filename.split("/")[-1].split(".")[:-1])
@@ -55,11 +55,11 @@ if __name__ == "__main__":
         print("Need some checkpoints!")
         sys.exit()
 
-    plot = False
+    makePlot = False
     if "plot" in sys.argv:
         print("Gonna plot")
         sys.argv.remove("plot")
-        plot = True
+        makePlot = True
     trim = False
     if "trim" in sys.argv:
         print("Gonna trim")
@@ -71,12 +71,12 @@ if __name__ == "__main__":
         sys.argv.remove("diff")
         diff = True
 
-    val0, divB0 = calc(sys.argv[1], plot, trim)
+    val0, divB0 = calc(sys.argv[1], makePlot, trim)
     
     for f in sys.argv[2:-1]:
-        calc(f, plot, trim)
+        calc(f, makePlot, trim)
 
-    val1, divB1 = calc(sys.argv[-1], plot, trim)
+    val1, divB1 = calc(sys.argv[-1], makePlot, trim)
 
     if val0 != 0.0:
         err = (val1-val0)/val0
@@ -85,14 +85,14 @@ if __name__ == "__main__":
 
     print(err)
 
-    if plot:
+    if makePlot:
         diff = divB1-divB0
-        import discoPlotUtil as dp
+        import discopy.plot as plot
         import matplotlib.pyplot as plt
         
-        t, r, phi, z,prim, dat = du.loadCheckpoint(sys.argv[1])
-        opts = du.loadOpts(sys.argv[1])
-        pars = du.loadPars(sys.argv[1])
+        t, r, phi, z,prim, dat = util.loadCheckpoint(sys.argv[1])
+        opts = util.loadOpts(sys.argv[1])
+        pars = util.loadPars(sys.argv[1])
 
         fig, ax = plt.subplots(1,1, figsize=(9,9))
 
@@ -107,7 +107,7 @@ if __name__ == "__main__":
             rjph = rjph[2:-2]
             zkph = zkph[2:-2]
 
-        dp.plotPhiSlice(fig, ax, rjph, zkph, diff, 
+        plot.plotPhiSlice(fig, ax, rjph, zkph, diff, 
                             r"$\delta \nabla \cdot B$",
                             pars, opts)
         name = ".".join(sys.argv[1].split("/")[-1].split(".")[:-1])

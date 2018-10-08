@@ -3,9 +3,8 @@ import math
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import discoUtil as du
-import discoPlotUtil as dpu
-import discoGeom as dg
+import discopy.util as util
+import discopy.geom as geom
 import calc as ca
 
 def rhoProf(x, a, x0, L, rho0):
@@ -74,10 +73,10 @@ def calcMagnetosonicWave(t, x, pars, tol=1.0e-6):
 
 def analyzeSingle(filename):
 
-    opts = du.loadOpts(filename)
-    pars = du.loadPars(filename)
+    opts = util.loadOpts(filename)
+    pars = util.loadPars(filename)
     print("Loading " + filename)
-    t, x1, x2, x3, prim, dat = du.loadCheckpoint(filename)
+    t, x1, x2, x3, prim, dat = util.loadCheckpoint(filename)
 
     nx = pars['Num_R']
     gam = pars['Adiabatic_Index']
@@ -92,9 +91,9 @@ def analyzeSingle(filename):
     B3 = prim[:,7]
     eS = P * np.power(rho, -gam)
 
-    x, y, z = dg.getXYZ(x1, x2, x3, opts, pars)
-    vx, vy, vz = dg.getVXYZ(x1, x2, x3, v1, v2, v3, opts)
-    Bx, By, Bz = dg.getBXYZ(x1, x2, x3, B1, B2, B3, opts)
+    x, y, z = geom.getXYZ(x1, x2, x3, opts, pars)
+    vx, vy, vz = geom.getVXYZ(x1, x2, x3, v1, v2, v3, opts)
+    Bx, By, Bz = geom.getBXYZ(x1, x2, x3, B1, B2, B3, opts)
 
     gam = pars['Adiabatic_Index']
     phi0 = pars['Init_Par5'] * np.pi
@@ -121,18 +120,18 @@ def analyzeSingle(filename):
     #JpS = VS - 2*csS/(gam-1)
 
 
-    dV = dg.getDV(dat, opts, pars)
+    dV = geom.getDV(dat, opts, pars)
 
 
-    errRho = dg.integrate(np.fabs(rho-rhoS), dat, opts, pars, dV)
-    errP = dg.integrate(np.fabs(P-PS), dat, opts, pars, dV)
-    errVx = dg.integrate(np.fabs(vx-ix*vS), dat,opts,pars,dV)
-    errVy = dg.integrate(np.fabs(vy-iy*vS), dat,opts,pars,dV)
-    errVz = dg.integrate(np.fabs(vz-iz*vS), dat,opts,pars,dV)
-    errBx = dg.integrate(np.fabs(Bx-(jx*BjS+kx*BkS)), dat,opts,pars,dV)
-    errBy = dg.integrate(np.fabs(By-(jy*BjS+ky*BkS)), dat,opts,pars,dV)
-    errBz = dg.integrate(np.fabs(Bz-(jz*BjS+kz*BkS)), dat,opts,pars,dV)
-    errS = dg.integrate(np.fabs(eS-eSS), dat, opts, pars, dV)
+    errRho = geom.integrate(np.fabs(rho-rhoS), dat, opts, pars, dV)
+    errP = geom.integrate(np.fabs(P-PS), dat, opts, pars, dV)
+    errVx = geom.integrate(np.fabs(vx-ix*vS), dat,opts,pars,dV)
+    errVy = geom.integrate(np.fabs(vy-iy*vS), dat,opts,pars,dV)
+    errVz = geom.integrate(np.fabs(vz-iz*vS), dat,opts,pars,dV)
+    errBx = geom.integrate(np.fabs(Bx-(jx*BjS+kx*BkS)), dat,opts,pars,dV)
+    errBy = geom.integrate(np.fabs(By-(jy*BjS+ky*BkS)), dat,opts,pars,dV)
+    errBz = geom.integrate(np.fabs(Bz-(jz*BjS+kz*BkS)), dat,opts,pars,dV)
+    errS = geom.integrate(np.fabs(eS-eSS), dat, opts, pars, dV)
 
     return t, nx, errRho, errP, errVx, errVy, errVz, errBx, errBy, errBz, errS
 

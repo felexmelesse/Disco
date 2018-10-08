@@ -171,10 +171,10 @@ def getDVcart(xjph, yiph, zkph, ny, index, pars):
 
     return dV
 
-def getDVcyl(rjph, piph, zkph, np, index, pars):
+def getDVcyl(rjph, piph, zkph, nphi, index, pars):
 
-    nz = np.shape[0]
-    nr = np.shape[1]
+    nz = nphi.shape[0]
+    nr = nphi.shape[1]
 
     r1d = 0.5*(rjph[1:] + rjph[:-1])
     dr1d = rjph[1:] - rjph[:-1]
@@ -190,7 +190,7 @@ def getDVcyl(rjph, piph, zkph, np, index, pars):
     for k in range(nz):
         for j in range(nr):
             a = index[k,j]
-            b = index[k,j]+np[k,j]
+            b = index[k,j]+nphi[k,j]
 
             r[a:b] = r1d[j]
             dr[a:b] = dr1d[j]

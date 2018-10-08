@@ -3,7 +3,7 @@ import math
 import h5py as h5
 import matplotlib.pyplot as plt
 import numpy as np
-import discoGeom as dg
+from . import geom as dg
 
 def loadPars(filename):
 

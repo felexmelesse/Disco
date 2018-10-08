@@ -2,15 +2,15 @@ import sys
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import discoUtil as du
-import discoGeom as dg
+import discopy.util as util
+import discopy.geom as geom
 
 def analyzeSingle(filename):
 
-    opts = du.loadOpts(filename)
-    pars = du.loadPars(filename)
+    opts = util.loadOpts(filename)
+    pars = util.loadPars(filename)
     print("Loading " + filename)
-    t, x1, x2, x3, prim, dat = du.loadCheckpoint(filename)
+    t, x1, x2, x3, prim, dat = util.loadCheckpoint(filename)
 
     B1 = prim[:,5]
     B2 = prim[:,6]
@@ -18,7 +18,7 @@ def analyzeSingle(filename):
 
     b2 = B1*B1 + B2*B2 + B3*B3
 
-    eB = 0.5 * dg.integrate(b2, dat, opts, pars)
+    eB = 0.5 * geom.integrate(b2, dat, opts, pars)
 
     return t, eB
 

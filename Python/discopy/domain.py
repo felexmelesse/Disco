@@ -1,8 +1,8 @@
 import math
 import sys
 import numpy as np
-import checkpoint as cp
-import pars as pr
+from . import checkpoint as cp
+from . import pars as pr
 
 class DiscoDomain:
 

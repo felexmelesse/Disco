@@ -1,17 +1,17 @@
 import sys
 import numpy as np
-import discoUtil as du
-import discoGeom as dg
+import discopy.util as util
+import discopy.geom as geom
 
 def calc(filename):
 
-    t, r, phi, z,prim, dat = du.loadCheckpoint(filename)
-    opts = du.loadOpts(filename)
-    pars = du.loadPars(filename)
+    t, r, phi, z,prim, dat = util.loadCheckpoint(filename)
+    opts = util.loadOpts(filename)
+    pars = util.loadPars(filename)
 
     gam = pars['Adiabatic_Index']
 
-    h1, h2, h3 = dg.getScaleFactors(r, phi, z, opts)
+    h1, h2, h3 = geom.getScaleFactors(r, phi, z, opts)
 
     rho = prim[:,0]
     P = prim[:,1]
@@ -33,11 +33,11 @@ def calc(filename):
         B2 = b1*b1 + b2*b2 + b3*b3
         e += 0.5*B2
 
-    M = dg.integrate(rho, dat, opts, pars)
-    S1 = dg.integrate(s1, dat, opts, pars)
-    S2 = dg.integrate(s2, dat, opts, pars)
-    S3 = dg.integrate(s3, dat, opts, pars)
-    E = dg.integrate(e, dat, opts, pars)
+    M = geom.integrate(rho, dat, opts, pars)
+    S1 = geom.integrate(s1, dat, opts, pars)
+    S2 = geom.integrate(s2, dat, opts, pars)
+    S3 = geom.integrate(s3, dat, opts, pars)
+    E = geom.integrate(e, dat, opts, pars)
 
     print(M, S1, S2, S3, E)
 

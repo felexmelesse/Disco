@@ -2,15 +2,15 @@ import sys
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-import discoUtil as du
+import discopy.util as util
 import calc as ca
 
 def analyzeSingle(filename):
 
-    opts = du.loadOpts(filename)
-    pars = du.loadPars(filename)
+    opts = util.loadOpts(filename)
+    pars = util.loadPars(filename)
     print("Loading " + filename)
-    t, x1, x2, x3, prim, dat = du.loadCheckpoint(filename)
+    t, x1, x2, x3, prim, dat = util.loadCheckpoint(filename)
 
     #assume spherical geom for now
     r = x1

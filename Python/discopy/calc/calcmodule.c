@@ -2,7 +2,7 @@
 #include <Python.h>
 #define NPY_NO_DEPRECATED_API NPY_1_11_API_VERSION
 #include <numpy/arrayobject.h>
-#include "../../Calc/calc.h"
+#include "../../../Calc/calc.h"
 
 
 static char module_docstring[] = 
@@ -27,16 +27,48 @@ static PyMethodDef module_methods[] = {
         magnetosonic_cf_int_newt_docstring},
     {NULL, NULL, 0, NULL}};
 
-PyMODINIT_FUNC init_calc(void)
+#if PY_MAJOR_VERSION >= 3
+
+static struct PyModuleDef calcModule = {
+    PyModuleDef_HEAD_INIT,
+    "calc", //Module Name
+    module_docstring,
+    0,
+    module_methods,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
+#define INITERROR return NULL
+    
+PyMODINIT_FUNC PyInit_calc(void)
+
+#else
+
+#define INITERROR return
+
+PyMODINIT_FUNC initcalc(void)
+#endif
 {
-    PyObject *m = Py_InitModule3("_calc", module_methods, module_docstring);
+
+#if PY_MAJOR_VERSION >= 3
+    PyObject *m = PyModule_Create(&calcModule);
+#else
+    PyObject *m = Py_InitModule3("calc", module_methods, module_docstring);
+#endif
 
     // return if there was a problem
     if(m == NULL)
-        return;
+        INITERROR;
 
     // Load numpy stuff!
     import_array();
+
+#if PY_MAJOR_VERSION >= 3
+    return m;
+#endif
 }
 
 static PyObject *calc_bondi_newt(PyObject *self, PyObject *args)

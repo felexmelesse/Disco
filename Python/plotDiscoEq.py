@@ -5,21 +5,21 @@ import h5py as h5
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import discoUtil as du
-import discoPlotUtil as dp
+import discopy.util as util
+import discopy.plot as plot
 
 def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
                     bounds=None, rmax=None, planets=False, k=None):
     
     print("Loading {0:s}...".format(file))
 
-    t, r, phi, z, prim, dat = du.loadCheckpoint(file)
+    t, r, phi, z, prim, dat = util.loadCheckpoint(file)
     rjph = dat[0]
     zkph = dat[1]
     primPhi0 = dat[2]
     piph = dat[3]
-    pars = du.loadPars(file)
-    opts = du.loadOpts(file)
+    pars = util.loadPars(file)
+    opts = util.loadOpts(file)
 
     if k is None:
         k = int(zkph.shape[0]/2-1)
@@ -47,7 +47,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
         piph1 = piph
 
 
-    varnames, vartex, num_c, num_n = du.getVarNames(file)
+    varnames, vartex, num_c, num_n = util.getVarNames(file)
     #nq = prim.shape[1]
     nq = num_c + num_n
 
@@ -79,7 +79,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
 
                 fig, ax = plt.subplots(1,1, figsize=(12,9))
 
-                dp.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], Z, vartex[q],
+                plot.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], Z, vartex[q],
                                 pars, opts, vmin=vmin, vmax=vmax, rmax=rmax, 
                                 planets=planetDat)
                 fig.suptitle(title, fontsize=24)
@@ -92,7 +92,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
             if q in logvars:
                 fig, ax = plt.subplots(1,1, figsize=(12,9))
 
-                dp.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], Z, vartex[q],
+                plot.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], Z, vartex[q],
                                 pars, opts, vmin=vmin, vmax=vmax, rmax=rmax, 
                                 planets=planetDat, log=True)
                 fig.suptitle(title, fontsize=24)
@@ -109,13 +109,13 @@ def getBounds(use_bounds, names, files):
 
     if use_bounds is not None:
         if use_bounds is True:
-            bounds = dp.calcBounds(files)
+            bounds = plot.calcBounds(files)
         else:
             if os.path.isfile(use_bounds):
-                bounds = dp.readBoundsFile(use_bounds, num_q)
+                bounds = plot.readBoundsFile(use_bounds, num_q)
             else:
-                bounds = dp.calcBounds(files)
-                dp.writeBoundsFile(use_bounds, names, bounds)
+                bounds = plot.calcBounds(files)
+                plot.writeBoundsFile(use_bounds, names, bounds)
     else:
         bounds = None
 
@@ -153,7 +153,7 @@ if __name__ == "__main__":
 
     files = args.checkpoints
 
-    names, texnames, num_c, num_n = du.getVarNames(files[0])
+    names, texnames, num_c, num_n = util.getVarNames(files[0])
 
     bounds = getBounds(use_bounds, names, files)
 

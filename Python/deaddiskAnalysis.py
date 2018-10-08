@@ -4,7 +4,7 @@ import argparse as ap
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import discoUtil as du
+import discopy.util as util
 
 def moment_arm(r1, r2):
     return math.sqrt(0.5*(r1*r1+r2*r2))
@@ -418,14 +418,14 @@ def summaryQuantities(grid, prim, pars, planetDat, name):
 def analysisSingle(filename, flux=True, fourier=True, summary=True):
 
     print("Loading {0}".format(filename))
-    t, r, phi, z, prim, dat = du.loadCheckpoint(filename)
+    t, r, phi, z, prim, dat = util.loadCheckpoint(filename)
     rjph = dat[0]
     zkph = dat[1]
     primPhi0 = dat[2]
     piph = dat[3]
     planetDat = dat[4]
     nphi = dat[7]
-    pars = du.loadPars(filename)
+    pars = util.loadPars(filename)
 
     k = int(zkph.shape[0]/2-1)
     ind = (z>zkph[k]) * (z<zkph[k+1])

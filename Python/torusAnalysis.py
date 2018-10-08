@@ -2,9 +2,9 @@ import sys
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import discoUtil as du
-import discoPlotUtil as dp
-import discoGeom as dg
+import discopy.util as util
+import discopy.plot as plot
+import discopy.geom as geom
 
 figsize = (9,12)
 figsizeR = (8,6)
@@ -15,7 +15,7 @@ def makeGridPlots(rjph, zkph, pars, opts, title, name, fv, bounds, texlabels,
     for i in range(len(fv)):
         if linear[i]:
             fig, ax = plt.subplots(1,1, figsize=figsize)
-            dp.plotPhiSlice(fig, ax, rjph, zkph, fv[i], texlabels[i], 
+            plot.plotPhiSlice(fig, ax, rjph, zkph, fv[i], texlabels[i], 
                             pars, opts, vmin=bounds[i,0], vmax=bounds[i,1],
                             log=False)
             fig.suptitle(title, fontsize=24)
@@ -26,7 +26,7 @@ def makeGridPlots(rjph, zkph, pars, opts, title, name, fv, bounds, texlabels,
             plt.close(fig)
         if log[i]:
             fig, ax = plt.subplots(1,1, figsize=figsize)
-            dp.plotPhiSlice(fig, ax, rjph, zkph, fv[i], texlabels[i], 
+            plot.plotPhiSlice(fig, ax, rjph, zkph, fv[i], texlabels[i], 
                             pars, opts, vmin=bounds[i,0], vmax=bounds[i,1],
                             log=True)
             fig.suptitle(title, fontsize=24)
@@ -94,9 +94,9 @@ def analyze(file, bounds=None, boundsR=None, checkBounds=False, plot=True):
 
     print("Loading " + file)
 
-    pars = du.loadPars(file)
-    opts = du.loadOpts(file)
-    t, r, phi, th, prim, dat = du.loadCheckpoint(file)
+    pars = util.loadPars(file)
+    opts = util.loadOpts(file)
+    t, r, phi, th, prim, dat = util.loadCheckpoint(file)
     rjph = dat[0]
     zkph = dat[1]
     iPhi0 = dat[6]
@@ -128,7 +128,7 @@ def analyze(file, bounds=None, boundsR=None, checkBounds=False, plot=True):
     machA = np.sqrt(v2)/np.maximum(cA, 1.0e-5)
     mach = np.sqrt(v2)/np.sqrt(cs*cs + cA2)
 
-    R = dg.getCentroid(rjph[:-1], rjph[1:], 1, opts)
+    R = geom.getCentroid(rjph[:-1], rjph[1:], 1, opts)
 
     j = rho*r*r*sinth*sinth*vp
     e = 0.5*rho*v2 + P/(gam-1) + 0.5*B2
@@ -195,11 +195,11 @@ def analyze(file, bounds=None, boundsR=None, checkBounds=False, plot=True):
         makeGridPlots(rjph, zkph, pars, opts, title, name, fv, bounds, 
                         texlabels, labels, linear, log)
 
-    dAr = dg.getDA1(r, dat[3], dat[1], dat, opts, pars)
-    Mdot = dg.integrateTrans1(r, rho*vr, dat, opts, pars, dAr)
-    phiB = dg.integrateTrans1(r, 0.5*np.abs(Br), dat, opts, pars, dAr)
-    Jdot = dg.integrateTrans1(r, j*vr - r*sinth*Bp*Br, dat, opts, pars, dAr)
-    Edot = dg.integrateTrans1(r, (e + P+0.5*B2)*vr, dat, opts, pars, dAr)
+    dAr = geom.getDA1(r, dat[3], dat[1], dat, opts, pars)
+    Mdot = geom.integrateTrans1(r, rho*vr, dat, opts, pars, dAr)
+    phiB = geom.integrateTrans1(r, 0.5*np.abs(Br), dat, opts, pars, dAr)
+    Jdot = geom.integrateTrans1(r, j*vr - r*sinth*Bp*Br, dat, opts, pars, dAr)
+    Edot = geom.integrateTrans1(r, (e + P+0.5*B2)*vr, dat, opts, pars, dAr)
     Mdotmin = Mdot.min()
     Mdotmax = Mdot.max()
     Jdotmin = Jdot.min()
@@ -230,11 +230,11 @@ def analyze(file, bounds=None, boundsR=None, checkBounds=False, plot=True):
         makeRadialPlots(R, title, name, fvR, boundsR, 
                         texlabelsR, labelsR, linearR, logR)
 
-    dV = dg.getDV(dat, opts, pars)
-    M = dg.integrate(rho, dat, opts, pars, dV)
-    J = dg.integrate(j, dat, opts, pars, dV)
-    E = dg.integrate(e, dat, opts, pars, dV)
-    EB = dg.integrate(0.5*B2, dat, opts, pars, dV)
+    dV = geom.getDV(dat, opts, pars)
+    M = geom.integrate(rho, dat, opts, pars, dV)
+    J = geom.integrate(j, dat, opts, pars, dV)
+    E = geom.integrate(e, dat, opts, pars, dV)
+    EB = geom.integrate(0.5*B2, dat, opts, pars, dV)
 
     return t, (M, J, E, EB)
  

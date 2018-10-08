@@ -5,8 +5,8 @@ import h5py as h5
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import discoUtil as du
-import discoGeom as dg
+from . import util
+from . import geom
 
 def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None, 
             vmax=None, noGhost=False, colorbar=True, xlabel=None, ylabel=None,
@@ -57,7 +57,7 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
         #x = rf[:,None] * np.cos(phif)[None,:]
         #y = rf[:,None] * np.sin(phif)[None,:]
 
-        x, y, z = dg.getXYZ(rf[:,None], phif[None,:], Z.mean(), opts, pars)
+        x, y, z = geom.getXYZ(rf[:,None], phif[None,:], Z.mean(), opts, pars)
 
         C = ax.pcolormesh(x, y, aq[None,:], 
                 cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
@@ -149,7 +149,7 @@ def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, opts, vmin=None,
         norm = mpl.colors.Normalize(vmin, vmax)
 
 
-    x, y, z = dg.getXYZ(rjph_loc[None,:], 0.0, zkph_loc[:,None], opts, pars)
+    x, y, z = geom.getXYZ(rjph_loc[None,:], 0.0, zkph_loc[:,None], opts, pars)
         
     C = ax.pcolormesh(x, z, dat, 
             cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
@@ -188,7 +188,7 @@ def calcBounds(files):
     f = files[0]
     
     print("  Checking bounds for {0:s}...".format(f))
-    prim = du.loadCheckpointPrims(f)
+    prim = util.loadCheckpointPrims(f)
 
     num_q = prim.shape[1]
     bounds = [[prim[:,q].min(), prim[:,q].max()] for q in range(num_q)]
@@ -196,7 +196,7 @@ def calcBounds(files):
 
     for f in files[1:]:
         print("  Checking bounds for {0:s}...".format(f))
-        prim = du.loadCheckpointPrims(f)
+        prim = util.loadCheckpointPrims(f)
         for q in range(num_q):
             bounds[q,0] = min(bounds[q,0], prim[:,q].min())
             bounds[q,1] = max(bounds[q,1], prim[:,q].max())
