@@ -67,6 +67,7 @@ Drift_Rate		0.0 //-2.5e-4
 Drift_Exp		0.66666667
 Grav2D          1
 G_EPS           0.02
+PW_Flag         0
 
 //Sink Parameters
 Use_Sink        1

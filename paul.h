@@ -72,6 +72,7 @@ struct param_list{
    double Cs2_Par;
    int alpha_flag;
    int grav2D;
+   int pw_flag;
    double g_eps;
 
 

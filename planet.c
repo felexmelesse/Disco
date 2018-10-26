@@ -4,15 +4,20 @@ double t = 0.0;
 double PHI_ORDER = 2.0;
 static double R_SCHWZ = 0.1/3.0;
 static int grav2D = 0;
-static int pw_flag = 0.0;
 //static double G_EPS = 0.02;
+
+static int pw_flag = 0;
 
 double get_dp( double , double );
 
 void setGravParams( struct domain * theDomain ){
 
    grav2D = theDomain->theParList.grav2D;
-   //G_EPS = theDomain->theParList.g_eps;
+   pw_flag = theDomain->theParList.pw_flag;
+   if( pw_flag && !(theDomain->rank) )
+           printf("\nUsing Paczynski-Wiita!\n");
+   
+    //G_EPS = theDomain->theParList.g_eps;
 }
 
 double phigrav( double M , double r , double eps ){
@@ -30,12 +35,18 @@ double fgrav_yike( double M, double r, double eps ){
    return( M*pow(r,n-1.)/pow( pow(r,n) + pow(eps,n),1.+1./n) );
 }
 
-double phigrav_pw( double M, double r ){
-    return( M/(r-R_SCHWZ) );
+double phigrav_pw( double M, double r, double eps ){
+    if( r < 0.05 )
+        r = 0.05;
+    double r_smooth = sqrt( r*r + eps*eps );
+    return( M/(r_smooth-R_SCHWZ) );
 }
 
-double fgrav_pw( double M, double r ){
-    return( M/pow(r-R_SCHWZ, 2) );
+double fgrav_pw( double M, double r, double eps ){
+    if( r<0.05 )
+        r = 0.05;
+    double r_smooth = sqrt( r*r + eps*eps );
+    return( M*r/(r_smooth*pow( (r_smooth-R_SCHWZ),2)) );
 }
 
 void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
@@ -54,9 +65,9 @@ void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
    double pot = 0.0;
    double r_cut = 1.5*R_SCHWZ;
    if( pw_flag ){
-        if( script_r < r_cut )
-            script_r = r_cut;
-        pot = phigrav_pw( pl->M, script_r );
+        //if( script_r < r_cut )
+        //    script_r = r_cut;
+        pot = phigrav_pw( pl->M, script_r, pl->eps );
    }
    else{
         pot = phigrav( pl->M , script_r , pl->eps );
@@ -88,15 +99,14 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
    double script_r = sqrt(dx*dx+dy*dy+z*z);
    double script_r_perp = sqrt(dx*dx+dy*dy);
 
-   double r_cut = 1.5*R_SCHWZ;
-   double f_cut = -fgrav_pw( pl->M, r_cut );
+   //double r_cut = 1.5*R_SCHWZ;
+   //double f_cut = -fgrav_pw( pl->M, r_cut );
 
    double f1 = 0.0;
    if( pw_flag ){
-       if( script_r < r_cut )
-           f1 = f_cut;
-       else
-           f1 = -fgrav_pw( pl->M, script_r );
+       //if( script_r < r_cut )
+       //    f1 = f_cut;
+       f1 = -fgrav_pw( pl->M, script_r, pl->eps );
    }
    else{
        f1 = -fgrav( pl->M, script_r, pl->eps );

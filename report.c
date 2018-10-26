@@ -135,6 +135,9 @@ void report( struct domain * theDomain ){
                Torque2 -= (rho-1.0)*rp*fp2*dV;
                Fr -= (rho-1.0)*fr*dV;
 
+               //TODO: have planets track total mass eaten and mdot(t)
+               //Torque -= rp*pl.mdot*(om*rp - r*c->prim[UPP]); //*(rho-1.0)??
+
 /*
                int n_cut;
                for( n_cut=0 ; n_cut<10 ; ++n_cut ){
