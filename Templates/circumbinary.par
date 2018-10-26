@@ -4,17 +4,17 @@ Restart			0	//Restart from input.h5
 
 //Time Range//
 T_Start			0.0 //1.0
-T_End		    1.0
-T_Times_2pi		0
+T_End		    50.0
+T_Times_2pi		1
 
 //Output Frequency//
 Num_Reports		    4e4
 Num_Snapshots		0
-Num_Checkpoints		10
+Num_Checkpoints		50
 Use_Logtime		    0
 
 //Grid Dimensions//
-Num_R			    20
+Num_R			    256
 Num_Z			    1
 aspect			    1.0	//Cell Aspect Ratio, for calculating N_phi
 Max_Aspect_Short	1.5	
@@ -22,66 +22,65 @@ Max_Aspect_Long		1.5	//Aspect Ratio AMR Refinement Criteria
 
 //Domain Parameters//
 R_Min			0.0
-R_Max			1.0
-Z_Min			-10.0 //-0.0625
-Z_Max			10.0  //0.0625
+R_Max			30.0
+Z_Min			-0.25 //-0.0625
+Z_Max			0.25  //0.0625
 Z_Periodic		0
 Phi_Max			1.0
 P_Times_2pi		1
-Log_Zoning		0	//0=Uniform, 1=Log, 2=Hybrid
-Log_Radius		0.1	//Only for option 2 of Log_Zoning
+Log_Zoning		2	//0=Uniform, 1=Log, 2=Hybrid
+Log_Radius		2.0	//Only for option 2 of Log_Zoning
 
 //Numerical Parameters
 CFL			            0.2
 PLM			            1.5
 Max_DT                  0.0 //If > 0.0, the maximum allowed time step.
-Riemann_Solver		    0	//0=HLL, 1=HLLC, 2=HLLD
-Mesh_Motion		        3	//0=Fixed, 1=By Cell, 2=Riemann, 3=Avg, 4=Exact
-Exact_Mesh_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep
+Riemann_Solver		    1	//0=HLL, 1=HLLC, 2=HLLD
+Mesh_Motion		        4	//0=Fixed, 1=By Cell, 2=Riemann, 3=Avg, 4=Exact
+Exact_Mesh_Omega        3   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep
 Exact_Mesh_Omega_Par    0.0 //unused so far
 Absorbing_BC		    0
 Initial_Regrid		    0
-Density_Floor		    0.0 //1e-5
-Pressure_Floor		    1.0e-4 //1e-5
+Density_Floor		    1e-10
+Pressure_Floor		    1e-5 //1e-5
 Constrained_Transport   1
 
 //Hydro Parameters
-Adiabatic_Index		1.66666666667
-Isothermal		    0
-Cs2_Profile         0   //0=Flat,1=FlatDiskMach,2=Visc,3=Sorathia, 4=Binary
+Adiabatic_Index		1.001
+Isothermal		    1
+Cs2_Profile         4   //0=Flat,1=FlatDiskMach,2=Visc,3=Sorathia,4=Binary
 Cs2_Par             0.0 //unused so far
-Energy_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep, 4=Gaussian
+Energy_Omega        3   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep, 4=Gaussian
 Energy_Omega_Par    0.0 //unused so far
-Use_Viscosity		0
-Viscosity		    0.0
-Use_As_Alpha		0     
+Use_Viscosity		1
+Viscosity		    0.1 //0.025  //1e-5
+Use_As_Alpha		1     
 
 //Disk Parameters
-Mach_Number		20.0
-Include_Atmos	0
-
-//Planet Parameters	
-Mass_Ratio		0.0
-Eccentricity	0.0
-Drift_Rate		0.0 //-2.5e-4
-Drift_Exp		0.66666667
-Grav2D          1
-G_EPS           0.02 //set to <=0.0 to turn off/use paul's defaults
-PW_Flag         0    //use pseudo-newtonian potential (Pacynski-Wiita)
+Mach_Number		10.0
+Include_Atmos	1
 
 //Sink Parameters
 Use_Sink        1
 R_Sink          0.1     //0.0333
-Tau_Sink        5.0    //1e-4
+Tau_Sink        29.84
+
+//Planet Parameters	
+Mass_Ratio		1.0
+Eccentricity	0.0
+Drift_Rate		0.0 //-2.5e-4
+Drift_Exp		0.66666667
+Grav2D          1
+G_EPS           0.0 //0.02 //Set to <=0.0 to turn off/use paul's defaults
+PW_Flag         0.0  //Use Pseudo-Newtonian potential
 
 //Tracer Parameters
-Tracer_Init_Type  1        //0=per cell, 1=even by volume, 2=even by process
-N_Tracers         100      //ignored for init 0
-Tracer_Rmin       0.0   
+Tracer_Init_Type  3        //0=per cell, 1=even by volume, 2=even by process, 3=Shakura-Sunyaev
+N_Tracers         0    //ignored for init 0
+Tracer_Rmin       0.0
 Tracer_Rmax       0.0      //ignored for 0.0
-Tracer_Out_Num    1000     //total number of tracer xyz outputs
-
-Tracer_Out_Step   50       //(no longer used) steps between tracer xyz writes   
+Tracer_Out_Step   0       //(no longer used) steps between tracer xyz writes
+Tracer_Out_Num    0     //total number of tracer xyz outputs   
 Tracer_Out_Type   0        //0=visualize, 1=plotting
 
 //Rotating Frame
