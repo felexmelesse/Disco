@@ -22,6 +22,10 @@ static int cs2Choice = 0;
 static double G_EPS = -0.02;
 static double t_step = 0.0;
 
+//Variables for boundary damping
+static double r_damp = 80.0;
+static double r_max  = 0.0;
+
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
    isothermal = theDomain->theParList.isothermal_flag;
@@ -39,6 +43,10 @@ void setHydroParams( struct domain * theDomain ){
    q_planet = theDomain->theParList.Mass_Ratio;
    G_EPS = theDomain->theParList.g_eps;
 
+//========= Params for Damping =======================
+    r_max = theDomain->theParList.rmax;
+    //r_damp = theDomain->theParList.r_damp;
+
 }
 
 int set_B_flag(void){
@@ -51,6 +59,12 @@ void set_hydro_time( double t ){
 
 double get_omega( double * prim , double * x ){
    return( prim[UPP] );
+}
+
+double Theta( double r ){
+    
+    double theta = (r - r_damp)/(r_max - r_damp);
+    return theta*theta;
 }
 
 void planetaryForce( struct planet * , int , double , double , double * , double * );
@@ -329,12 +343,61 @@ void density_sink_yike( struct domain *theDomain, double *prim, double *cons, do
     double vz  = prim[UZZ];
     double rp = xp[0];
     double rm = xm[0];
-    double r = get_moment_arm( xp, xm );
-    //double r = 0.5*(xp[0]+xm[0]);
+    //double r = get_moment_arm( xp, xm );
+    double r = 0.5*(xp[0]+xm[0]);
     double dphi = get_dp( xp[1],xm[1] );
     double phip = xp[1];
     double phim = phip - dphi;
+    double phi  = 0.5*(phip+phim);
+    //double dist = nearest_planet_dist( theDomain, 0.5*(rp+rm), 0.5*(phip+phim) );
+    //TODO: Need to modify this to also save the nearest planet pointer
+    //       For tracking accretion: theBH = thePlanet_nearest
+    int Npl = theDomain->Npl;
+    struct planet *thePlanets = theDomain->thePlanets;
+    
+    int p;
+    for( p=0; p<Npl; ++p ){
+        struct planet *pl = thePlanets+p;
+        double dist = get_planet_2dist( r, phi, pl->r, pl->phi);
+        if( sink_flag && dist < R_SINK ){
+            double t_visc = TAU_SINK;
+            if( t_visc < 10.*dt )
+                t_visc = 10.*dt;
+            double sink_frac = dt/t_visc;
+        
+            //prim[RHO] -= sink_frac*rho;
+            cons[DDD] -= sink_frac*cons[DDD];
+            cons[SRR] -= sink_frac*cons[SRR];
+            cons[LLL] -= sink_frac*cons[LLL];
+            cons[SZZ] -= sink_frac*cons[SZZ];
+            cons[TAU] -= sink_frac*cons[TAU];
+            //int q;
+            //double floor = 1e-5;
+            //for( q=0; q<NUM_Q; q++ ){i
+            //  cons[q] -= sink_frac*cons[q];
+            //}
+
+            pl->m_accr = sink_frac*prim[RHO]*dV;
+        }
+    }
+}
+
+void density_sink_yike_old( struct domain *theDomain, double *prim, double *cons, double *xp, double *xm, double dV, double dt ){
+
+    double rho = prim[RHO];
+    double vr  = prim[URR];
+    double om  = prim[UPP];
+    double vz  = prim[UZZ];
+    double rp = xp[0];
+    double rm = xm[0];
+    //double r = get_moment_arm( xp, xm );
+    double r = 0.5*(xp[0]+xm[0]);
+    double dphi = get_dp( xp[1],xm[1] );
+    double phip = xp[1];
+    double phim = phip - dphi;
+    double phi  = 0.5*(phip+phim);
     double dist = nearest_planet_dist( theDomain, 0.5*(rp+rm), 0.5*(phip+phim) );
+
     if( sink_flag && dist < R_SINK ){
         double t_visc = TAU_SINK;
         if( t_visc < 10.*dt )
@@ -349,11 +412,51 @@ void density_sink_yike( struct domain *theDomain, double *prim, double *cons, do
         cons[TAU] -= sink_frac*cons[TAU];
         //int q;
         //double floor = 1e-5;
-        //for( q=0; q<NUM_Q; q++ ){
+        //for( q=0; q<NUM_Q; q++ ){i
         //  cons[q] -= sink_frac*cons[q];
         //}
+
     }
 }
+
+void initial( double*, double* );
+
+void damping( double *cons, double *xp, double *xm, double dV, double dt ){
+
+    //calculate x0's to damp to [omega->r^3/2, Sigma->r^-0.5, vr->-1.5*nu/r]
+    //Make a prims array and call prim to cons
+    double prim0[NUM_Q];
+    double cons0[NUM_Q];
+
+    double rp = xp[0];
+    double rm = xm[0];
+    double r = get_moment_arm(xp,xm);
+    double dphi = get_dp( xp[1], xm[1] );
+    double phip = xp[1];
+    double phim = phip-dphi;
+
+    //Set Prim0's to initial conditions
+    double x[3] = { r, 0.5*(phip+phim), 0.5*(xp[2]+xm[2]) };
+    initial( prim0, x );
+
+    //Build Cons0
+    prim2cons( prim0, cons0, x, dV );
+
+    //set timescale tau
+    double tau = 1e-4;    //6283.2;  //10.0;
+    if( tau < 10*dt )
+        tau = 10*dt;
+
+    double damp_frac = dt/tau;
+    if( r_damp>0.0 && r>r_damp ){
+        //do the damping!
+        int q;
+        for( q=0; q<NUM_Q; ++q ){
+            cons[q] -= damp_frac*(cons[q] - cons0[q])*Theta(r);
+        }
+    }
+}
+
 
 void visc_flux( double * prim , double * gprim , double * flux , double * x , double * n ){
 

@@ -231,6 +231,8 @@ struct planet{
    double eps;
    double Fr;
    double Fp;
+
+   double m_accr;
 };
 
 struct tracer{
