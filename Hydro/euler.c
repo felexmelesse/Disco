@@ -26,6 +26,10 @@ static double t_step = 0.0;
 static double r_damp = 80.0;
 static double r_max  = 0.0;
 
+//Variables for calculating torques
+double torque_accr = 0.0;
+double torque_grav = 0.0;
+
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
    isothermal = theDomain->theParList.isothermal_flag;
@@ -67,7 +71,7 @@ double Theta( double r ){
     return theta*theta;
 }
 
-void planetaryForce( struct planet * , int , double , double , double * , double * );
+void planetaryForce( struct planet * , double , double, double , double * , double * , double*, int );
 
 void prim2cons( double * prim , double * cons , double * x , double dV ){
 
@@ -234,7 +238,7 @@ double get_dp( double , double );
 double get_planet_2dist( double, double, double, double );
 
 void source( struct domain *theDomain, double * prim , double * cons , double * xp , double * xm , double dV, double dt, int last_step ){
-   
+  
    double rp = xp[0];
    double rm = xm[0];
    double dphi = get_dp(xp[1],xm[1]);
@@ -336,7 +340,8 @@ void density_sink( struct domain *theDomain, double *prim, double *cons, double 
 }
 
 void density_sink_yike( struct domain *theDomain, double *prim, double *cons, double *xp, double *xm, double dV, double dt ){
-
+    //This one is currently the sink being used (called by source() in misc.c)
+    
     double rho = prim[RHO];
     double vr  = prim[URR];
     double om  = prim[UPP];
@@ -352,12 +357,17 @@ void density_sink_yike( struct domain *theDomain, double *prim, double *cons, do
     //double dist = nearest_planet_dist( theDomain, 0.5*(rp+rm), 0.5*(phip+phim) );
     //TODO: Need to modify this to also save the nearest planet pointer
     //       For tracking accretion: theBH = thePlanet_nearest
+
+    double *torques = theDomain->torques;
+
     int Npl = theDomain->Npl;
     struct planet *thePlanets = theDomain->thePlanets;
     
     int p;
     for( p=0; p<Npl; ++p ){
         struct planet *pl = thePlanets+p;
+        double rbh = pl->r;
+        double vbh = rbh*(pl->omega);
         double dist = get_planet_2dist( r, phi, pl->r, pl->phi);
         if( sink_flag && dist < R_SINK ){
             double t_visc = TAU_SINK;
@@ -365,6 +375,12 @@ void density_sink_yike( struct domain *theDomain, double *prim, double *cons, do
                 t_visc = 10.*dt;
             double sink_frac = dt/t_visc;
         
+            ////Track mass that will be eaten by sink
+            //double rho = cons[DDD]/dV;
+            pl->m_accr += sink_frac*cons[DDD];
+            //printf("Mass removed, Mdot(t): (%e, %e)\t [%e, %e, %e]\n", sink_frac*cons[DDD], cons[DDD]/t_visc, cons[DDD]/dV, dV, sink_frac);
+
+            
             //prim[RHO] -= sink_frac*rho;
             cons[DDD] -= sink_frac*cons[DDD];
             cons[SRR] -= sink_frac*cons[SRR];
@@ -376,9 +392,18 @@ void density_sink_yike( struct domain *theDomain, double *prim, double *cons, do
             //for( q=0; q<NUM_Q; q++ ){i
             //  cons[q] -= sink_frac*cons[q];
             //}
-
-            pl->m_accr = sink_frac*prim[RHO]*dV;
+            
+            
+            //Calculate Accretion Torques
+            double mdot = cons[DDD]/t_visc;  //prim[RHO]/t_visc; //cons[DDD] = prim[RHO]*dV
+            torques[1] += mdot*rbh*(r*prim[UPP] - vbh); //sign chose to match yike... (correct?)
         }
+        double fr, fp, fz;
+        planetaryForce( pl, r, phi, 0.0, &fr, &fp, &fz, 1);
+        //fr, fp and fz are on fluid element, so force on bh is -fj
+        torques[0] += cons[DDD]*(-fp)*rbh; //*dV? //(rho-1.0)???
+        if( abs(cons[DDD]*fp*rbh) > 100 )
+            printf("Big torque (%e) at r = %e", cons[DDD]*(-fp)*rbh, r);
     }
 }
 
@@ -422,8 +447,10 @@ void density_sink_yike_old( struct domain *theDomain, double *prim, double *cons
 void initial( double*, double* );
 
 void damping( double *cons, double *xp, double *xm, double dV, double dt ){
-
-    //calculate x0's to damp to [omega->r^3/2, Sigma->r^-0.5, vr->-1.5*nu/r]
+   
+    //TODO: Maybe put everything in the if statement so don't do it if don't have to
+    //TODO: Track how much ang mom we're damping against e.g. what is (x-x0)*damp_frac?
+    
     //Make a prims array and call prim to cons
     double prim0[NUM_Q];
     double cons0[NUM_Q];
@@ -443,7 +470,9 @@ void damping( double *cons, double *xp, double *xm, double dV, double dt ){
     prim2cons( prim0, cons0, x, dV );
 
     //set timescale tau
-    double tau = 1e-4;    //6283.2;  //10.0;
+    double OM_P = 2*M_PI;
+    double tau = 100.0*OM_P;
+    //double tau = 2*M_PI*pow(r_max, 1.5);
     if( tau < 10*dt )
         tau = 10*dt;
 
@@ -456,6 +485,7 @@ void damping( double *cons, double *xp, double *xm, double dV, double dt ){
         }
     }
 }
+
 
 
 void visc_flux( double * prim , double * gprim , double * flux , double * x , double * n ){

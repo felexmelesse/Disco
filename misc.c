@@ -1,6 +1,7 @@
 #include "paul.h"
 #include <string.h>
 
+
 double get_dA( double * , double * , int );
 double get_dV( double * , double * );
 double get_moment_arm( double * , double * );
@@ -468,6 +469,7 @@ void planet_src( struct planet * , double * , double *, double * , double * , do
 void omega_src( double * , double * , double * , double * , double );
 void density_sink( struct domain *, double *, double *, double *, double *, double ,double );
 void density_sink_yike( struct domain *, double *, double *, double *, double *, double ,double );
+void damping( double *, double *, double *, double, double );
 
 void add_source( struct domain * theDomain , double dt, int last_step ){
 
@@ -480,6 +482,13 @@ void add_source( struct domain * theDomain , double dt, int last_step ){
 
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
+
+
+   //Reset torques before calculating in sink fxn
+   //double *torques = theDomain->torques;
+   //torques[0] = 0.0;
+   //torques[1] = 0.0;
+   memset( theDomain->torques, 0.0, 2*sizeof(double) );
 
    int i,j,k,p;
    for( j=0 ; j<Nr ; ++j ){
@@ -499,7 +508,8 @@ void add_source( struct domain * theDomain , double dt, int last_step ){
             }
             omega_src( c->prim , c->cons , xp , xm , dV*dt );
             //density_sink( theDomain, c->prim, c->cons, xp, xm, dV, dt );
-            density_sink_yike( theDomain, c->prim, c->cons, xp, xm, dV, dt );
+            density_sink_yike( theDomain, c->prim, c->cons, xp, xm, dV, dt ); 
+            damping( c->cons, xp, xm, dV, dt );
          }
       }
    }

@@ -163,6 +163,9 @@ struct domain{
    int final_step;
    int check_plz;
 
+   //For torque calculations (0bv10us1y)--[grav, accretion]
+   double torques[2];
+
 };
 
 struct cell{
@@ -233,6 +236,8 @@ struct planet{
    double Fp;
 
    double m_accr;
+   //double torque_grav;
+   //double torque_accr;
 };
 
 struct tracer{

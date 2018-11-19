@@ -59,7 +59,9 @@ int main( int argc , char * argv[] ){
 
    if( theDomain.rank==0 && !(theDomain.theParList.restart_flag) ){
       FILE * rFile = fopen("report.dat","w");
+      FILE * mFile = fopen("momentum.dat","w");
       fclose(rFile);
+      fclose(mFile);
    }
 
    //Time the hydro

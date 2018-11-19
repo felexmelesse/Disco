@@ -8,6 +8,9 @@ static int grav2D = 0;
 
 static int pw_flag = 0;
 
+//For torque calculation
+//double torque_grav = 0.0;
+
 double get_dp( double , double );
 
 void setGravParams( struct domain * theDomain ){
@@ -167,6 +170,9 @@ void planet_src( struct planet * pl , double * prim , double * cons , double *gr
    cons[SZZ] += rho*Fz*dVdt;
    cons[LLL] += rho*Fp*r*dVdt;
    cons[TAU] += rho*( Fr*vr + Fz*vz + Fp*vp )*dVdt;
+
+   //Calculate Grav Torques
+   //torque_grav -= rho*r*Fp; //*dV?
 
 }
 

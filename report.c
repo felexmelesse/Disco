@@ -31,7 +31,11 @@ void report( struct domain * theDomain ){
    for( p=0; p<Npl; ++p ){
         struct planet *pl = thePlanets+p;
         M_accr += pl->m_accr;
+
+        //TODO:Do torque stuff?
    }
+
+   double *torques = theDomain->torques;
 
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
@@ -185,6 +189,10 @@ void report( struct domain * theDomain ){
    MPI_Allreduce( MPI_IN_PLACE , &S_0     , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    MPI_Allreduce( MPI_IN_PLACE , &Mdot    , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
 
+   //Accretion and Torques
+   MPI_Allreduce( MPI_IN_PLACE , &M_accr  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   MPI_Allreduce( MPI_IN_PLACE , torques  , 2 , MPI_DOUBLE , MPI_SUM , grid_comm );
+
 //   MPI_Allreduce( MPI_IN_PLACE , T_cut  , 10 , MPI_DOUBLE , MPI_SUM , grid_comm );
 //   MPI_Allreduce( MPI_IN_PLACE , P_cut  , 10 , MPI_DOUBLE , MPI_SUM , grid_comm );
 
@@ -200,13 +208,18 @@ void report( struct domain * theDomain ){
 
    if( rank==0 ){
       FILE * rFile = fopen("report.dat","a");
-      fprintf(rFile,"%e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n",
+      fprintf(rFile,"%e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n",
                 t,Torque,Power,Fr,rho_min,rhoavg_min,PsiR,PsiI,Mass,Mdot,S_R,
                 L1_rho,L1_isen,L1_B,Br2,aM,bM, M_accr );
       //fprintf(rFile,"%e %e %e ",t,Torque,Power);
       //for( j=0 ; j<10 ; ++j ) fprintf(rFile,"%e %e ",T_cut[j],P_cut[j]);
       //fprintf(rFile,"\n");
       fclose(rFile);
+   }
+   if( rank==0 ){
+        FILE *mFile = fopen("momentum.dat","a");
+        fprintf(mFile, "%e %e %e\n", t, torques[0], torques[1]);
+        fclose(mFile);
    }
 
 }
