@@ -467,7 +467,7 @@ double get_dvdt( struct tracer *tr ){
 
 //Specific to Binary runs -> at present doing this for expediency
 //double get_planets_phi( double , double );
-double get_bin_potential( double, double );
+double get_potential( double, double );
 double get_cs2( double, double );
 
 void updatePhysQuants( struct tracer * tr, double gamma ){
@@ -495,7 +495,7 @@ void updatePhysQuants( struct tracer * tr, double gamma ){
     double vp = r*(tr->Omega - 1.0 ); //Make sure velocity is in corot frame
     double v2 = (tr->Vr)*(tr->Vr) + vp*vp + (tr->Vz)*(tr->Vz);
 //    double bin_pot = get_planets_phi( r , tr->Phi );
-    double bin_pot = get_bin_potential( r , tr->Phi );
+    double bin_pot = get_potential( r , tr->Phi );
     double C_j = r*r - v2 + 2*bin_pot;
     if( fabs(C_j) > BIG_NUM )
         C_j = -1;

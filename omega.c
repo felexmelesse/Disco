@@ -97,7 +97,7 @@ double get_om1( double r ){
     return om1;
 }
 
-double get_bin_potential( double, double );
+double get_potential( double, double );
 
 double get_cs2( double r, double phi ){
     double cs2;
@@ -119,7 +119,7 @@ double get_cs2( double r, double phi ){
         cs2 = M*H0*H0 / (2*r1*r1*r1);
     }
     else if(cs2Choice == 4){
-        double pot = get_bin_potential( r, phi );
+        double pot = get_potential( r, phi );
         cs2 = pot/(Mach*Mach);
     }
     else
