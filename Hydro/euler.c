@@ -6,15 +6,18 @@ double get_om1( double );
 double get_cs2( double, double );
 
 static double gamma_law = 0.0; 
-static double R_SINK    = 0.0;
-static double TAU_SINK  = 1e-4;  //5.0;
 static double RHO_FLOOR = 0.0; 
 static double PRE_FLOOR = 0.0; 
 static double explicit_viscosity = 0.0;
 static int include_viscosity = 0;
 static int isothermal = 0;
 static int alpha_flag = 0;
-static int sink_flag  = 0;
+
+//Sink Params
+static int    sink_flag = 0;
+static double R_SINK    = 0.0;
+static double TAU_SINK  = 1e-4;  //5.0;
+static double pefficiency = 1.0;
 
 static double a = 1.0;
 static double q_planet = 1.0;
@@ -33,14 +36,17 @@ double torque_grav = 0.0;
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
    isothermal = theDomain->theParList.isothermal_flag;
-   sink_flag = theDomain->theParList.sink_flag;
-   R_SINK = theDomain->theParList.r_sink;
-   TAU_SINK = theDomain->theParList.t_sink;
    RHO_FLOOR = theDomain->theParList.Density_Floor;
    PRE_FLOOR = theDomain->theParList.Pressure_Floor;
    explicit_viscosity = theDomain->theParList.viscosity;
    include_viscosity = theDomain->theParList.visc_flag;
    alpha_flag = theDomain->theParList.alpha_flag;
+
+//========= Params for Sink  =========================
+   sink_flag = theDomain->theParList.sink_flag;
+   R_SINK = theDomain->theParList.r_sink;
+   TAU_SINK = theDomain->theParList.t_sink;
+   pefficiency = theDomain->theParList.p_eff;
 
 //========= Params for Binary Sims ===================
    cs2Choice = theDomain->theParList.Cs2_Profile;
@@ -384,7 +390,7 @@ void density_sink_yike( struct domain *theDomain, double *prim, double *cons, do
             //prim[RHO] -= sink_frac*rho;
             cons[DDD] -= sink_frac*cons[DDD];
             cons[SRR] -= sink_frac*cons[SRR];
-            cons[LLL] -= sink_frac*cons[LLL];
+            cons[LLL] -= sink_frac*cons[LLL]*pefficiency;
             cons[SZZ] -= sink_frac*cons[SZZ];
             cons[TAU] -= sink_frac*cons[TAU];
             //int q;

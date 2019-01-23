@@ -48,6 +48,7 @@ struct param_list{
    int    sink_flag;
    double r_sink;
    double t_sink;
+   double p_eff;
 
    int LogZoning, Z_Periodic;
    double LogRadius;

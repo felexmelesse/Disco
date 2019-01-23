@@ -73,6 +73,7 @@ PW_Flag         0    //use pseudo-newtonian potential (Pacynski-Wiita)
 Use_Sink        1
 R_Sink          0.1     //0.0333
 Tau_Sink        5.0    //1e-4
+P_Eff           1.0
 
 //Tracer Parameters
 Tracer_Init_Type  1        //0=per cell, 1=even by volume, 2=even by process

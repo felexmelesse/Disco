@@ -136,6 +136,7 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Use_Sink", VAR_INT, &(theList->sink_flag));
          err += readvar( pfile , "R_Sink", VAR_DOUB, &(theList->r_sink));
          err += readvar( pfile , "Tau_Sink", VAR_DOUB, &(theList->t_sink));
+         err += readvar( pfile , "P_Eff", VAR_DOUB, &(theList->p_eff));
          err += readvar( pfile , "G_EPS", VAR_DOUB, &(theList->g_eps));
          err += readvar( pfile , "PW_Flag", VAR_INT, &(theList->pw_flag));
       }
