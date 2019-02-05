@@ -377,6 +377,27 @@ void density_sink_yike( struct domain *theDomain, double *prim, double *cons, do
         double dist = get_planet_2dist( r, phi, pl->r, pl->phi);
         if( sink_flag && dist < R_SINK ){
             double t_visc = TAU_SINK;
+            
+//========================== Set t_visc to local viscous time ====================================
+            if( sink_flag==2 ){
+                double nu = explicit_viscosity;
+                double M = pl->M;
+                double eps = G_EPS;
+                if( alpha_flag ){
+                    double alpha = explicit_viscosity;
+                    double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
+                    double h = c*pow( r , 1.5 );
+                    //viscosity calculation for Binary system--based on Yike's
+                    if( cs2Choice==4 ){
+                        //Ignoring contribution from other BH b/c in sink 
+                        double denom = 1./sqrt( M*pow(dist*dist+eps*eps,-1.5) ); 
+                        h = c*denom;
+                    }
+                    nu = alpha*c*h;
+                }          
+                t_visc = 2./3.*r*r/nu;  //TODO:Might need a factor of u^-0.5 here...
+            }
+//=================================================================================================
             if( t_visc < 10.*dt )
                 t_visc = 10.*dt;
             double sink_frac = dt/t_visc;

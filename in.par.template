@@ -70,7 +70,7 @@ G_EPS           0.02 //set to <=0.0 to turn off/use paul's defaults
 PW_Flag         0    //use pseudo-newtonian potential (Pacynski-Wiita)
 
 //Sink Parameters
-Use_Sink        1
+Use_Sink        1      //Boolean flag, but 2=set Tau_Sink to local_viscous_time
 R_Sink          0.1     //0.0333
 Tau_Sink        5.0    //1e-4
 P_Eff           1.0
