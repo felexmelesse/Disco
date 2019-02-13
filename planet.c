@@ -23,6 +23,11 @@ double phigrav( double M , double r , double eps , int type)
     {
         return M / (r - 2*M);
     }
+    else if(type == PLSURFACEGRAV)
+    {
+        return M*r; // M is gravitational acceleration
+                    // only makes sense if grav2D is on
+    }
 
     return 0.0;
 }
@@ -37,6 +42,11 @@ double fgrav( double M , double r , double eps , int type)
     else if(type == PLPW)
     {
         return M / ((r-2*M)*(r-2*M));
+    }
+    else if(type == PLSURFACEGRAV)
+    {
+        return M; // M is gravitational acceleration
+                  // only makes sense if grav2D is on
     }
     return 0.0;
     
@@ -67,11 +77,17 @@ void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
 
 void planetaryForce( struct planet * pl , double r , double phi , double z , double * fr , double * fp , double * fz , int mode ){
 
-   if(grav2D)
-      z = 0.0;
-
    double rp = pl->r;
    double pp = pl->phi;
+   if(grav2D == 1)
+      z = 0.0;
+   else if(grav2D == 2)
+   {
+       rp = r;
+       pp = phi;
+       z = 1.0;
+   }
+
    double cosp = cos(phi);
    double sinp = sin(phi);
    double dx = r*cosp-rp*cos(pp);
@@ -90,6 +106,12 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
    if( mode==1 ){
       cosap = cosa*cos(pp)+sina*sin(pp);
       sinap = sina*cos(pp)-cosa*sin(pp);
+   }
+
+   if(script_r_perp <= 0.0)
+   {
+       cosap = 0.0;
+       sinap = 0.0;
    }
 /*
    double rH = rp*pow( pl->M/3.,1./3.);
@@ -127,8 +149,7 @@ void planet_src( struct planet * pl , double * prim , double * cons , double * x
                     get_centroid(xp[2],xm[2],2)};
    double xcyl[3];
    get_rpz(x, xcyl);
-
-   //double Fr,Fp,Fz;
+   
    double Fcyl[3], F[3];
    planetaryForce( pl, xcyl[0], xcyl[1], xcyl[2],
                     &(Fcyl[0]), &(Fcyl[1]), &(Fcyl[2]), 0);

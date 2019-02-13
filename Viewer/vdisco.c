@@ -73,7 +73,7 @@ double maxval = -HUGE_VAL;
 double minval = HUGE_VAL;
 
 double t;
-int Nr,Nz,Nq,Npl,NpDat,N1d,Nc,KK;
+int Nr,Nz,Nq,Npl,NpDat,N1d,Nc,KK, layer;
 int * Np = NULL;
 double * r_jph = NULL;
 double * z_kph = NULL;
@@ -1132,14 +1132,26 @@ void keyPressed(unsigned char key, int x, int y)
    if( key == 'Z' ) fix_zero = !fix_zero;
    if( key == 'q' )
    {
-       if(KK == Nz-1)
+       layer++;
+       if layer > 8
+          layer = 0;
+
+       if(layer == 0)
            KK = 0;
-       else if(KK == 0)
+       else if(layer == 1)
+           KK = Nz/8;
+       else if(layer == 2)
            KK = Nz/4;
-       else if(KK == Nz/4)
+       else if(layer == 3)
+           KK = (3*Nz)/8;
+       else if(layer == 4)
            KK = Nz/2;
-       else if(KK == Nz/2)
-           KK = 3*Nz/4;
+       else if(layer == 5)
+           KK = (5*Nz)/8;
+       else if(layer == 6)
+           KK = (3*Nz)/4;
+       else if(layer == 7)
+           KK = (7*Nz)/8;
        else
            KK = Nz - 1;
        loadSliceZ(filename, KK);
@@ -1567,6 +1579,7 @@ int main(int argc, char *argv[])
    loadPlanets(filename);
 
    KK = Nz/2;
+   layer = 4;
    loadSliceZ(filename, KK);
    loadSlicePhi(filename);
    loadDiagnostics(filename, KK);

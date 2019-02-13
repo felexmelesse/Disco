@@ -1,22 +1,23 @@
 import sys
 import math
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import discopy.util as util
 import discopy.geom as geom
 import calc as ca
 
+
 def rhoProf(x, a, x0, L, rho0):
 
     rho = np.empty(x.shape)
     rho[:] = rho0
-    inn = np.fabs(x-x0)<L
+    inn = np.fabs(x-x0) < L
     xin = x[inn]
     f = 1.0 - (xin-x0)*(xin-x0)/(L*L)
     rho[inn] *= 1.0 + a*f*f*f*f
 
     return rho
+
 
 def calcMagnetosonicWave(t, x, pars, tol=1.0e-6):
     rho0 = 1.0
@@ -34,8 +35,8 @@ def calcMagnetosonicWave(t, x, pars, tol=1.0e-6):
     rhomax = rho0 * (1+a)
     csmax = cs0*np.power(rhomax/rho0, 0.5*(gam-1))
     cAmax = cA0*np.sqrt(rhomax/rho0)
-    vmax = v0 + ca.magnetosonic_cf_int_newt(np.array([rhomax]), rho0, cs0, 
-                                                cA0, gam)[0]
+    vmax = v0 + ca.magnetosonic_cf_int_newt(np.array([rhomax]), rho0, cs0,
+                                            cA0, gam)[0]
     cfmax = math.sqrt(csmax*csmax + cAmax*cAmax)
     cf0 = math.sqrt(cs0*cs0 + cA0*cA0)
 
@@ -56,11 +57,11 @@ def calcMagnetosonicWave(t, x, pars, tol=1.0e-6):
         xf = xc + (v+cf)*t
 
         err = (xf-x) / (xR-xL)
-        over = err>0
-        under = err<0
+        over = err > 0
+        under = err < 0
         xb[over] = xc[over]
         xa[under] = xc[under]
-        
+
     xc = 0.5*(xa+xb)
     rho = rhoProf(xc, a, x0, L, rho0)
     P = rho0*cs0*cs0/gam * np.power(rho/rho0, gam)
@@ -81,14 +82,14 @@ def analyzeSingle(filename):
     nx = pars['Num_R']
     gam = pars['Adiabatic_Index']
 
-    rho = prim[:,0]
-    P = prim[:,1]
-    v1 = prim[:,2]
-    v2 = prim[:,3]
-    v3 = prim[:,4]
-    B1 = prim[:,5]
-    B2 = prim[:,6]
-    B3 = prim[:,7]
+    rho = prim[:, 0]
+    P = prim[:, 1]
+    v1 = prim[:, 2]
+    v2 = prim[:, 3]
+    v3 = prim[:, 4]
+    B1 = prim[:, 5]
+    B2 = prim[:, 6]
+    B3 = prim[:, 7]
     eS = P * np.power(rho, -gam)
 
     x, y, z = geom.getXYZ(x1, x2, x3, opts, pars)
@@ -102,38 +103,37 @@ def analyzeSingle(filename):
     cp = math.cos(phi0)
     sp = math.sin(phi0)
     phiB = pars['Init_Par8'] * math.pi
-    
+
     ix, iy, iz = st*cp, st*sp, ct
     jx, jy, jz = -sp, cp, 0.0
     kx, ky, kz = -ct*cp, -ct*sp, st
 
     X = ix*x + iy*y + iz*z
 
-    #Jm = V + 2*cs/(gam-1)
-    #Jp = V - 2*cs/(gam-1)
+    # Jm = V + 2*cs/(gam-1)
+    # Jp = V - 2*cs/(gam-1)
 
     rhoS, PS, vS, BS = calcMagnetosonicWave(t, X, pars, 1.0e-13)
     eSS = PS * np.power(rhoS, -gam)
     BjS = math.cos(phiB) * BS
     BkS = math.sin(phiB) * BS
-    #JmS = VS + 2*csS/(gam-1)
-    #JpS = VS - 2*csS/(gam-1)
-
+    # JmS = VS + 2*csS/(gam-1)
+    # JpS = VS - 2*csS/(gam-1)
 
     dV = geom.getDV(dat, opts, pars)
 
-
     errRho = geom.integrate(np.fabs(rho-rhoS), dat, opts, pars, dV)
     errP = geom.integrate(np.fabs(P-PS), dat, opts, pars, dV)
-    errVx = geom.integrate(np.fabs(vx-ix*vS), dat,opts,pars,dV)
-    errVy = geom.integrate(np.fabs(vy-iy*vS), dat,opts,pars,dV)
-    errVz = geom.integrate(np.fabs(vz-iz*vS), dat,opts,pars,dV)
-    errBx = geom.integrate(np.fabs(Bx-(jx*BjS+kx*BkS)), dat,opts,pars,dV)
-    errBy = geom.integrate(np.fabs(By-(jy*BjS+ky*BkS)), dat,opts,pars,dV)
-    errBz = geom.integrate(np.fabs(Bz-(jz*BjS+kz*BkS)), dat,opts,pars,dV)
+    errVx = geom.integrate(np.fabs(vx-ix*vS), dat, opts, pars, dV)
+    errVy = geom.integrate(np.fabs(vy-iy*vS), dat, opts, pars, dV)
+    errVz = geom.integrate(np.fabs(vz-iz*vS), dat, opts, pars, dV)
+    errBx = geom.integrate(np.fabs(Bx-(jx*BjS+kx*BkS)), dat, opts, pars, dV)
+    errBy = geom.integrate(np.fabs(By-(jy*BjS+ky*BkS)), dat, opts, pars, dV)
+    errBz = geom.integrate(np.fabs(Bz-(jz*BjS+kz*BkS)), dat, opts, pars, dV)
     errS = geom.integrate(np.fabs(eS-eSS), dat, opts, pars, dV)
 
     return t, nx, errRho, errP, errVx, errVy, errVz, errBx, errBy, errBz, errS
+
 
 def analyze(filenames):
 
@@ -151,7 +151,7 @@ def analyze(filenames):
     errBz = np.empty(N)
     errS = np.empty(N)
 
-    for i,f in enumerate(filenames):
+    for i, f in enumerate(filenames):
         dat = analyzeSingle(f)
         t[i] = dat[0]
         nx[i] = dat[1]
@@ -183,18 +183,18 @@ def makeErrPlot(t, nx, err, name, label):
     NX = np.unique(nx)
     figname = name + "_nx.png"
     if len(NX) > 1:
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1, 1)
         for tt in T:
-            ind = t==tt
+            ind = t == tt
             ax.plot(nx[ind], err[ind], marker='+', ms=10, mew=1, ls='')
-        nn = np.logspace(math.log10(NX[1]), math.log10(NX[-1]), 
-                            num=10, base=10.0)
-        ax.plot(nn, err.max() * np.power(nn/nn[0], -2), ls='--', lw=2, 
-                    color='grey')
+        nn = np.logspace(math.log10(NX[1]), math.log10(NX[-1]),
+                         num=10, base=10.0)
+        ax.plot(nn, err.max() * np.power(nn/nn[0], -2), ls='--', lw=2,
+                color='grey')
         ax.set_xlabel(r"$n_x$")
         ax.set_ylabel(label)
         ax.set_xscale('log')
-        if (err>0).any():
+        if (err > 0).any():
             ax.set_yscale('log')
             ylim = ax.get_ylim()
             if ylim[1] < 10*ylim[0]:

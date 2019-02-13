@@ -1,9 +1,9 @@
 import sys
-import math
 import h5py as h5
 import numpy as np
 
 strType = h5.special_dtype(vlen=bytes)
+
 
 def loadPars(f):
     pars = dict()
@@ -15,6 +15,7 @@ def loadPars(f):
 
     return pars
 
+
 def loadOpts(f):
     opts = dict()
 
@@ -24,6 +25,7 @@ def loadOpts(f):
         opts[key] = optG[key][0]
 
     return opts
+
 
 def loadGrid(f):
     g = f['Grid']
@@ -38,24 +40,25 @@ def loadGrid(f):
 
     return grid
 
+
 def loadData(f):
 
     g = f['Data']
     ct_mode = f['Opts']['CT_MODE'][0]
     if ct_mode == 1:
         nfaces = 3
-        bflux = g['Cells'][:,-1-nfaces:-1]
+        bflux = g['Cells'][:, -1-nfaces:-1]
     elif ct_mode == 2:
         nfaces = 5
-        bflux = g['Cells'][:,-1-nfaces:-1]
+        bflux = g['Cells'][:, -1-nfaces:-1]
     else:
         nfaces = 0
         bflux = None
 
-    prim = g['Cells'][:,:-1-nfaces]
-    piph = g['Cells'][:,-1]
+    prim = g['Cells'][:, :-1-nfaces]
+    piph = g['Cells'][:, -1]
     planets = g['Planets'][...]
-    
+
     try:
         diagRZ = g['Poloidal_Diagnostics'][...]
     except KeyError:
@@ -73,11 +76,13 @@ def loadData(f):
 
     return data
 
+
 def savePars(f, pars):
 
     g = f.create_group("Pars")
     for key in pars:
         g.create_dataset(key, data=np.array([pars[key]]))
+
 
 def saveOpts(f, opts):
 
@@ -89,6 +94,7 @@ def saveOpts(f, opts):
         else:
             g.create_dataset(key, data=np.array([opts[key]]))
 
+
 def saveGrid(f, grid):
 
     g = f.create_group("Grid")
@@ -98,6 +104,7 @@ def saveGrid(f, grid):
     g.create_dataset('Np', data=grid[3])
     g.create_dataset('r_jph', data=grid[4])
     g.create_dataset('z_kph', data=grid[5])
+
 
 def saveData(f, data):
 
@@ -121,11 +128,11 @@ def saveData(f, data):
     nq = prim.shape[1]
     N = prim.shape[0]
 
-    d = g.create_dataset('Cells', (N,nq+nfaces+1), dtype=np.float64)
-    d[:,:nq] = prim[:,:]
+    d = g.create_dataset('Cells', (N, nq+nfaces+1), dtype=np.float64)
+    d[:, :nq] = prim[:, :]
     if bflux is not None:
-        d[:,nq:nq+nfaces] = bflux[:,:]
-    d[:,-1] = piph[:]
+        d[:, nq:nq+nfaces] = bflux[:, :]
+    d[:, -1] = piph[:]
 
 
 def loadCheckpointAll(filename):
@@ -144,12 +151,13 @@ def loadCheckpointAll(filename):
 
     return checkpoint
 
+
 def loadCheckpointData(filename):
 
     f = h5.File(filename, "r")
 
-    piph = f['Data']['Cells'][:,-1][...]
-    prim = f['Data']['Cells'][:,:-1][...]
+    piph = f['Data']['Cells'][:, -1][...]
+    prim = f['Data']['Cells'][:, :-1][...]
     index = f['Grid']['Index'][...]
     idPhi0 = f['Grid']['Id_phi0'][...]
     nphi = f['Grid']['Np'][...]
@@ -165,17 +173,18 @@ def loadCheckpointData(filename):
     primPhi0 = np.zeros((index.shape[0], index.shape[1], prim.shape[1]))
     for k in range(index.shape[0]):
         for j in range(index.shape[1]):
-            ind0 = index[k,j]
-            ind1 = ind0 + nphi[k,j]
+            ind0 = index[k, j]
+            ind1 = ind0 + nphi[k, j]
             r[ind0:ind1] = R[j]
             z[ind0:ind1] = Z[k]
             piph_strip = piph[ind0:ind1]
             pimh = np.roll(piph_strip, 1)
-            pimh[pimh>piph_strip] -= 2*np.pi
+            pimh[pimh > piph_strip] -= 2*np.pi
             phi[ind0:ind1] = 0.5*(pimh+piph_strip)
-            primPhi0[k,j,:] = prim[idPhi0[k,j],:]
+            primPhi0[k, j, :] = prim[idPhi0[k, j], :]
 
     return t, r, phi, z, prim, (riph, ziph, primPhi0, piph)
+
 
 def loadDiagRZ(filename):
 
@@ -190,19 +199,19 @@ def loadDiagRZ(filename):
 
     Nr = rjph.shape[0]-1
     Nz = zkph.shape[0]-1
-    Nq = diag.shape[-1]
-    #diag = np.resize(diag, (Nz,Nr,Nq))
+    # diag = np.resize(diag, (Nz,Nr,Nq))
 
     R = 0.5*(rjph[1:]+rjph[:-1])
     Z = 0.5*(zkph[1:]+zkph[:-1])
 
-    r = np.empty((Nz,Nr))
-    z = np.empty((Nz,Nr))
+    r = np.empty((Nz, Nr))
+    z = np.empty((Nz, Nr))
 
-    r[:,:] = R[None,:]
-    z[:,:] = Z[:,None]
+    r[:, :] = R[None, :]
+    z[:, :] = Z[:, None]
 
     return t, r, z, diag, rjph, zkph
+
 
 def saveCheckpoint(checkpoint, filename):
 
@@ -224,10 +233,12 @@ def saveCheckpoint(checkpoint, filename):
 
     f.close()
 
+
 def setTime(filename, t=0.0):
     f = h5.File(filename, "r+")
     f['Grid/T'][0] = t
     f.close()
+
 
 if __name__ == "__main__":
 
@@ -263,4 +274,3 @@ if __name__ == "__main__":
     print(checkpoint2[3])
     print("DATA")
     print(checkpoint2[4])
-

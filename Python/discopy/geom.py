@@ -1,4 +1,3 @@
-import math
 import numpy as np
 
 
@@ -12,6 +11,7 @@ def getXYZ(x1, x2, x3, opts, pars):
         return getXYZsph(x1, x2, x3, pars)
     else:
         return getXYZcart(x1, x2, x3, pars)
+
 
 def getCellCentroids(dat, opts, pars):
     x1jph = dat[0]
@@ -34,8 +34,8 @@ def getCellCentroids(dat, opts, pars):
 
     for k in range(nx3):
         for j in range(nx1):
-            a = index[k,j]
-            b = index[k,j] + nx2[k,j]
+            a = index[k, j]
+            b = index[k, j] + nx2[k, j]
 
             x1[a:b] = x11d[j]
             x3[a:b] = x31d[k]
@@ -50,6 +50,7 @@ def getCellCentroids(dat, opts, pars):
 
     return x1, x2, x3
 
+
 def getCentroid(xm, xp, dim, opts):
     if opts['GEOMETRY'] == "cylindrical":
         return getCentroidcyl(xm, xp, dim)
@@ -57,6 +58,7 @@ def getCentroid(xm, xp, dim, opts):
         return getCentroidsph(xm, xp, dim)
     else:
         return getCentroidcart(xm, xp, dim)
+
 
 def getDV(dat, opts, pars):
 
@@ -73,14 +75,17 @@ def getDV(dat, opts, pars):
     else:
         return getDVcart(x1jph, x2iph, x3kph, nx2, index, pars)
 
+
 def getVXYZ(x1, x2, x3, v1, v2, v3, opts):
 
     h1, h2, h3 = getScaleFactors(x1, x2, x3, opts)
     return getVecXYZ(x1, x2, x3, h1*v1, h2*v2, h3*v3, opts)
 
+
 def getBXYZ(x1, x2, x3, B1, B2, B3, opts):
 
     return getVecXYZ(x1, x2, x3, B1, B2, B3, opts)
+
 
 def getVecXYZ(x1, x2, x3, v1, v2, v3, opts):
 
@@ -96,13 +101,16 @@ def getScaleFactors(x1, x2, x3, opts):
     else:
         return getScaleFactorscart(x1, x2, x3)
 
+
 def getXYZcart(x, y, z, pars):
     return x, y, z
+
 
 def getXYZcyl(r, phi, z, pars):
     x = r*np.cos(phi)
     y = r*np.sin(phi)
     return x, y, z
+
 
 def getXYZsph(r, phi, th, pars):
     x = r*np.cos(phi)*np.sin(th)
@@ -110,8 +118,10 @@ def getXYZsph(r, phi, th, pars):
     z = r*np.cos(th)
     return x, y, z
 
+
 def getCentroidcart(xm, xp, dim):
     return 0.5*(xm+xp)
+
 
 def getCentroidcyl(xm, xp, dim):
     if dim == 1:
@@ -120,14 +130,15 @@ def getCentroidcyl(xm, xp, dim):
         xc = 0.5*(xm+xp)
     return xc
 
+
 def getCentroidsph(xm, xp, dim):
     if dim == 1:
         xc = 3.0*(xm*xm*xm + xm*xm*xp + xm*xp*xp + xp*xp*xp
-                    ) / (4.0*(xm*xm+xm*xp+xp*xp))
+                  ) / (4.0*(xm*xm+xm*xp+xp*xp))
     elif dim == 3:
         xc = np.empty(xm.shape)
-        xc[xm==xp] = xm[xm==xp]
-        dif = xm!=xp
+        xc[xm == xp] = xm[xm == xp]
+        dif = xm != xp
         cp = np.cos(xp)
         cm = np.cos(xm)
         sp = np.sin(xp)
@@ -136,6 +147,7 @@ def getCentroidsph(xm, xp, dim):
     else:
         xc = 0.5*(xm+xp)
     return xc
+
 
 def getDVcart(xjph, yiph, zkph, ny, index, pars):
 
@@ -153,15 +165,15 @@ def getDVcart(xjph, yiph, zkph, ny, index, pars):
 
     for k in range(nz):
         for j in range(nx):
-            a = index[k,j]
-            b = index[k,j]+ny[k,j]
+            a = index[k, j]
+            b = index[k, j]+ny[k, j]
 
             dx[a:b] = dx1d[j]
             dz[a:b] = dz1d[k]
 
             yp = yiph[a:b]
             ym = np.roll(yp, 1)
-            ym[ym>yp] -= ymax
+            ym[ym > yp] -= ymax
             dy[a:b] = yp-ym
 
     if nz > 1:
@@ -170,6 +182,7 @@ def getDVcart(xjph, yiph, zkph, ny, index, pars):
         dV = dx*dy
 
     return dV
+
 
 def getDVcyl(rjph, piph, zkph, nphi, index, pars):
 
@@ -189,8 +202,8 @@ def getDVcyl(rjph, piph, zkph, nphi, index, pars):
 
     for k in range(nz):
         for j in range(nr):
-            a = index[k,j]
-            b = index[k,j]+nphi[k,j]
+            a = index[k, j]
+            b = index[k, j]+nphi[k, j]
 
             r[a:b] = r1d[j]
             dr[a:b] = dr1d[j]
@@ -198,7 +211,7 @@ def getDVcyl(rjph, piph, zkph, nphi, index, pars):
 
             pp = piph[a:b]
             pm = np.roll(pp, 1)
-            pm[pm>pp] -= pmax
+            pm[pm > pp] -= pmax
             dp[a:b] = pp-pm
 
     if nz > 1:
@@ -207,6 +220,7 @@ def getDVcyl(rjph, piph, zkph, nphi, index, pars):
         dV = r*dr*dp
 
     return dV
+
 
 def getDVsph(rjph, piph, tkph, nphi, index, pars):
 
@@ -228,8 +242,8 @@ def getDVsph(rjph, piph, tkph, nphi, index, pars):
 
     for k in range(nt):
         for j in range(nr):
-            a = index[k,j]
-            b = index[k,j]+nphi[k,j]
+            a = index[k, j]
+            b = index[k, j]+nphi[k, j]
 
             r2[a:b] = r21d[j]
             dr[a:b] = dr1d[j]
@@ -238,12 +252,13 @@ def getDVsph(rjph, piph, tkph, nphi, index, pars):
 
             pp = piph[a:b]
             pm = np.roll(pp, 1)
-            pm[pm>pp] -= pmax
+            pm[pm > pp] -= pmax
             dp[a:b] = pp-pm
 
     dV = r2*sinth*dr*dp*sindth
 
     return dV
+
 
 def integrate(f, dat, opts, pars, dV=None):
     if dV is None:
@@ -258,12 +273,10 @@ def integrate(f, dat, opts, pars, dV=None):
     nz = nphi.shape[0]
     nr = nphi.shape[1]
 
-
-
     for k in range(nz):
         for j in range(nr):
-            a = index[k,j]
-            b = index[k,j] + nphi[k,j]
+            a = index[k, j]
+            b = index[k, j] + nphi[k, j]
             if (j < 2 and pars["NoBC_Rmin"] == 0)\
                     or (j >= nr-2 and pars["NoBC_Rmax"] == 0)\
                     or (k < 2 and nz > 1 and pars["NoBC_Zmin"] == 0)\
@@ -272,6 +285,7 @@ def integrate(f, dat, opts, pars, dV=None):
 
     return (f[mask]*dV[mask]).sum()
 
+
 def getScaleFactorscart(x, y, z):
 
     hx = np.ones(y.shape)
@@ -279,6 +293,7 @@ def getScaleFactorscart(x, y, z):
     hz = np.ones(y.shape)
 
     return hx, hy, hz
+
 
 def getScaleFactorscyl(r, phi, z):
 
@@ -290,8 +305,10 @@ def getScaleFactorscyl(r, phi, z):
 
     return hr, hp, hz
 
+
 def getVecXYZcart(x, y, z, vx, vy, vz):
     return vx, vy, vz
+
 
 def getVecXYZcyl(r, phi, z, vr, vp, vz):
 
@@ -302,6 +319,7 @@ def getVecXYZcyl(r, phi, z, vr, vp, vz):
     vy = sp*vr + cp*vp
 
     return vx, vy, vz
+
 
 def getSignedDphi(phip, phim, pars):
 
@@ -314,6 +332,7 @@ def getSignedDphi(phip, phim, pars):
         dphi += pmax
 
     return dphi
+
 
 def calcDivB(dat, opts, pars, dV=None):
     if dV is None:
@@ -330,17 +349,17 @@ def calcDivB(dat, opts, pars, dV=None):
 
     divB = np.zeros(piph.shape)
 
-    PhiP = Phi[:,0]
-    PhiRm = Phi[:,1]
-    PhiRp = Phi[:,2]
-    PhiZm = Phi[:,3]
-    PhiZp = Phi[:,4]
+    PhiP = Phi[:, 0]
+    PhiRm = Phi[:, 1]
+    PhiRp = Phi[:, 2]
+    PhiZm = Phi[:, 3]
+    PhiZp = Phi[:, 4]
 
     # phi direction
     for k in range(nz):
         for j in range(nr):
-            a = index[k,j]
-            b = index[k,j] + nphi[k,j]
+            a = index[k, j]
+            b = index[k, j] + nphi[k, j]
 
             divB[a:b] += PhiP[a:b] - np.roll(PhiP[a:b], 1)
 
@@ -348,17 +367,17 @@ def calcDivB(dat, opts, pars, dV=None):
     for k in range(nz):
         for jL in range(nr-1):
             jR = jL+1
-            aL = index[k,jL]
-            bL = index[k,jL] + nphi[k,jL]
-            aR = index[k,jR]
-            bR = index[k,jR] + nphi[k,jR]
+            aL = index[k, jL]
+            bL = index[k, jL] + nphi[k, jL]
+            aR = index[k, jR]
+            bR = index[k, jR] + nphi[k, jR]
             piphL = piph[aL:bL]
             piphR = piph[aR:bR]
             PhiRL = PhiRp[aL:bL]
             PhiRR = PhiRm[aR:bR]
 
-            iL0 = idPhi0[k,jL] - aL
-            iR0 = idPhi0[k,jR] - aR
+            iL0 = idPhi0[k, jL] - aL
+            iR0 = idPhi0[k, jR] - aR
             iL = iL0
             iR = iR0
             done = False
@@ -394,9 +413,9 @@ def calcDivB(dat, opts, pars, dV=None):
                     divB[aR+iR] -= PhiRR[iR]
                     iR += 1
 
-                if iL == nphi[k,jL]:
+                if iL == nphi[k, jL]:
                     iL = 0
-                if iR == nphi[k,jR]:
+                if iR == nphi[k, jR]:
                     iR = 0
 
                 if iL == iL0 and iR == iR0:
@@ -406,10 +425,10 @@ def calcDivB(dat, opts, pars, dV=None):
     for kL in range(nz-1):
         for j in range(nr):
             kR = kL+1
-            aL = index[kL,j]
-            bL = index[kL,j] + nphi[kL,j]
-            aR = index[kR,j]
-            bR = index[kR,j] + nphi[kR,j]
+            aL = index[kL, j]
+            bL = index[kL, j] + nphi[kL, j]
+            aR = index[kR, j]
+            bR = index[kR, j] + nphi[kR, j]
             piphL = piph[aL:bL]
             piphR = piph[aR:bR]
             PhiZL = PhiZp[aL:bL]
@@ -418,8 +437,8 @@ def calcDivB(dat, opts, pars, dV=None):
             pimhL = np.roll(piphL, 1)
             pimhR = np.roll(piphR, 1)
 
-            iL0 = idPhi0[kL,j] - aL
-            iR0 = idPhi0[kR,j] - aR
+            iL0 = idPhi0[kL, j] - aL
+            iR0 = idPhi0[kR, j] - aR
             iL = iL0
             iR = iR0
             done = False
@@ -429,7 +448,7 @@ def calcDivB(dat, opts, pars, dV=None):
                 phiR = piphR[iR]
 
                 dp = getSignedDphi(phiL, phiR, pars)
-                
+
                 if dp < 0.0:
                     dp1 = getSignedDphi(phiL, pimhR[iR], pars)
                     if dp1 <= 0.0:
@@ -454,9 +473,9 @@ def calcDivB(dat, opts, pars, dV=None):
                     divB[aR+iR] -= PhiZR[iR]
                     iR += 1
 
-                if iL == nphi[kL,j]:
+                if iL == nphi[kL, j]:
                     iL = 0
-                if iR == nphi[kR,j]:
+                if iR == nphi[kR, j]:
                     iR = 0
 
                 if iL == iL0 and iR == iR0:
@@ -465,6 +484,7 @@ def calcDivB(dat, opts, pars, dV=None):
     divB /= dV
 
     return divB
+
 
 def getDA1(x1, x2ph, x3f, dat, opts, pars):
 
@@ -476,12 +496,12 @@ def getDA1(x1, x2ph, x3f, dat, opts, pars):
     x3ph = np.empty(x2ph.shape)
     for k in range(index.shape[0]):
         for j in range(index.shape[1]):
-            a = index[k,j]
-            b = index[k,j] + nx2[k,j]
+            a = index[k, j]
+            b = index[k, j] + nx2[k, j]
             x2mh[a:b] = np.roll(x2ph[a:b], 1)
             x3mh[a:b] = x3f[k]
             x3ph[a:b] = x3f[k+1]
-    x2mh[x2mh>x2ph] -= x2max
+    x2mh[x2mh > x2ph] -= x2max
 
     if opts['GEOMETRY'] == "cylindrical":
         return getDA1cyl(x1, x2ph, x2mh, x3ph, x3mh)
@@ -490,11 +510,14 @@ def getDA1(x1, x2ph, x3f, dat, opts, pars):
     else:
         return getDA1cart(x1, x2ph, x2mh, x3ph, x3mh)
 
+
 def getDA1cart(x1, x2ph, x2mh, x3ph, x3mh):
     return (x2ph-x2mh)*(x3ph-x3mh)
 
+
 def getDA1cyl(x1, x2ph, x2mh, x3ph, x3mh):
     return x1*(x2ph-x2mh)*(x3ph-x3mh)
+
 
 def getDA1sph(x1, x2ph, x2mh, x3ph, x3mh):
     sinth = np.sin(0.5*(x3ph+x3mh))
@@ -502,12 +525,39 @@ def getDA1sph(x1, x2ph, x2mh, x3ph, x3mh):
     return x1*x1*sinth*sindth*(x2ph-x2mh)
 
 
+def integrate2(f, dat, opts, pars):
+
+    index = dat[8]
+    n1 = index.shape[1]
+    n2 = dat[7]
+    n3 = index.shape[0]
+    x2ph = dat[3]
+    x2max = pars['Phi_Max']
+
+    integral = np.empty((n3, n1), dtype=f.dtype)
+
+    for k in range(n3):
+        for j in range(n1):
+            a = index[k, j]
+            b = index[k, j] + n2[k, j]
+            x2p = x2ph[a:b]
+            x2m = np.roll(x2p, 1)
+            x2m[x2m > x2p] -= x2max
+            dx2 = x2p-x2m
+            integral[k, j] = (f[a:b]*dx2).sum()
+
+    if n3 == 1:
+        integral = integral[0, :]
+
+    return integral
+
+
 def integrateTrans1(x1, f, dat, opts, pars, dA=None):
 
     if dA is None:
         dA = getDA1(x1, dat[3], dat[1], dat, opts, pars)
 
-    mask = np.empty(f.shape, dtype=np.bool) 
+    mask = np.empty(f.shape, dtype=np.bool)
     mask[:] = True
     x1ph = dat[0]
     index = dat[8]
@@ -517,17 +567,15 @@ def integrateTrans1(x1, f, dat, opts, pars, dA=None):
 
     for k in range(n3):
         for j in range(n1):
-            a = index[k,j]
-            b = index[k,j] + n2[k,j]
+            a = index[k, j]
+            b = index[k, j] + n2[k, j]
             if (k < 2 and n3 > 1 and pars["NoBC_Zmin"] == 0)\
                     or (k >= n3-2 and n3 > 1 and pars["NoBC_Zmax"] == 0):
                 mask[a:b] = False
 
-    I = np.empty(n1)
+    integral = np.empty(n1, dtype=f.dtype)
     for j in range(n1):
-        ind = (x1<x1ph[j+1]) & (x1>x1ph[j])
-        I[j] = (f[mask]*dA[mask])[ind].sum()
+        ind = (x1 < x1ph[j+1]) & (x1 > x1ph[j])
+        integral[j] = (f[mask*ind]*dA[mask*ind]).sum()
 
-    return I
-
-
+    return integral
