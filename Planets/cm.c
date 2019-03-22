@@ -75,7 +75,9 @@ void forcePlanets( struct planet * thePlanets , double dt ){
 double phigrav( double, double, double );
 double get_planet_2dist( double, double, double, double );
 
-double get_potential( double r, double phi ){
+double get_potential( double r, double phi, struct planet *thePlanets ){
+
+/*
    double a  = 1.0; 
    double q = q_planet;
    double om = pow( a, -1.5 );
@@ -90,6 +92,9 @@ double get_potential( double r, double phi ){
    double r2 = a*(1.-mu);
    double phi2 = om*tt;
    double d2 = get_planet_2dist( r, phi, r2, phi2 );
+*/
+   double d1 = get_planet_2dist( r, phi, thePlanets[0].r, thePlanets[0].phi );
+   double d2 = get_planet_2dist( r, phi, thePlanets[1].r, thePlanets[1].phi );
 
    double cut = 0.05;
    if( d2 < cut ){

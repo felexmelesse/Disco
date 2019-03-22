@@ -143,7 +143,7 @@ void getUstar( double * prim , double * Ustar , double * x , double Sk , double 
 
 }
 
-void cons2prim( double * cons , double * prim , double * x , double dV ){
+void cons2prim( double * cons , double * prim , double * x , double dV, struct planet * thePlanets ){
    
    double r = x[0];
    double phi = x[1];
@@ -171,7 +171,7 @@ void cons2prim( double * cons , double * prim , double * x , double dV ){
    double VEL_CAP = 20.0;
   
    if( isothermal ){
-      double cs2 = get_cs2( r, phi );
+      double cs2 = get_cs2( r, phi, thePlanets );
       if( cs2 < CS_FLOOR*CS_FLOOR )
           cs2 = CS_FLOOR*CS_FLOOR;
       if( cs2 > CS_CAP*CS_CAP )
@@ -271,6 +271,9 @@ void source( struct domain *theDomain, double * prim , double * cons , double * 
    cons[TAU] += dVdt*rho*vr*( om*om*r2_3/r_1 - om1*(omega-om)*r2_3 );
 
 //================ Yike Binary Visc. Calc. =================
+//TODO:   For eccentric or live binaries, need to fix this
+//          -> source() has acces to planet objects
+
    double om_bh = pow( a, -1.5 );
    double mu = q_planet/(1.+q_planet);
    double phi = 0.5*(phip+phim);
@@ -308,6 +311,9 @@ void source( struct domain *theDomain, double * prim , double * cons , double * 
 }
 
 void density_sink( struct domain *theDomain, double *prim, double *cons, double *xp, double *xm, double dV, double dt ){
+
+//========================== This function is outdated ============================
+//                              -> density_sink_yike() is the standard now
 
     double rho = prim[RHO];
     double vr  = prim[URR];
@@ -395,7 +401,8 @@ void density_sink_yike( struct domain *theDomain, double *prim, double *cons, do
                     }
                     nu = alpha*c*h;
                 }          
-                t_visc = 2./3.*r*r/nu;  //TODO:Might need a factor of u^-0.5 here...
+                t_visc = 2./3.*dist*dist/nu;  //TODO:Might need a factor of u^-0.5 here...
+                //printf("r = %f, tau = %f\n", r, t_visc );
             }
 //=================================================================================================
             if( t_visc < 10.*dt )
@@ -403,8 +410,8 @@ void density_sink_yike( struct domain *theDomain, double *prim, double *cons, do
             double sink_frac = dt/t_visc;
         
             ////Track mass that will be eaten by sink
-            //double rho = cons[DDD]/dV;
             pl->m_accr += sink_frac*cons[DDD];
+            
             //printf("Mass removed, Mdot(t): (%e, %e)\t [%e, %e, %e]\n", sink_frac*cons[DDD], cons[DDD]/t_visc, cons[DDD]/dV, dV, sink_frac);
 
             
@@ -419,7 +426,6 @@ void density_sink_yike( struct domain *theDomain, double *prim, double *cons, do
             //for( q=0; q<NUM_Q; q++ ){i
             //  cons[q] -= sink_frac*cons[q];
             //}
-            
             
             //Calculate Accretion Torques
             double mdot = cons[DDD]/t_visc;  //prim[RHO]/t_visc; //cons[DDD] = prim[RHO]*dV
@@ -521,6 +527,9 @@ void visc_flux( double * prim , double * gprim , double * flux , double * x , do
    double nu = explicit_viscosity;
 
 //================ Yike Binary Visc. Calc. =================
+//TODO:   For eccentric or live binaries, need to fix this
+//          -> source() has acces to planet objects
+
    double q = q_planet;
    double om_bh = pow( a, -1.5 );
    double mu = q/(1.+q);

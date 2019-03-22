@@ -341,7 +341,7 @@ void calc_prim( struct domain * theDomain ){
             double r = get_moment_arm( xp , xm );
             double dV = get_dV( xp , xm );
             double x[3] = {r, 0.5*(phim+phip), 0.5*(z_kph[k]+z_kph[k-1])};
-            cons2prim( c->cons , c->prim , x , dV );
+            cons2prim( c->cons , c->prim , x , dV, theDomain->thePlanets );
          }
       }
    }
