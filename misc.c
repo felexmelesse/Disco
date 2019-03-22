@@ -89,7 +89,7 @@ double getmindt( struct domain * theDomain ){
    return( dt );
 }
 
-void initial( double * , double * );
+//void initial( double * , double * );
 void prim2cons( double * , double * , double * , double );
 void cons2prim( double * , double * , double * , double, struct planet * );
 void restart( struct domain * );
@@ -184,7 +184,7 @@ void set_wcell( struct domain * theDomain ){
 
 }
 
-void initial( double * , double * );
+//void initial( double * , double * );
 void clear_cell( struct cell * );
 
 void regrid( struct domain * theDomain ){
@@ -378,7 +378,7 @@ void calc_cons( struct domain * theDomain ){
 }
 
 void plm_phi( struct domain * );
-void riemann_phi( struct cell * , struct cell * , double * , double );
+void riemann_phi( struct cell * , struct cell * , double * , double, struct planet * );
 
 void phi_flux( struct domain * theDomain , double dt ){
 
@@ -402,7 +402,8 @@ void phi_flux( struct domain * theDomain , double dt ){
             double r = get_moment_arm(xp,xm);
             double dA = get_dA(xp,xm,0);
             double x[3] = {r, phi, 0.5*(z_kph[k-1]+z_kph[k])};
-            riemann_phi( &(cp[i]) , &(cp[ip]) , x , dA*dt );
+            //Set cell viscosity here?
+            riemann_phi( &(cp[i]) , &(cp[ip]) , x , dA*dt, theDomain->thePlanets );
          }
       }
    }
@@ -411,7 +412,7 @@ void phi_flux( struct domain * theDomain , double dt ){
 
 void buildfaces( struct domain * , int , int );
 void plm_trans( struct domain * , struct face * , int , int );
-void riemann_trans( struct face * , double , int );
+void riemann_trans( struct face * , double , int, struct planet * );
 
 void trans_flux( struct domain * theDomain , double dt , int dim ){
 
@@ -429,7 +430,7 @@ void trans_flux( struct domain * theDomain , double dt , int dim ){
 
    int f;
    for( f=0 ; f<Nf ; ++f ){
-      riemann_trans( theFaces + f , dt , dim );
+      riemann_trans( theFaces + f , dt , dim, theDomain->thePlanets );
    }
 
 }

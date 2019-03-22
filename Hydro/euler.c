@@ -3,7 +3,7 @@
 
 double get_om( double );
 double get_om1( double );
-double get_cs2( double, double );
+double get_cs2( double, double, struct planet * );
 
 static double gamma_law = 0.0; 
 static double RHO_FLOOR = 0.0; 
@@ -274,10 +274,11 @@ void source( struct domain *theDomain, double * prim , double * cons , double * 
 //TODO:   For eccentric or live binaries, need to fix this
 //          -> source() has acces to planet objects
 
-   double om_bh = pow( a, -1.5 );
-   double mu = q_planet/(1.+q_planet);
    double phi = 0.5*(phip+phim);
    double eps = G_EPS;
+/*
+   double om_bh = pow( a, -1.5 );
+   double mu = q_planet/(1.+q_planet);
 
    double M1 = 1.-mu;
    double r1 = a*mu;
@@ -288,6 +289,13 @@ void source( struct domain *theDomain, double * prim , double * cons , double * 
    double r2 = a*(1.-mu);
    double phi2 = om_bh*t_step;
    double d2 = get_planet_2dist( r_1, phi, r2, phi2 );
+*/
+   struct planet *thePlanets = theDomain->thePlanets;
+   double M1 = thePlanets[0].M;
+   double M2 = thePlanets[1].M;
+   double d1 = get_planet_2dist( r_1, phi, thePlanets[0].r, thePlanets[0].phi );
+   double d2 = get_planet_2dist( r_1, phi, thePlanets[1].r, thePlanets[1].phi );
+
 //==========================================================
  
    if( include_viscosity ){
@@ -521,7 +529,7 @@ void damping( double *cons, double *xp, double *xm, double dV, double dt ){
 
 
 
-void visc_flux( double * prim , double * gprim , double * flux , double * x , double * n ){
+void visc_flux( double * prim , double * gprim , double * flux , double * x , double * n, struct planet *thePlanets ){
 
    double r = x[0];
    double nu = explicit_viscosity;
@@ -529,7 +537,7 @@ void visc_flux( double * prim , double * gprim , double * flux , double * x , do
 //================ Yike Binary Visc. Calc. =================
 //TODO:   For eccentric or live binaries, need to fix this
 //          -> source() has acces to planet objects
-
+/*
    double q = q_planet;
    double om_bh = pow( a, -1.5 );
    double mu = q/(1.+q);
@@ -544,6 +552,13 @@ void visc_flux( double * prim , double * gprim , double * flux , double * x , do
    double r2 = a*(1.-mu);
    double phi2 = om_bh*t_step;
    double d2 = get_planet_2dist( r, x[1], r2, phi2 );
+*/
+   double eps = G_EPS;
+
+   double M1 = thePlanets[0].M;
+   double M2 = thePlanets[1].M;
+   double d1 = get_planet_2dist( r, x[1], thePlanets[0].r, thePlanets[0].phi );
+   double d2 = get_planet_2dist( r, x[1], thePlanets[1].r, thePlanets[1].phi );
 //==========================================================
 
    if( alpha_flag ){
