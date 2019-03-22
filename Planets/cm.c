@@ -106,8 +106,8 @@ double get_potential( double r, double phi, struct planet *thePlanets ){
        //M1 = 1.0;
    }
 
-   double pot1 = M1/d1;    //phigrav( M1, d1, 0.0 ); //no smoothing
-   double pot2 = M2/d2;    //phigrav( M2, d2, 0.0 );
+   double pot1 = thePlanets[0].M/d1;    //phigrav( M1, d1, 0.0 ); //no smoothing
+   double pot2 = thePlanets[1].M/d2;    //phigrav( M2, d2, 0.0 );
    //printf("Time: %f\n", tt );
    //printf("pot1: %f, pot2: %f\n", pot1, pot2 );
    return pot1 + pot2;

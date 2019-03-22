@@ -4,7 +4,7 @@
 
 void initial( double * , double * );
 double get_dV( double * , double * );
-void cons2prim( double * , double * , double * , double );
+//void cons2prim( double * , double * , double * , double );
 void prim2cons( double * , double * , double * , double );
 double get_moment_arm( double * , double * );
 

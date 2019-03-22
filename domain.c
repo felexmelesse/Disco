@@ -121,9 +121,9 @@ void setupDomain( struct domain * theDomain ){
 
 }
 
-void initial( double * , double * );
+void initial( double * , double *, struct planet * );
 void prim2cons( double * , double * , double * , double );
-void cons2prim( double * , double * , double * , double );
+void cons2prim( double * , double * , double * , double, struct planet * );
 void restart( struct domain * );
 void calc_dp( struct domain * );
 void set_wcell( struct domain * );
@@ -168,7 +168,7 @@ void setupCells( struct domain * theDomain ){
             double x[3] = { r , phi , .5*(z_kph[k]+z_kph[k-1])};
             if( !restart_flag )
             {
-               initial( c->prim , x );
+               initial( c->prim , x, theDomain->thePlanets );
                subtract_omega( c->prim );
                if( atmos ){
                   int p;
@@ -181,7 +181,7 @@ void setupCells( struct domain * theDomain ){
             if(noiseType != 0)
                 addNoise(c->prim, x);            
             prim2cons( c->prim , c->cons , x , dV );
-            cons2prim( c->cons , c->prim , x , dV );
+            cons2prim( c->cons , c->prim , x , dV, theDomain->thePlanets );
             c->real = 1;
             if( xm[0]==0.0 ) //if cell is a middle wedge
                 c->origin = 1;

@@ -59,7 +59,7 @@ void forcePlanets( struct planet * thePlanets , double dt ){
    //Silence is golden.
 }
 
-void get_potential( double r, double phi ){
+void get_potential( double r, double phi, struct planet *thePlanets ){
        //Silence is golden.
 }
 

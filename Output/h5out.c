@@ -336,7 +336,7 @@ void writePars(struct domain *theDomain, char filename[])
 
 double get_dV( double * , double * );
 void prim2cons( double * , double * , double *, double );
-void cons2prim( double * , double * , double *, double );
+void cons2prim( double * , double * , double *, double, struct planet * );
 
 void zero_diagnostics( struct domain * );
 void avg_diagnostics( struct domain * );

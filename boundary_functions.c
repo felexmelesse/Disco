@@ -7,7 +7,7 @@
 void initial( double * , double * );
 double get_dV( double * , double * );
 double get_dA( double *, double *, int);
-void cons2prim( double * , double * , double * , double );
+void cons2prim( double * , double * , double * , double, struct planet * );
 void prim2cons( double * , double * , double * , double );
 double get_moment_arm(double *, double *);
 void subtract_omega( double * );

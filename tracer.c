@@ -467,8 +467,8 @@ double get_dvdt( struct tracer *tr ){
 
 //Specific to Binary runs -> at present doing this for expediency
 //double get_planets_phi( double , double );
-double get_potential( double, double );
-double get_cs2( double, double );
+//double get_potential( double, double );
+//double get_cs2( double, double );
 
 void updatePhysQuants( struct tracer * tr, double gamma ){
     //Need to update (and treatment of tracer charactersitics
@@ -491,28 +491,28 @@ void updatePhysQuants( struct tracer * tr, double gamma ){
     }
         
 //================ Calculate jacobi constant ================================
-    double r  = tr->R;
-    double vp = r*(tr->Omega - 1.0 ); //Make sure velocity is in corot frame
-    double v2 = (tr->Vr)*(tr->Vr) + vp*vp + (tr->Vz)*(tr->Vz);
+//    double r  = tr->R;
+//    double vp = r*(tr->Omega - 1.0 ); //Make sure velocity is in corot frame
+//    double v2 = (tr->Vr)*(tr->Vr) + vp*vp + (tr->Vz)*(tr->Vz);
 //    double bin_pot = get_planets_phi( r , tr->Phi );
-    double bin_pot = get_potential( r , tr->Phi );
-    double C_j = r*r - v2 + 2*bin_pot;
-    if( fabs(C_j) > BIG_NUM )
-        C_j = -1;
-    tr->C_j = C_j;
+//    double bin_pot = get_potential( r , tr->Phi );
+//    double C_j = r*r - v2 + 2*bin_pot;
+//    if( fabs(C_j) > BIG_NUM )
+//        C_j = -1;
+//    tr->C_j = C_j;
 //===========================================================================
 //
 //================ Calculate Change in C_j ==================================
 //                 based on D.J. D'Orazio et al. (2016)
-    double rho = tr->prim[RHO];
-    double cs2 = get_cs2( r, tr->Phi );
-    double ratio = rho/rho_0;
-    if( ratio < 0.0 ) //maybe change how this is handled
-        ratio = 1.0;
-    double dCj = cs2/gamma_law*log( ratio ); // = /int dP/rho = c_s^2/gamma *ln(rho/rho_old)
-    if( fabs(dCj) > BIG_NUM )
-        dCj = 0.0;
-    tr->dPdp = dCj;
+//    double rho = tr->prim[RHO];
+//    double cs2 = get_cs2( r, tr->Phi );
+//    double ratio = rho/rho_0;
+//    if( ratio < 0.0 ) //maybe change how this is handled
+//        ratio = 1.0;
+//    double dCj = cs2/gamma_law*log( ratio ); // = /int dP/rho = c_s^2/gamma *ln(rho/rho_old)
+//    if( fabs(dCj) > BIG_NUM )
+//        dCj = 0.0;
+//    tr->dPdp = dCj;
 //===========================================================================
 
 

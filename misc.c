@@ -91,7 +91,7 @@ double getmindt( struct domain * theDomain ){
 
 void initial( double * , double * );
 void prim2cons( double * , double * , double * , double );
-void cons2prim( double * , double * , double * , double );
+void cons2prim( double * , double * , double * , double, struct planet * );
 void restart( struct domain * );
 /*
 void clear_w( struct domain * theDomain ){
@@ -611,7 +611,7 @@ void AMRsweep( struct domain * theDomain , struct cell ** swptr , int jk ){
       double r  = get_moment_arm( xp , xm );
       double dV = get_dV( xp , xm );
       double x[3] = {r, 0.5*(phim+phip), 0.5*(z_kph[k-1]+z_kph[k])};
-      cons2prim( sweep[iS].cons , sweep[iS].prim , x , dV );
+      cons2prim( sweep[iS].cons , sweep[iS].prim , x , dV, theDomain->thePlanets );
       //Shift Memory
       int blocksize = Np[jk]-iSp-1;
       if( iSp != Np[jk]-1 ) memmove( sweep+iSp , sweep+iSp+1 , blocksize*sizeof(struct cell) );
@@ -651,7 +651,7 @@ void AMRsweep( struct domain * theDomain , struct cell ** swptr , int jk ){
       double dV = get_dV( xp , xm );
       double r  = get_moment_arm( xp , xm );
       double x[3] = {r, 0.5*(xp[1]+xm[1]), 0.5*(xp[2]+xm[2])};
-      cons2prim( sweep[iL].cons , sweep[iL].prim , x , dV );
+      cons2prim( sweep[iL].cons , sweep[iL].prim , x , dV, theDomain->thePlanets );
 
       xp[1] = phip;
       xm[1] = phi0;
@@ -659,7 +659,7 @@ void AMRsweep( struct domain * theDomain , struct cell ** swptr , int jk ){
       r  = get_moment_arm( xp , xm );
       x[0] = r;
       x[1] = 0.5*(xp[1]+xm[1]);
-      cons2prim( sweep[iL+1].cons , sweep[iL+1].prim , x , dV );
+      cons2prim( sweep[iL+1].cons , sweep[iL+1].prim , x , dV, theDomain->thePlanets );
 
    }
 }

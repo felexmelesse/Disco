@@ -6,9 +6,7 @@ static double nu   = 0.0;
 static double Mach = 0.0;
 static double rho_fl = 0.0;
 static double viscosity = 0.0;
-static int alpha_flag = 0;
-
-static double eps = 0.0;
+static int alpha = 0;
 
 void setICparams( struct domain * theDomain ){
    gam  = theDomain->theParList.Adiabatic_Index;
@@ -16,15 +14,13 @@ void setICparams( struct domain * theDomain ){
    Mach = theDomain->theParList.Disk_Mach;
    rho_fl = theDomain->theParList.Density_Floor;
    viscosity = theDomain->theParList.viscosity;
-   alpha_flag = theDomain->theParList.alpha_flag;
-
-   eps = theDomain->theParList.g_eps;
+   alpha = theDomain->theParList.alpha_flag;
 }
 
 
 double get_cs2( double, double, struct planet * );
 
-void initial( double * prim , double * x, struct planet *thePlanets  ){
+void initial( double * prim , double * x, struct planet *thePlanets ){
    
    double r = x[0];
    double z = x[2];
@@ -48,11 +44,6 @@ void initial( double * prim , double * x, struct planet *thePlanets  ){
    double omega2  = pow( r , -3. );
    double omega2P = 0.0*cs2/r/r;
    double omega = sqrt( omega2 - omega2P );
-   
-   //double n = 2.0;
-   //double Fg = pow(r,n-1.)/pow( pow(r,n) + pow(eps,n), 1.+1./n );
-   //double omega = sqrt( Fg/r );
-
 
    if( omega > 1. ) omega = 1; 
 
@@ -60,7 +51,7 @@ void initial( double * prim , double * x, struct planet *thePlanets  ){
    if( r > 1.0 ) X = 1.0; 
 
    double nu = viscosity;
-   if( alpha_flag ){
+   if( alpha ){
      double alpha = viscosity;
      nu = alpha*cs2*pow(r,1.5);
    }
@@ -68,8 +59,7 @@ void initial( double * prim , double * x, struct planet *thePlanets  ){
    double vr0 = -1.5*nu/r; 
    double vr  = vr0*exp( -pow(r/r0,-d) );
 
-   double lguess = -0.5;
-   prim[RHO] = rho*(1-lguess*pow(r,-0.5));
+   prim[RHO] = rho;
    prim[PPP] = Pp;
    prim[URR] = vr;   
    prim[UPP] = omega;
