@@ -2,7 +2,7 @@
 #include "../paul.h"
 #include <string.h>
 
-void initial( double * , double * );
+void initial( double * , double *, struct planet * );
 double get_dV( double * , double * );
 //void cons2prim( double * , double * , double * , double );
 void prim2cons( double * , double * , double * , double );
@@ -32,7 +32,7 @@ void boundary_trans( struct domain * theDomain , int dim ){
                struct cell * c = &(theCells[jk][i]);
                double phi = c->piph - .5*c->dphi;
                double x[3] = { .5*(r_jph[j]+r_jph[j-1]) , phi , .5*(z_kph[k]+z_kph[k-1]) };
-               initial( c->prim , x );
+               initial( c->prim , x, theDomain->thePlanets );
                subtract_omega( c->prim );
             }
          }
@@ -78,7 +78,7 @@ void boundary_trans( struct domain * theDomain , int dim ){
                struct cell * c = &(theCells[jk][i]);
                double phi = c->piph - .5*c->dphi;
                double x[3] = { .5*(r_jph[j]+r_jph[j-1]) , phi , .5*(z_kph[k]+z_kph[k-1]) };
-               initial( c->prim , x ); 
+               initial( c->prim , x, theDomain->thePlanets ); 
                subtract_omega( c->prim );
                c->prim[RHO] = rho_in*pow(r/rg,-k0);
                c->prim[PPP] = P_in*pow(r/rg,-k0-2.*nu0);

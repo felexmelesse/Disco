@@ -2,7 +2,7 @@
 #include "../paul.h"
 #include <string.h>
 
-void initial( double * , double * );
+void initial( double * , double *, struct planet * );
 double get_dV( double * , double * );
 //void cons2prim( double * , double * , double * , double );
 void prim2cons( double * , double * , double * , double );
@@ -39,7 +39,7 @@ void boundary_trans( struct domain * theDomain , int dim ){
                struct cell * c = &(theCells[jk][i]);
                double phi = c->piph - .5*c->dphi;
                double x[3] = { .5*(r_jph[j]+r_jph[j-1]) , phi , .5*(z_kph[k]+z_kph[k-1]) };
-               initial( c->prim , x );
+               initial( c->prim , x, theDomain->thePlanets );
             }
          }
       }
@@ -54,7 +54,7 @@ void boundary_trans( struct domain * theDomain , int dim ){
                struct cell * c = &(theCells[jk][i]);
                double phi = c->piph - .5*c->dphi;
                double x[3] = { .5*(r_jph[j]+r_jph[j-1]) , phi , .5*(z_kph[k]+z_kph[k-1]) };
-               initial( c->prim , x ); 
+               initial( c->prim , x , theDomain->thePlanets ); 
             }    
          }    
       } 
@@ -68,7 +68,7 @@ void boundary_trans( struct domain * theDomain , int dim ){
                struct cell * c = &(theCells[jk][i]);
                double phi = c->piph - .5*c->dphi;
                double x[3] = { .5*(r_jph[j]+r_jph[j-1]) , phi , .5*(z_kph[k]+z_kph[k-1]) };
-               initial( c->prim , x );
+               initial( c->prim , x , theDomain->thePlanets );
             }
          }
       }
@@ -120,7 +120,7 @@ void boundary_trans( struct domain * theDomain , int dim ){
                   if(d2 < cut1*cut1)
                   {
                       double X[3] = {0.5*(rm+rp), phi, 0.5*(zm+zp)};
-                      initial(c->prim, X);
+                      initial(c->prim, X, theDomain->thePlanets );
                       c->real = 0;
                   }
                }
@@ -168,7 +168,7 @@ void boundary_trans( struct domain * theDomain , int dim ){
                   if(d2 < cut2*cut2)
                   {
                       double X[3] = {0.5*(rm+rp), phi, 0.5*(zm+zp)};
-                      initial(c->prim, X);
+                      initial(c->prim, X, theDomain->thePlanets );
                       c->real = 0;
                   }
                }
