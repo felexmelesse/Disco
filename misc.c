@@ -474,6 +474,7 @@ void damping( double *, double *, double *, double, double );
 
 void add_source( struct domain * theDomain , double dt, int last_step ){
 
+
    struct cell ** theCells = theDomain->theCells;
    struct planet * thePlanets = theDomain->thePlanets;
    int Nr = theDomain->Nr;
