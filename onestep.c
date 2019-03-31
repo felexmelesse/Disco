@@ -80,16 +80,13 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
       }
    }
 
-   //TODO:if planet_motion not analytic, move planet calcs forces and integrates
-
-/*----------- I think this should happen for both RK_steps.. not just first_step...-----
+   //I think this is correct thing to do for RK2 specifically
    if( !planet_motion_analytic() || first_step ){
       adjust_RK_planets( theDomain , RK );
       movePlanets( theDomain->thePlanets , theDomain->t , dt );
    }
----------------------------------------------------------------------------------------*/
-   adjust_RK_planets( theDomain, RK );
-   movePlanets( theDomain->thePlanets, theDomain->t, dt );
+   //adjust_RK_planets( theDomain, RK );d
+   //movePlanets( theDomain->thePlanets, theDomain->t, dt );
 
 
    adjust_RK_tracers( theDomain , RK );
