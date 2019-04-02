@@ -30,6 +30,7 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
         Rs = Rs[:-2]
 
     if rmax is None or rmax <=0.0:
+        rmax = 0.0
         lim_float = True
     else:
         lim_float = False

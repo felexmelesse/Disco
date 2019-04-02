@@ -31,6 +31,12 @@ void setOmegaParams( struct domain * theDomain ){
    r2 = theDomain->theParList.initPar3; // Outer Edge
    H0 = theDomain->theParList.initPar4; // Scale Height
    M = theDomain->theParList.metricPar2;
+
+   if(strcmp(PLANETS, "bin_rot") == 0)
+   {
+       double q = theDomain->theParList.Mass_Ratio;
+       M = q*1.0/(1.0+q);
+   }
 }
 
 double mesh_om( double *x)
@@ -112,7 +118,6 @@ double get_cs2( double *x ){
 
     if(cs2Choice == 1)
         cs2 = 1./(Mach*Mach);
-
     else if(cs2Choice == 2)
     {
         double nu = .5;
@@ -121,6 +126,11 @@ double get_cs2( double *x ){
     else if(cs2Choice == 3)
     {
         cs2 = M*H0*H0 / (2*r1*r1*r1);
+    }
+    else if(cs2Choice == 4)
+    {
+        double v2 = M/r;
+        cs2 = v2/(Mach*Mach);
     }
     else
         cs2 = 1.0;

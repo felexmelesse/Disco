@@ -22,7 +22,7 @@ def loadOpts(filename):
 
     opts = {}
     for key in f['Opts']:
-        opts[key] = f['Opts'][key][0]
+        opts[key] = str(f['Opts'][key][0], encoding='utf-8')
 
     f.close()
 
@@ -116,9 +116,10 @@ def plotAx(ax, x, y, xscale, yscale, xlabel, ylabel, *args, **kwargs):
 
 def getVarNames(filename):
     f = h5.File(filename, "r")
-    hydro = str(f['Opts']['HYDRO'][0])
+    hydro = str(f['Opts']['HYDRO'][0], encoding='utf-8')
     num_c = int(f['Opts']['NUM_C'][0])
     num_n = int(f['Opts']['NUM_N'][0])
+    f.close()
 
     names = None
     texnames = None
