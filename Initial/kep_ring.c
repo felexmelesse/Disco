@@ -13,6 +13,7 @@ static double gam = 0.0;
 static double M = 0.0;
 static double a = 0.0;
 static double q = 0.0;
+static double rg = 0.0;
 
 void setICparams( struct domain * theDomain ){
     visc_flag = theDomain->theParList.visc_flag;
@@ -31,6 +32,10 @@ void setICparams( struct domain * theDomain ){
         a = 1.0;
     else
         a = 0.0;
+    if(strcmp(PLANETS, "bh") == 0)
+        rg = M;
+    else
+        rg = 0.0;
 }
 
 double poly_step(double x, double a, double b, double ya, double yb)
@@ -186,10 +191,14 @@ void initial( double * prim , double * x ){
    double qp1 = 1+q;
    double y = a/((1+q)*r);
 
-   double gr = -M/(r*r) * (1 + 3./4. * q * y*y
+   double gr = -M/((r-2*rg)*(r-2*rg)) * (1 + 3./4. * q * y*y
                         + 45./64. * q*(q*q-q+1) * y*y*y*y);
    double omega = sqrt((dPdr/rho - gr) / r);
    double vr = visc_flag ? -1.5*nu/rho/r : 0.0;
+   if(r < 6*rg)
+   {
+       omega = 1.5*sqrt(M*6*rg)/(r*r);
+   }
 
    double X = 0.0; 
    if( r>rm && r<rp ) X = 1.0; 
