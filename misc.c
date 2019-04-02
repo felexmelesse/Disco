@@ -550,6 +550,7 @@ void setup_faces( struct domain * theDomain , int dim ){
 void source( double * , double * , double * , double * , double );
 void planet_src( struct planet * , double * , double * , double * , double * , double );
 void omega_src( double * , double * , double * , double * , double );
+void sink_src( double * , double * , double * , double * , double );
 
 void add_source( struct domain * theDomain , double dt ){
 
@@ -583,6 +584,7 @@ void add_source( struct domain * theDomain , double dt ){
                planet_src( thePlanets+p , c->prim , c->cons , xp , xm , dV*dt );
             }
             omega_src( c->prim , c->cons , xp , xm , dV*dt );
+            sink_src( c->prim , c->cons , xp , xm , dV*dt );
          }    
       }    
    }   

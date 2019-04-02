@@ -143,6 +143,16 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Noise_Type" , VAR_INT  , &(theList->noiseType));
          err += readvar( pfile , "Noise_Abs" , VAR_DOUB  , &(theList->noiseAbs));
          err += readvar( pfile , "Noise_Rel" , VAR_DOUB  , &(theList->noiseRel));
+         err += readvar(pfile, "Sink_Type", VAR_INT , &(theList->sinkType));
+         err += readvar(pfile, "Sink_Par1", VAR_DOUB, &(theList->sinkPar1));
+         err += readvar(pfile, "Sink_Par2", VAR_DOUB, &(theList->sinkPar2));
+         err += readvar(pfile, "Sink_Par3", VAR_DOUB, &(theList->sinkPar3));
+         err += readvar(pfile, "Sink_Par4", VAR_DOUB, &(theList->sinkPar4));
+         err += readvar(pfile, "Nozzle_Type", VAR_INT , &(theList->nozzleType));
+         err += readvar(pfile, "Nozzle_Par1", VAR_DOUB, &(theList->nozzlePar1));
+         err += readvar(pfile, "Nozzle_Par2", VAR_DOUB, &(theList->nozzlePar2));
+         err += readvar(pfile, "Nozzle_Par3", VAR_DOUB, &(theList->nozzlePar3));
+         err += readvar(pfile, "Nozzle_Par4", VAR_DOUB, &(theList->nozzlePar4));
       }
 #if USE_MPI
       MPI_Barrier(MPI_COMM_WORLD);

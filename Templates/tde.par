@@ -3,26 +3,26 @@
 Restart			0	//Restart from input.h5
 
 //Time Range//
-T_Start			0.0 //1.0
-T_End		    1.0
-T_Times_2pi		0
+T_Start			0.0
+T_End		    216.0
+T_Times_2pi		1
 
 //Output Frequency//
 Num_Reports		    4e4
 Num_Snapshots		0
-Num_Checkpoints		10
+Num_Checkpoints		100
 Use_Logtime		    0
 
 //Grid Dimensions//
-Num_R			    20
+Num_R			    64
 Num_Z			    1
 aspect			    1.0	//Cell Aspect Ratio, for calculating N_phi
 Max_Aspect_Short	1.5	
 Max_Aspect_Long		1.5	//Aspect Ratio AMR Refinement Criteria
 
 //Domain Parameters//
-R_Min			0.0
-R_Max			1.0
+R_Min			4.0
+R_Max			45.0
 Z_Min			-10.0 //-0.0625
 Z_Max			10.0  //0.0625
 R_Periodic		0
@@ -30,10 +30,10 @@ Z_Periodic		0
 Phi_Max			1.0
 P_Times_2pi		1
 Z_Times_pi      0
-Log_Zoning		0	//0=Uniform, 1=Log, 2=Hybrid
+Log_Zoning		1	//0=Uniform, 1=Log, 2=Hybrid
 Log_Radius		0.1	//Only for option 2 of Log_Zoning
 
-NoBC_Rmin       1   //0 = Regular boundary. Ghost zones added and
+NoBC_Rmin       0   //0 = Regular boundary. Ghost zones added and
 NoBC_Rmax       0   //    boundary condition applied.
 NoBC_Zmin       0   //1 = Coordinate boundary (like r=0 origin).
 NoBC_Zmax       0   //    No ghost zones or explicit BC applied.
@@ -58,7 +58,7 @@ Adiabatic_Index		1.66666666667
 Isothermal		    0
 Cs2_Profile         0   //0=Flat,1=FlatDiskMach,2=Visc,3=Sorathia
 Cs2_Par             0.0 //unused so far
-Energy_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep, 4=Gaussian
+Energy_Omega        2   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep, 4=Gaussian
 Energy_Omega_Par    0.0 //unused so far
 Use_Viscosity		0
 Viscosity		    0.0
@@ -77,15 +77,15 @@ RotOmega            0.0     //Angular speed of frame
 RotD                0.0     //Distance from rotational axis to grid axis.
 
 //Disk Parameters
-Mach_Number		20.0
+Mach_Number		5.0
 Include_Atmos	0
 
 //Initial Condition Parameters
-Init_Par0       0     // int
-Init_Par1       0.0   // doub
+Init_Par0       4     // int
+Init_Par1       6.0   // doub
 Init_Par2       0.0   // doub
 Init_Par3       0.0   // doub
-Init_Par4       0.0   // doub
+Init_Par4       1.0e-6   // doub
 Init_Par5       0.0   // doub
 Init_Par6       0.0   // doub
 Init_Par7       0.0   // doub
@@ -102,11 +102,11 @@ Sink_Par1       0.0     //(double)
 Sink_Par2       0.0     //(double)
 Sink_Par3       0.0     //(double)
 Sink_Par4       0.0     //(double)
-Nozzle_Type     0       //0: No Nozzle, 1: Circular Nozzle
-Nozzle_Par1     0.0     //(double)
-Nozzle_Par2     0.0     //(double)
-Nozzle_Par3     0.0     //(double)
-Nozzle_Par4     0.0     //(double)
+Nozzle_Type     1       //0: No Nozzle, 1: Circular Nozzle
+Nozzle_Par1     36.0     //(double)
+Nozzle_Par2     1.0     //(double)
+Nozzle_Par3     0.1264     //(double) (0.1099 for ra=36, rp=10, Newt)
+Nozzle_Par4     40.0     //(double)
 
 //Metric Parameters
 Metric_Par0     0    //(int)

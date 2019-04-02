@@ -316,6 +316,27 @@ void writePars(struct domain *theDomain, char filename[])
                     H5T_NATIVE_DOUBLE);
     dumpVal(filename, "Pars", "Noise_Rel", &(pars->noiseRel),
                     H5T_NATIVE_DOUBLE);
+
+    dumpVal(filename, "Pars", "Sink_Type", &(pars->sinkType),
+                    H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "Sink_Par1", &(pars->sinkPar1),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Sink_Par2", &(pars->sinkPar2),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Sink_Par3", &(pars->sinkPar3),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Sink_Par4", &(pars->sinkPar4),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Nozzle_Type", &(pars->nozzleType),
+                    H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "Nozzle_Par1", &(pars->nozzlePar1),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Nozzle_Par2", &(pars->nozzlePar2),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Nozzle_Par3", &(pars->nozzlePar3),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Nozzle_Par4", &(pars->nozzlePar4),
+                    H5T_NATIVE_DOUBLE);
 }
 
 double get_dV( double * , double * );

@@ -101,6 +101,17 @@ struct param_list{
    int noiseType;
    double noiseAbs;
    double noiseRel;
+
+   int sinkType;
+   double sinkPar1;
+   double sinkPar2;
+   double sinkPar3;
+   double sinkPar4;
+   int nozzleType;
+   double nozzlePar1;
+   double nozzlePar2;
+   double nozzlePar3;
+   double nozzlePar4;
 };
 
 struct diagnostic_avg{
