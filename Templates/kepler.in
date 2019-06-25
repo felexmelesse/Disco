@@ -3,7 +3,7 @@
 # This file contains user-specified build options
 
 # Build options
-INITIAL  = kepler
+INITIAL  = kepler_gaussian
 HYDRO    = euler
 BOUNDARY = fixed
 OUTPUT   = h5out
