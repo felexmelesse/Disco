@@ -23,7 +23,7 @@ void initial( double * prim , double * x ){
    double R		= sqrt( (a-rx)*(a-rx) + ry*ry );
 
    double mu		= q_planet/(1.+q_planet);
-   double omega		= sqrt(mu/(R*R*R));
+   double omega		= sqrt(1/(R*R*R));
 
    double alpha_visc	= nu*Mach*Mach/(a*a*omega);
    double K		= q_planet*q_planet*Mach*Mach*Mach*Mach*Mach/alpha_visc;
@@ -50,7 +50,7 @@ void initial( double * prim , double * x ){
    prim[RHO] = rho;
    prim[PPP] = Pp;
    prim[URR] = 0.0; //-1.5*nu/r;
-   prim[UPP] = omega - sqrt(mu/(a*a*a));
+   prim[UPP] = omega - sqrt(1/(a*a*a));
    prim[UZZ] = 0.0;
    if( NUM_N>0 ) prim[NUM_C] = X;
 
