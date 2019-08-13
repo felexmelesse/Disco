@@ -6,12 +6,14 @@ static double nu   = 0.0;
 static double Mach = 0.0;
 static double q_planet	= 0.0;
 static double a		= 1.0;
+static double rot_om	= 0.0;
 
 void setICparams( struct domain * theDomain ){
    gam  = theDomain->theParList.Adiabatic_Index;
    nu   = theDomain->theParList.viscosity;
    Mach = theDomain->theParList.Disk_Mach;
    q_planet	= theDomain->theParList.Mass_Ratio;
+   rot_om	= theDomain->theParList.RotOmega;
 }
 
 void initial( double * prim , double * x ){
@@ -47,13 +49,15 @@ void initial( double * prim , double * x ){
    double X = 0.0; 
    if( r*cos(x[1]) > 0.0 ) X = 1.0; 
    
-   double theta		= atan2(ry, a-rx);
-   double xi		= M_PI - theta - phi;
+   //double theta		= atan2(ry, a-rx);
+   //double xi		= M_PI - theta - phi;
+   double dr_dPhi	= -a*sin(phi);
+   double dphi_dPhi	= (a/(r*cos(phi)))*(sin(phi)*sin(phi) + 1.0 - r*cos(phi)/a);
 
    prim[RHO] = rho;
    prim[PPP] = Pp;
-   prim[URR] = -sin(xi)*(sqrt(1./R) - sqrt(1./a)); //sqrt(1./(R)) - sqrt(1./(a)); //-1.5*nu/r;
-   prim[UPP] = cos(xi)*(sqrt(1./(R*R*R)) - sqrt(1./(a*a*a))); //R * sqrt(1./(a*a*a));
+   prim[URR] = dr_dPhi*(sqrt(1./R) - sqrt(1./a)); //-sin(xi) * (sqrt(1./(R)) - sqrt(1./(a)); //-1.5*nu/r;
+   prim[UPP] = dphi_dPhi*(sqrt(1./(R*R*R)) - sqrt(1./(a*a*a))) + rot_om; //cos(xi) R * sqrt(1./(a*a*a));
    prim[UZZ] = 0.0;
    if( NUM_N>0 ) prim[NUM_C] = X;
 
