@@ -52,7 +52,7 @@ void initial( double * prim , double * x ){
    //double theta		= atan2(ry, a-rx);
    //double xi		= M_PI - theta - phi;
    double dr_dPhi	= -a*sin(phi);
-   double dphi_dPhi	= (a/(r*cos(phi)))*(sin(phi)*sin(phi) + 1.0 - r*cos(phi)/a);
+   double dphi_dPhi	= 1.0 - (a/r)*cos(phi);
 
    prim[RHO] = rho;
    prim[PPP] = Pp;
