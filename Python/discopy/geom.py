@@ -7,7 +7,7 @@ def getXYZ(x1, x2, x3, opts, pars):
 
     if opts['GEOMETRY'] == "cylindrical":
         return getXYZcyl(x1, x2, x3, pars)
-    if opts['GEOMETRY'] == "spherical":
+    elif opts['GEOMETRY'] == "spherical":
         return getXYZsph(x1, x2, x3, pars)
     else:
         return getXYZcart(x1, x2, x3, pars)

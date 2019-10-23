@@ -24,6 +24,9 @@ def loadOpts(filename):
     for key in f['Opts']:
         opts[key] = str(f['Opts'][key][0], encoding='utf-8')
 
+    if 'GEOMETRY' not in opts:
+        opts['GEOMETRY'] = 'cylindrical'
+
     f.close()
 
     return opts
