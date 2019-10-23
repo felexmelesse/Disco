@@ -1,16 +1,12 @@
-import os
-import sys
-import argparse as ag
-import h5py as h5
 import numpy as np
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 from . import util
 from . import geom
 
-def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None, 
-            vmax=None, noGhost=False, colorbar=True, xlabel=None, ylabel=None,
-            log=False, rmax=None, planets=None, cmap=None):
+
+def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
+               vmax=None, noGhost=False, colorbar=True, xlabel=None,
+               ylabel=None, log=False, rmax=None, planets=None, cmap=None):
 
     phi_max = pars['Phi_Max']
 
@@ -19,7 +15,7 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
             cmap = mpl.cm.inferno
         except:
             cmap = mpl.cm.afmhot
-        
+
     if vmin is None:
         vmin = q.min()
     if vmax is None:
@@ -29,7 +25,7 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
     if noGhost:
         Rs = Rs[:-2]
 
-    if rmax is None or rmax <=0.0:
+    if rmax is None or rmax <= 0.0:
         rmax = 0.0
         lim_float = True
     else:
@@ -43,7 +39,7 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
     pimh_min = np.inf
 
     for i, R in enumerate(Rs):
-        ind = r==R
+        ind = (r == R)
         imax = np.argmax(piph[ind])
 
         apiph = np.roll(piph[ind], -imax-1)
@@ -55,8 +51,8 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
 
         rf = rjph[i:i+2]
 
-        #x = rf[:,None] * np.cos(phif)[None,:]
-        #y = rf[:,None] * np.sin(phif)[None,:]
+        # x = rf[:,None] * np.cos(phif)[None,:]
+        # y = rf[:,None] * np.sin(phif)[None,:]
 
         x, y, z = geom.getXYZ(rf[:,None], phif[None,:], Z.mean(), opts, pars)
 
@@ -95,17 +91,18 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
     ax.set_xlabel(xlabel, fontsize=18)
     ax.set_ylabel(ylabel, fontsize=18)
 
-def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, opts, vmin=None, 
-                    vmax=None, noGhost=False, colorbar=True, xlabel=None, 
-                    ylabel=None, log=False, rmax=None, planets=None, 
-                    cmap=None):
+
+def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, opts, vmin=None,
+                 vmax=None, noGhost=False, colorbar=True, xlabel=None,
+                 ylabel=None, log=False, rmax=None, planets=None,
+                 cmap=None):
 
     if cmap is None:
         try:
             cmap = mpl.cm.inferno
         except:
             cmap = mpl.cm.afmhot
-        
+
     if vmin is None:
         vmin = q.min()
     if vmax is None:
@@ -115,31 +112,34 @@ def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, opts, vmin=None,
     Nz = zkph.shape[0]-1
 
     if noGhost:
-        if rjph[0] == 0:
-            Nr_loc = Nr - 2
-            j1 = 0
-        else:
-            Nr_loc = Nr - 4
+        Nr_loc = Nr
+        Nz_loc = Nz
+        j1 = 0
+        k1 = 0
+
+        if pars['NoBC_Rmin'] == 0:
+            Nr_loc -= 2
             j1 = 2
-        if Nz_loc < 1:
-            Nz_loc = 1
-            k1 = 0
-        else:
-            Nz_loc = Nz - 4
+        if pars['NoBC_Rmax'] == 0:
+            Nr_loc -= 2
+        if pars['NoBC_Zmin'] == 0:
+            Nz_loc -= 2
             k1 = 2
-        dat = np.empty((Nz_loc,Nr_loc))
+        if pars['NoBC_Zmax'] == 0:
+            Nz_loc -= 2
+
+        dat = np.empty((Nz_loc, Nr_loc))
         for k in range(Nz_loc):
-            i = Nr*(k+k1) + j1
-            dat[k,:] = q[k+k1,j1:j1+Nr_loc]
+            dat[k, :] = q[k+k1, j1:j1+Nr_loc]
         rjph_loc = rjph[j1:j1+Nr_loc+1]
         zkph_loc = zkph[k1:k1+Nz_loc+1]
     else:
-        dat = q.copy()
-        rjph_loc = rjph.copy()
-        zkph_loc = zkph.copy()
+        dat = q
+        rjph_loc = rjph
+        zkph_loc = zkph
 
-
-    if rmax is None or rmax <=0.0:
+    if rmax is None or rmax <= 0.0:
+        rmax = 0.0
         lim_float = True
     else:
         lim_float = False
@@ -149,39 +149,39 @@ def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, opts, vmin=None,
     else:
         norm = mpl.colors.Normalize(vmin, vmax)
 
+    x, y, z = geom.getXYZ(rjph_loc[None, :], 0.0, zkph_loc[:, None],
+                          opts, pars)
 
-    x, y, z = geom.getXYZ(rjph_loc[None,:], 0.0, zkph_loc[:,None], opts, pars)
-        
-    C = ax.pcolormesh(x, z, dat, 
-            cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
+    C = ax.pcolormesh(x, z, dat, cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
 
     if lim_float and rjph_loc.max() > rmax:
         rmax = rjph_loc.max()
 
     if planets is not None:
-        rpl = planets[:,3]
-        ppl = planets[:,4]
+        rpl = planets[:, 3]
+        ppl = planets[:, 4]
         xpl = rpl * np.cos(ppl)
         ypl = rpl * np.sin(ppl)
         ax.plot(xpl, ypl, color='grey', ls='', marker='o', mew=0, ms=5)
-        
+
     ax.set_aspect('equal')
-    #ax.set_xlim(rjph.min(), rmax)
-    #ax.set_ylim(zkph.min(), zkph.max())
+    # ax.set_xlim(rjph.min(), rmax)
+    # ax.set_ylim(zkph.min(), zkph.max())
     ax.set_xlim(x.min(), x.max())
     ax.set_ylim(z.min(), z.max())
-    
+
     if colorbar:
         cb = fig.colorbar(C)
         cb.set_label(label, fontsize=24)
 
-    if xlabel == None:
+    if xlabel is None:
         xlabel = r'$x$'
-    if ylabel == None:
+    if ylabel is None:
         ylabel = r'$z$'
 
     ax.set_xlabel(xlabel, fontsize=18)
     ax.set_ylabel(ylabel, fontsize=18)
+
 
 def calcBounds(files):
 

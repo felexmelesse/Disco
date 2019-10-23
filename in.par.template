@@ -56,7 +56,7 @@ Constrained_Transport   1
 //Hydro Parameters
 Adiabatic_Index		1.66666666667
 Isothermal		    0
-Cs2_Profile         0   //0=Flat,1=FlatDiskMach,2=Visc,3=Sorathia
+Cs2_Profile         0   //0=Flat,1=FlatDiskMach,2=Visc,3=Sorathia,4=ConstMach
 Cs2_Par             0.0 //unused so far
 Energy_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep, 4=Gaussian
 Energy_Omega_Par    0.0 //unused so far
@@ -92,7 +92,7 @@ Init_Par7       0.0   // doub
 Init_Par8       0.0   // doub
 
 //Noise Parameters
-Noise_Type      0       // 0: No Noise, 1: URR and UPP 
+Noise_Type      0       // 0: No Noise, 1: URR and UPP, 2: PPP, 3: URR and UZZ
 Noise_Abs       0.0     // Amplitude of Absolute Noise
 Noise_Rel       0.0     // Amplitude of Relative Noise
 

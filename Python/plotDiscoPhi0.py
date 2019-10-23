@@ -1,16 +1,13 @@
 import os
-import sys
 import argparse as ag
-import h5py as h5
-import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import discopy.util as util
 import discopy.plot as plot
 
-def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, bounds=None, 
-                    rmax=None, planets=False):
-    
+
+def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, bounds=None,
+                   rmax=None, planets=False):
+
     print("Loading {0:s}...".format(file))
 
     t, r, phi, z, prim, dat = util.loadCheckpoint(file)
@@ -50,34 +47,36 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, bounds=None,
 
             if q in vars:
 
-                fig, ax = plt.subplots(1,1, figsize=(9,12))
+                fig, ax = plt.subplots(1, 1, figsize=(9, 12))
 
-                plot.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:,:,q], 
-                                vartex[q], pars, opts, 
-                                vmin=vmin, vmax=vmax, rmax=rmax,
-                                planets=planetDat)
+                plot.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:, :, q],
+                                  vartex[q], pars, opts,
+                                  vmin=vmin, vmax=vmax, rmax=rmax,
+                                  planets=planetDat)
                 fig.suptitle(title, fontsize=24)
-                plotname = "plot_phi0_{0:s}_lin_{1:s}.png".format(name, varnames[q])
-                
+                plotname = "plot_phi0_{0:s}_lin_{1:s}.png".format(
+                    name, varnames[q])
+
                 print("   Saving {0:s}...".format(plotname))
                 fig.savefig(plotname, dpi=200)
                 plt.close(fig)
 
             if q in logvars:
-                fig, ax = plt.subplots(1,1, figsize=(9,12))
+                fig, ax = plt.subplots(1, 1, figsize=(9, 12))
 
-                plot.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:,:,q], 
-                                vartex[q], pars, opts,
-                                vmin=vmin, vmax=vmax, rmax=rmax, 
-                                planets=planetDat, log=True)
+                plot.plotPhiSlice(fig, ax, rjph, zkph, primPhi0[:, :, q],
+                                  vartex[q], pars, opts,
+                                  vmin=vmin, vmax=vmax, rmax=rmax,
+                                  planets=planetDat, log=True)
                 fig.suptitle(title, fontsize=24)
-                plotname = "plot_phi0_{0:s}_log_{1:s}.png".format(name, varnames[q])
+                plotname = "plot_phi0_{0:s}_log_{1:s}.png".format(
+                    name, varnames[q])
 
                 print("   Saving {0:s}...".format(plotname))
                 fig.savefig(plotname, dpi=200)
                 plt.close(fig)
 
-    
+
 def getBounds(use_bounds, names, files):
 
     num_q = len(names)
@@ -96,23 +95,29 @@ def getBounds(use_bounds, names, files):
 
     return bounds
 
+
 if __name__ == "__main__":
 
-    parser = ag.ArgumentParser(description="Create 2D plots of Disco variables along phi = 0.")
-    parser.add_argument('checkpoints', nargs='+', 
-                            help="Checkpoint (.h5) files to plot.")
+    parser = ag.ArgumentParser(
+        description="Create 2D plots of Disco variables along phi = 0.")
+    parser.add_argument('checkpoints', nargs='+',
+                        help="Checkpoint (.h5) files to plot.")
     parser.add_argument('-v', '--vars', nargs='+', type=int,
-                            help="Variables to plot.")
+                        help="Variables to plot.")
     parser.add_argument('-l', '--logvars', nargs='+', type=int,
-                            help="Variables to plot logscale.")
+                        help="Variables to plot logscale.")
     parser.add_argument('-p', '--planets', action='store_true',
-                            help="Plot planets.")
+                        help="Plot planets.")
     parser.add_argument('-b', '--bounds', nargs='?', const=True,
-                            help="Use global max/min for bounds. Optional argument BOUNDS is a file. If it exists, it will be read for parameter bounds. If it does not exist the global max/min will be calculated and saved to the file.")
-    parser.add_argument('-r', '--rmax', type=float, 
-                            help="Set plot limits to RMAX.")
-    parser.add_argument('--noghost', action='store_true', 
-                            help="Do not plot ghost zones.")
+                        help=("Use global max/min for bounds. Optional "
+                              "argument BOUNDS is a file. If it exists, it "
+                              "will be read for parameter bounds. If it does "
+                              "not exist the global max/min will be "
+                              "calculated and saved to the file."))
+    parser.add_argument('-r', '--rmax', type=float,
+                        help="Set plot limits to RMAX.")
+    parser.add_argument('--noghost', action='store_true',
+                        help="Do not plot ghost zones.")
 
     args = parser.parse_args()
 
@@ -130,6 +135,5 @@ if __name__ == "__main__":
     bounds = getBounds(use_bounds, names, files)
 
     for f in files:
-        plotCheckpoint(f, vars=vars, logvars=logvars, bounds=bounds, 
-                        rmax=rmax, noGhost=noghost, planets=planets)
-
+        plotCheckpoint(f, vars=vars, logvars=logvars, bounds=bounds,
+                       rmax=rmax, noGhost=noghost, planets=planets)
