@@ -204,6 +204,12 @@ void readString(char *file, char *group, char *dset, char *buf, int len)
 
    hid_t h5fil = H5Fopen( file , H5F_ACC_RDONLY , H5P_DEFAULT );
    hid_t h5grp = H5Gopen1( h5fil , group );
+
+   if(!H5Lexists(h5grp, dset, H5P_DEFAULT))
+   {
+       buf[0] = '\0';
+       return;
+   }
    hid_t h5dst = H5Dopen1( h5grp , dset );
 
    hid_t space = H5Dget_space(h5dst);
@@ -1133,7 +1139,7 @@ void keyPressed(unsigned char key, int x, int y)
    if( key == 'q' )
    {
        layer++;
-       if layer > 8
+       if(layer > 8)
           layer = 0;
 
        if(layer == 0)
@@ -1288,6 +1294,8 @@ void loadGrid(char *filename)
    char buf[256];
 
    readString(filename, group4, (char *)"GEOMETRY", buf, 256);
+   if(strlen(buf) == 0)
+       strcpy(buf, "cylindrical");
 
    printf("Geometry is: %s\n", buf);
    printf("%lu %d %d\n", strlen(buf), strcmp(buf,"cartesian"), 
