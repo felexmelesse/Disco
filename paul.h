@@ -128,6 +128,7 @@ struct domain{
    int * Np;
    int Nr,Nz,Ng;
    int NgRa, NgRb, NgZa, NgZb;
+   int N0r, N0z, Nr_glob, Nz_glob, N0r_glob, N0z_glob;
    int N_ftracks_r;
    int N_ftracks_z;
    int Npl;

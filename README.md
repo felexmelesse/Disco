@@ -1,47 +1,63 @@
-#Disco
+# Disco
 A 3D Moving-Mesh Magnetohydrodynamics code designed for the study of astrophysical disks.
 
-By Paul Duffell
+By Paul Duffell and Geoffrey Ryan
 
-Thank you for your interest in the Disco code.
+Thank you for your interest in the Disco code!
+
+## License
 
 The license for this code is GPL.  The GPL license should be contained in this directory.
 
-Please cite me if you use this work.  In particular, cite my paper, Duffell (2016).
+## Attribution
 
-I posted this code because I believe in transparency in science, not because I am advertising this code or attempting to promote its extensive use.  I am happy to answer the occasional question, but I hope that you will attempt to solve most issues on your own.
+If you use Disco in your work, please cite the code paper [Duffell 2016](https://ui.adsabs.harvard.edu/abs/2016ApJS..226....2D/abstract).
 
-Having said that, here is how you set up the code:
+## Setup
 
 This code is parallel and uses the MPI library. It has been run using the MPICH2, OpenMPI, and Intel MPI implementations amongst others. For testing/debugging purposes it may be compiled in a pure serial mode, completely independent of MPI, but performance will obviously suffer.
 
 The only other important dependency is HDF5.  It is possible to compile without HDF5 (ascii output) but the default assumes you have HDF5.
 
+The following two files are necessary for compiling the code:
 
-The following three files are necessary for setting up the code:
+1) Makefile_dir.in
+2) Makefile_opt.in
 
-Makefile_dir.in
+Additionally, a parameter file is required at run-time:
 
-Makefile_opt.in
+3) in.par
 
-in.par
+### Compiling Disco The First Time
 
-The first two are pulled into the makefile and are necessary for compiling, and the last is a parameter file, which the code looks for at runtime.
+Default versions of all three of these files are in the project directory: `Makefile_dir.in.template`, `Makefile_opt.in.template`, and `in.par.template`. For your first time compiling the code, copy these into the required filenames and edit according to your system, then `make`:
 
-You can find many "Makefile_opt" and "in.par" files in the Templates/ directory.  Simply copy them over, e.g.
+```bash
+$ cp Makefile_dir.in.template Makefile_dir.in
+$ vim Makefile_dir.in  # edit as required
+$ cp Makefile_opt.in.template Makefile_opt.in
+$ make
+```
 
-cp Templates/isentropic.in ./Makefile_opt.in
+`Makefile_dir.in` sets the relevant flags and compiler directives for linking against MPI and HDF5. It will change from machine-to-machine, but probably not from run-to-run. To compile without MPI support set `USE_MPI` to 0.
 
-cp Templates/isentropic.par ./in.par
+`Makefile_opt.in` sets particular modules to compile into a Disco executable.  It is machine-independent, but will change for runs of different type (e.g. Hydro vs MHD, different Boundary Conditions).
 
-"Makefile_dir.in" sets the C compiler to use (default: mpicc), the directory where HDF5 is located, and other machine-level flags.  If you are compiling with HDF5, just modify this file so it points to the right place. To compile without MPI set USE_MPI = 0.
+### Beginning from a Template
 
-After that, so long as your C compiler works, all you have to do is type "make" and it should compile.
+Many sample setups exist in `Templates/`.  To build one of them (e.g. vortex) simply run `make TEMPLATE_NAME` (e.g. make vortex).  The template's parfile and Makefile_opt will be copied into the root directory and the build will proceed.
 
+To set up manually, simply copy the template's files by hand:
+```bash
+$ cp Template/isentropic.par in.par
+$ cp Template/isentropic.in Makefile_opt.in
+$ make clean
+$ make
+```
 
-COMPILING WITHOUT HDF5:
+### COMPILING WITHOUT HDF5:
 
-If you wish to compile without HDF5, open "Makefile_opt.in" and adjust the following settings:
+If you wish to compile without HDF5, open `Makefile_opt.in` and adjust the following settings:
 
 OUTPUT   = h5out
 
@@ -55,3 +71,36 @@ RESTART  = none
 
 This should remove any dependency on HDF5.
 
+## Running Disco
+
+To start Disco, simply run the executable in a directory containing `in.par`:
+
+```bash
+$ ./disco
+```
+
+### Parallel
+To run in parallel with `mpiexec`:
+
+```bash
+$ mpiexec -np 4 ./disco
+```
+
+Consult your system documentation for details on how to invoke MPI-parallel jobs on your machine.
+
+### Restarting From A Checkpoint
+
+Disco can restart from an existing checkpoint.  Simply rename the desired checkpoint to `input.h5` and set the `Restart` flag in `in.par` to 1.
+
+## Disco Output
+
+Disco outputs HDF5 checkpoint files with names `checkpoint_0123.h5` and appends to the text file `report.dat`.  The `vdisco` application in `Viewer/` can display checkpoint data, but requires OpenGL to compile.
+
+### Post-processing in Python: discopy
+
+The `Python/` directory contains user-friendly scripts for making plots of fluid variables.  It also contains the `discopy` package which provides utilities for loading and processing Disco data.  To set up `discopy` simply run `python3 setup.py develop` from the `Python/` directory.  The included plotting scripts are:
+
+    - `plotDiscoEq.py`: Make plots of equatorial slices through the domain (ie. the x-y plane).
+    - `plotDiscoPhi0.py`: Make plots of the phi=0 surface (ie. the x-z plane, x>0).
+    - `plotDiscoR.py`: Scatterplot of fluid variables as a function of r.
+    - `plotDiscoDiagRZ`: plot the Diagnostic (phi and t averaged) fields as a function of R and z.

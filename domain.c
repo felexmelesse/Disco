@@ -26,7 +26,7 @@ int get_num_rzFaces( int , int , int );
 
 void setupDomain( struct domain * theDomain ){
 
-   srand(theDomain->rank);
+   srand(314159);
    rand();
 
    int Nr = theDomain->Nr;
@@ -51,17 +51,43 @@ void setupDomain( struct domain * theDomain ){
    int i;
    for( i=0 ; i<Nr*Nz*num_tools ; ++i ) theDomain->theTools.Qrz[i] = 0.0;
 
-   double Pmax = theDomain->phi_max;
-   for( jk=0 ; jk<Nr*Nz ; ++jk ){
-      double p0 = Pmax*(double)rand()/(double)RAND_MAX;
-      double dp = Pmax/(double)Np[jk];
-      for( i=0 ; i<Np[jk] ; ++i ){
-         double phi = p0+dp*(double)i;
-         if( phi > Pmax ) phi -= Pmax;
-         theDomain->theCells[jk][i].piph = phi;
-         theDomain->theCells[jk][i].dphi = dp;
-      }
-   }
+    //Setup independent of node layout: pick the right rand()'s
+    double Pmax = theDomain->phi_max;
+    int j, k;
+
+    //Discard everything from lower (global) z-layers.
+    for(k=theDomain->N0z_glob; k<theDomain->N0z; k++)
+        for(j=0; j<theDomain->Nr_glob; j++)
+            rand();
+
+    for( k=0 ; k<Nz ; ++k )
+    {
+        //Discard randoms from inner (global) annuli
+        for(j=theDomain->N0r_glob; j<theDomain->N0r; j++)
+            rand();
+
+        //DO the work
+        for( j=0 ; j<Nr ; ++j )
+        {
+            jk = k*Nr + j;
+            double p0 = Pmax*(double)rand()/(double)RAND_MAX;
+            double dp = Pmax/(double)Np[jk];
+            for( i=0 ; i<Np[jk] ; ++i )
+            {
+                double phi = p0+dp*(double)i;
+                if( phi > Pmax ) phi -= Pmax;
+                    theDomain->theCells[jk][i].piph = phi;
+                    theDomain->theCells[jk][i].dphi = dp;
+            }
+        }
+        //Discard randoms from outer (global) annuli
+        for(j=theDomain->N0r+Nr; j<theDomain->N0r_glob + theDomain->Nr_glob;
+                j++)
+        {
+            rand();
+        }
+
+    }
 
    theDomain->t       = theDomain->theParList.t_min;
    theDomain->t_init  = theDomain->theParList.t_min;

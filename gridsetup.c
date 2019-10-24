@@ -58,12 +58,37 @@ void setupGrid( struct domain * theDomain ){
    N1z += NgZb;
    int Nz = N1z-N0z;
 
+   int Nr_glob = Num_R;
+   int Nz_glob = Num_Z;
+   int N0r_glob = 0;
+   int N0z_glob = 0;
+   if(!theDomain->theParList.NoBC_Rmin)
+   {
+       Nr_glob += Ng;
+       N0r_glob -= Ng;
+   }
+   if(!theDomain->theParList.NoBC_Rmax)
+       Nr_glob += Ng;
+   if(!theDomain->theParList.NoBC_Zmin)
+   {
+       Nz_glob += Ng;
+       N0z_glob -= Ng;
+   }
+   if(!theDomain->theParList.NoBC_Zmax)
+       Nz_glob += Ng;
+
    theDomain->Nr = Nr;
    theDomain->Nz = Nz;
    theDomain->NgRa = NgRa;
    theDomain->NgRb = NgRb;
    theDomain->NgZa = NgZa;
    theDomain->NgZb = NgZb;
+   theDomain->N0r = N0r;
+   theDomain->N0z = N0z;
+   theDomain->N0r_glob = N0r_glob;
+   theDomain->N0z_glob = N0z_glob;
+   theDomain->Nr_glob = Nr_glob;
+   theDomain->Nz_glob = Nz_glob;
    printf("Rank = %d, Nr = %d, Nz = %d\n",theDomain->rank,Nr,Nz);
 
    theDomain->Np    = (int *)    malloc( Nr*Nz*sizeof(int) );
