@@ -6,6 +6,7 @@ void setupGrid( struct domain * );
 void timestep( struct domain * , double );
 void setupCells( struct domain * );
 void regrid( struct domain * );
+void boundary_trans( struct domain * , int );
 void exchangeData( struct domain * , int );
 double getmindt( struct domain * );
 void calc_prim( struct domain * );
@@ -27,7 +28,9 @@ void print_welcome();
 
 int main( int argc , char * argv[] ){
  
+#if USE_MPI
    MPI_Init(&argc,&argv);
+#endif
    struct domain theDomain = {0};
    start_clock( &theDomain ); 
    read_par_file( &theDomain );
@@ -47,12 +50,17 @@ int main( int argc , char * argv[] ){
 /*
    if( theDomain.theParList.Initial_Regrid && !(theDomain.theParList.restart_flag) ) regrid( &theDomain );
 */
-   if( theDomain.Nr > 1 ) exchangeData( &theDomain , 0 );
-   if( theDomain.Nz > 1 ) exchangeData( &theDomain , 1 );
 
-   int restart_flag = theDomain.theParList.restart_flag;
-   if( set_B_flag() && NUM_FACES >= 3 && !restart_flag) 
-       set_B_fields( &theDomain );
+   if( theDomain.Nr > 1 ){
+      exchangeData( &theDomain , 0 );
+      if( !theDomain.theParList.R_Periodic)
+         boundary_trans( &theDomain , 1);
+   }
+   if( theDomain.Nz > 1 ){
+      exchangeData( &theDomain , 1 );
+      if( !theDomain.theParList.Z_Periodic)
+         boundary_trans( &theDomain , 2);
+   }
 
    if( theDomain.rank==0 && !(theDomain.theParList.restart_flag) ){
       FILE * rFile = fopen("report.dat","w");
@@ -70,9 +78,13 @@ int main( int argc , char * argv[] ){
 
    possiblyOutput( &theDomain , 1 );
    generate_log( &theDomain );
+#if USE_MPI
    MPI_Barrier(theDomain.theComm);
+#endif
    freeDomain( &theDomain );
+#if USE_MPI
    MPI_Finalize();
+#endif
 
    return(0);
 

@@ -1,4 +1,3 @@
-
 //
 // This code was created by Jeff Molofee '99 (ported to Linux/GLUT by Richard Campbell '99)
 // If you've found this code useful, please let me know.
@@ -14,9 +13,15 @@
 
 #include <hdf5.h>
 
-#include <GL/glut.h>    // Header File For The GLUT Library 
+#ifdef OSX
+#include <GLUT/glut.h>    // Header File For The GLUT Library 
+#include <OpenGL/gl.h>	// Header File For The OpenGL32 Library
+#include <OpenGL/glu.h>	// Header File For The GLu32 Library
+#else
+#include <glut.h>    // Header File For The GLUT Library 
 #include <GL/gl.h>	// Header File For The OpenGL32 Library
 #include <GL/glu.h>	// Header File For The GLu32 Library
+#endif
 #include <unistd.h>     // needed to sleep
 
 /* ASCII code for the escape key. */
@@ -29,8 +34,10 @@
 #define CAM_BACKUP  1.5
 #define ZRORDER 1 // 1: checkpoints organized with faster index r (default,new)
                   // 0: checkpoints organized with slower index r (old)
+#define DIAGMODE 1 // 1: checkpoints store RZ diagnostics (default,new)
+                   // 0: checkpoints store R diagnostics (old)
 
-static int WindowWidth  = 600;
+static int WindowWidth  = 800;
 static int WindowHeight = 600;
  
 int CommandMode;
@@ -47,7 +54,6 @@ int draw_spiral = 0;
 int draw_jet = 0;
 int draw_planet = 0;
 int draw_scale = 0;
-int reflect  = 0;
 int valq=0;
 int draw_border = 0;
 int logscale = 0;
@@ -55,36 +61,62 @@ int floors=0;
 int help_screen=0;
 int print_vals=0;
 int fix_zero=0;
+int geometry = 0;
+
+double val_floor = VAL_FLOOR;
+double val_ceil = VAL_CEIL;
 
 double rotate_angle = M_PI/2.;
 
-double offx, offy, rescale, maxval, minval;
+double offx, offy, rescale;
+double maxval = -HUGE_VAL;
+double minval = HUGE_VAL;
 
 double t;
-int Nr,Nz,Nq,Npl,N1d,midz;
-int * Np;
-double * r_jph;
-double * z_kph;
-double ** p_iph;
-double *** theZones;
-double ** rzZones;
-double ** thePlanets;
-double ** theRadialData;
+int Nr,Nz,Nq,Npl,NpDat,N1d,Nc,KK, layer;
+int * Np = NULL;
+double * r_jph = NULL;
+double * z_kph = NULL;
+double ** p_iph = NULL;
+double phimax;
+double *** theZones = NULL;
+double ** rzZones = NULL;
+double ** thePlanets = NULL;
+double ** theRadialData = NULL;
+int *Np_All = NULL;
+int *Tindex_All = NULL;
+int *Id_phi0 = NULL;
 
 double max_1d = 1.0;
 
+char filename[1024];
+char **filenameList = NULL;
+int nfiles = 0;
+int currentFile = 0;
+
 void get_rgb( double , float * , float * , float * , int );
+void loadSliceZ(char *filename, int k);
+void loadSlicePhi(char *filename);
+void loadDiagnostics(char *filename, int k);
+void loadFile(int fileIndex, int zslice);
 
 double getval( double * thisZone , int q ){
    if( q!=-1 ) return( thisZone[q] );
    double rho = thisZone[0];
 //   double X   = thisZone[5];
    double P   = thisZone[1];
+   double vr = thisZone[2];
+   double om = thisZone[3];
+
+/*
+   double gam = 1.333333;
+   double cs = sqrt(gam*P/rho);
+    return fabs(vr)/cs;
+    */
+
    double Br = thisZone[5];
    double Bp = thisZone[6];
    double Bz = thisZone[7];
-//   double gam = sqrt(1.+ur*ur+up*up);
-//   double e = (rho+4.*P)*gam*gam-P - rho*gam;
    return( .5*(Br*Br+Bp*Bp+Bz*Bz) ); //fabs(P/pow(rho,5./3.)-1.) );// fabs(thisZone[1]/pow(thisZone[0],5./3.)-1.) );
 //   return( rho*P );
 }
@@ -117,16 +149,22 @@ void getMaxMin(void){
          }
       }
    }
-   if( floors ){
+   if( floors == 1){
       if( maxval > VAL_CEIL  ) maxval = VAL_CEIL;
       if( minval < VAL_FLOOR ) minval = VAL_FLOOR;
    }
-   if( FIXMAXMIN && floors ){
+   if( FIXMAXMIN && floors==1 ){
       maxval = VAL_CEIL;
       minval = VAL_FLOOR;
    }
+   if(floors == 2)
+    {
+       maxval = val_ceil; 
+       minval = val_floor;
+    }
    if( fix_zero ){
-      maxval = .5*(maxval-minval);
+      //maxval = .5*(maxval-minval);
+      if(-minval > maxval) maxval = -minval;
       minval = -maxval;
    }
    //if( floors ) minval = maxval-5.0;
@@ -134,7 +172,7 @@ void getMaxMin(void){
 }
 
 void getH5dims( char * file , char * group , char * dset , hsize_t * dims ){
-   hid_t h5fil = H5Fopen( file , H5F_ACC_RDWR , H5P_DEFAULT );
+   hid_t h5fil = H5Fopen( file , H5F_ACC_RDONLY , H5P_DEFAULT );
    hid_t h5grp = H5Gopen1( h5fil , group );
    hid_t h5dst = H5Dopen1( h5grp , dset );
    hid_t h5spc = H5Dget_space( h5dst );
@@ -148,7 +186,7 @@ void getH5dims( char * file , char * group , char * dset , hsize_t * dims ){
 }
 
 void readSimple( char * file , char * group , char * dset , void * data , hid_t type ){
-   hid_t h5fil = H5Fopen( file , H5F_ACC_RDWR , H5P_DEFAULT );
+   hid_t h5fil = H5Fopen( file , H5F_ACC_RDONLY , H5P_DEFAULT );
    hid_t h5grp = H5Gopen1( h5fil , group );
    hid_t h5dst = H5Dopen1( h5grp , dset );
 
@@ -159,8 +197,41 @@ void readSimple( char * file , char * group , char * dset , void * data , hid_t 
    H5Fclose( h5fil );
 }
 
+void readString(char *file, char *group, char *dset, char *buf, int len)
+{
+   hid_t strtype = H5Tcopy(H5T_C_S1);
+   H5Tset_size(strtype, H5T_VARIABLE);
+
+   hid_t h5fil = H5Fopen( file , H5F_ACC_RDONLY , H5P_DEFAULT );
+   hid_t h5grp = H5Gopen1( h5fil , group );
+
+   if(!H5Lexists(h5grp, dset, H5P_DEFAULT))
+   {
+       buf[0] = '\0';
+       return;
+   }
+   hid_t h5dst = H5Dopen1( h5grp , dset );
+
+   hid_t space = H5Dget_space(h5dst);
+   hsize_t dims[1];
+   H5Sget_simple_extent_dims(space, dims, NULL);
+
+   char **rdata = (char **)malloc(dims[0] * sizeof(char *));
+   H5Dread(h5dst, strtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, rdata);
+   strncpy(buf, rdata[0], len-1);
+   buf[len-1] = '\0';
+
+   H5Dvlen_reclaim(strtype, space, H5P_DEFAULT, rdata);
+   free(rdata);
+   H5Dclose(h5dst);
+   H5Sclose(space);
+   H5Tclose(strtype);
+   H5Gclose(h5grp);
+   H5Fclose(h5fil);
+}
+
 void readPatch( char * file , char * group , char * dset , void * data , hid_t type , int dim , int * start , int * loc_size , int * glo_size){
-   hid_t h5fil = H5Fopen( file , H5F_ACC_RDWR , H5P_DEFAULT );
+   hid_t h5fil = H5Fopen( file , H5F_ACC_RDONLY , H5P_DEFAULT );
    hid_t h5grp = H5Gopen1( h5fil , group );
    hid_t h5dst = H5Dopen1( h5grp , dset );
 
@@ -281,7 +352,654 @@ void TakeScreenshot(const char *useless){
    printf("done!\n");
 }
 
-/* The main drawing function. */
+void draw1dBackground(double RotationAngleX, double RotationAngleY,
+                        double RotationAngleZ, double camdist, double xoff,
+                        double yoff, double zoff, int q)
+{
+      glColor3f(1.0,1.0,1.0);
+      glBegin(GL_QUADS);
+      glVertex3f(-1./rescale-xoff,-1./rescale-yoff, camdist + zoff );
+      glVertex3f( 1./rescale-xoff,-1./rescale-yoff, camdist + zoff );
+      glVertex3f( 1./rescale-xoff, 1./rescale-yoff, camdist + zoff );
+      glVertex3f(-1./rescale-xoff, 1./rescale-yoff, camdist + zoff );
+      glEnd();
+      glLineWidth( 3.0f );
+      glColor3f(0.0,0.0,0.0);
+}
+void draw1dRadialData(double RotationAngleX, double RotationAngleY, 
+                        double RotationAngleZ, double camdist, double xoff, 
+                        double yoff, double zoff, int q)
+{
+    glBegin( GL_LINE_STRIP );
+    int j;
+    //      for( j=0 ; j<Nr ; ++j ){
+    for( j=0 ; j<Nr ; ++j )
+    {
+        //if(logscale) val = log(getval(theZones[i],q))/log(10.);
+        double rm = r_jph[j-1];
+        double rp = r_jph[j]; 
+        double val = theRadialData[j][q]/max_1d;//*pow(.5*(rp+rm),1.5);//2.*(theRadialData[j][q]-minval)/(maxval-minval) - 1.;//getval(theZones[i],q);
+        if( q==1 ) val *= 1e2;
+        val = 2.*val - 1.;
+        double c0 = 2.*((.5*(rp+rm)-r_jph[-1])/(r_jph[Nr-1]-r_jph[-1]) - .5)/rescale;
+        double c1 = val/rescale;
+        glVertex3f( c0-xoff, c1-yoff, camdist-zoff+.001 );
+    }    
+    glEnd();
+    /*
+    glColor3f(0.5,0.5,0.5);
+    glBegin( GL_LINE_STRIP );
+
+    for( j=0 ; j<Nr ; ++j )
+    {
+        //if(logscale) val = log(getval(theZones[i],q))/log(10.);
+        double rm = r_jph[j-1];
+        double rp = r_jph[j];
+        double r = .5*(rp+rm); 
+        double val = pow(r,-1.5)/max_1d;// *pow(.5*(rp+rm),1.5);//2.*(theRadialData[j][q]-minval)/(maxval-minval) - 1.;//getval(theZones[i],q);         if( q==1 ) val *= 1e2;
+        val = 2.*val - 1.;
+        double c0 = 2.*((.5*(rp+rm)-r_jph[-1])/(r_jph[Nr-1]-r_jph[-1]) - .5)/rescale;                 double c1 = val/rescale;
+        glVertex3f( c0-xoff, c1-yoff, camdist-zoff+.001 );
+    }       
+    glEnd();
+    */
+}
+
+void draw1dPlanet(double RotationAngleX, double RotationAngleY,
+                double RotationAngleZ, double camdist, double xoff,
+                double yoff, double zoff, int q)
+{
+    double eps = 0.01;
+    int p;
+    for( p=0 ; p<Npl ; ++p )
+    {
+        double r   = thePlanets[p][0];
+        double x = 2.*(( r - r_jph[-1] )/( r_jph[Nr-1]-r_jph[-1] ) - .5)/rescale;
+        glColor3f(0.0,0.0,0.0);
+        glLineWidth(2.0);
+        glBegin(GL_LINE_LOOP);
+        glVertex3f( x-xoff+eps , 1./rescale-yoff+eps , camdist+.001 );
+        glVertex3f( x-xoff-eps , 1./rescale-yoff+eps , camdist+.001 );
+        glVertex3f( x-xoff-eps , 1./rescale-yoff-eps , camdist+.001 );
+        glVertex3f( x-xoff+eps , 1./rescale-yoff-eps , camdist+.001 );
+        glEnd();
+    }
+}
+
+void drawZCell(double x1p, double x1m, double x2p, double x2m, double x3,
+                double camdist, double xoff, double yoff, double zoff)
+{
+    if(geometry == 1)
+    {
+        double rp = x1p/rescale;
+        double rm = x1m/rescale;
+        double phip = x2p;
+        double phim = x2m;
+        double dp = phip-phim;
+        double z0 = x3/rescale;
+
+        double c0 = rm*cos(phim);
+        double c1 = rm*sin(phim);
+        glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+
+        int np = (int) (rp*(phip-phim) / (rp-rm)) + 1;
+        int nm = (int) (rm*(phip-phim) / (rp-rm)) + 1;
+
+        c0 = rp*cos(phim);
+        c1 = rp*sin(phim);
+        glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+
+        int p;
+        for(p=1; p<np; p++)
+        {
+            double ph = phim + (p*(phip-phim))/np;
+            c0 = rp*cos(ph)/cos(dp/np);
+            c1 = rp*sin(ph)/cos(dp/np);
+            glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+        }
+
+        c0 = rp*cos(phip);
+        c1 = rp*sin(phip);
+        glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+
+        c0 = rm*cos(phip);
+        c1 = rm*sin(phip);
+        glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+
+        for(p=nm-1; p>0; p--)
+        {
+            double ph = phim + (p*(phip-phim))/nm;
+            c0 = rm*cos(ph);
+            c1 = rm*sin(ph);
+            glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
+        }
+    }
+    else if(geometry == 2)
+    {
+        double rp = x1p/rescale;
+        double rm = x1m/rescale;
+        double phip = x2p;
+        double phim = x2m;
+        double sinth = sin(x3);
+        double costh = cos(x3);
+        double dp = phip-phim;
+
+        double c0 = rm*sinth*cos(phim);
+        double c1 = rm*sinth*sin(phim);
+        double c2 = rm*costh;
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff );
+
+        int np = (int) (rp*(phip-phim) / (rp-rm)) + 1;
+        int nm = (int) (rm*(phip-phim) / (rp-rm)) + 1;
+
+        c0 = rp*sinth*cos(phim);
+        c1 = rp*sinth*sin(phim);
+        c2 = rp*costh;
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff );
+
+        int p;
+        for(p=1; p<np; p++)
+        {
+            double ph = phim + (p*(phip-phim))/np;
+            c0 = rp*sinth*cos(ph)/cos(dp/np);
+            c1 = rp*sinth*sin(ph)/cos(dp/np);
+            glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+        }
+
+        c0 = rp*sinth*cos(phip);
+        c1 = rp*sinth*sin(phip);
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+
+        c0 = rm*sinth*cos(phip);
+        c1 = rm*sinth*sin(phip);
+        c2 = rm*costh;
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+
+        for(p=nm-1; p>0; p--)
+        {
+            double ph = phim + (p*(phip-phim))/nm;
+            c0 = rm*sinth*cos(ph);
+            c1 = rm*sinth*sin(ph);
+            glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+        }
+    }
+    else
+    {
+        double xm = x1m/rescale;
+        double xp = x1p/rescale;
+        double ym = x2m/rescale;
+        double yp = x2p/rescale;
+        double z = x3/rescale;
+        glVertex3f( xm-xoff, ym-yoff, camdist-zoff+z );
+        glVertex3f( xp-xoff, ym-yoff, camdist-zoff+z );
+        glVertex3f( xp-xoff, yp-yoff, camdist-zoff+z );
+        glVertex3f( xm-xoff, yp-yoff, camdist-zoff+z );
+    }
+}
+
+void drawPhiCell(double x1p, double x1m, double x3p, double x3m, double x2,
+                    double camdist, double xoff, double yoff, double zoff)
+{
+    if(geometry == 1)
+    {
+        double cp = cos(x2);
+        double sp = sin(x2);
+        double rm = x1m/rescale;
+        double rp = x1p/rescale;
+        double zm = x3m/rescale;
+        double zp = x3p/rescale;
+
+        glVertex3f( rm*cp-xoff, rm*sp-yoff, camdist-zoff+zm );
+        glVertex3f( rp*cp-xoff, rp*sp-yoff, camdist-zoff+zm );
+        glVertex3f( rp*cp-xoff, rp*sp-yoff, camdist-zoff+zp );
+        glVertex3f( rm*cp-xoff, rm*sp-yoff, camdist-zoff+zp );
+    }
+    else if(geometry == 2)
+    {
+        double rp = x1p/rescale;
+        double rm = x1m/rescale;
+        double thp = x3p;
+        double thm = x3m;
+        double sinp = sin(x2);
+        double cosp = cos(x2);
+        double dth = thp-thm;
+
+        double c0 = rm*sin(thm)*cosp;
+        double c1 = rm*sin(thm)*sinp;
+        double c2 = rm*cos(thm);
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff );
+
+        int np = (int) (rp*(thp-thm) / (rp-rm)) + 1;
+        int nm = (int) (rm*(thp-thm) / (rp-rm)) + 1;
+
+        c0 = rp*sin(thm)*cosp;
+        c1 = rp*sin(thm)*sinp;
+        c2 = rp*cos(thm);
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff );
+
+        int p;
+        for(p=1; p<np; p++)
+        {
+            double th = thm + (p*(thp-thm))/np;
+            c0 = rp*sin(th)*cosp/cos(dth/np);
+            c1 = rp*sin(th)*sinp/cos(dth/np);
+            c2 = rp*cos(th);
+            glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+        }
+
+        c0 = rp*sin(thp)*cosp;
+        c1 = rp*sin(thp)*sinp;
+        c2 = rp*cos(thp);
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+
+        c0 = rm*sin(thp)*cosp;
+        c1 = rm*sin(thp)*sinp;
+        c2 = rm*cos(thp);
+        glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+
+        for(p=nm-1; p>0; p--)
+        {
+            double th = thm + (p*(thp-thm))/nm;
+            c0 = rm*sin(th)*cosp;
+            c1 = rm*sin(th)*sinp;
+            c2 = rp*cos(th);
+            glVertex3f( c0-xoff, c1-yoff, c2+camdist-zoff);
+        }
+    }
+    else
+    {
+        double xm = x1m/rescale;
+        double xp = x1p/rescale;
+        double zm = x3m/rescale;
+        double zp = x3p/rescale;
+        double y = x2/rescale;
+        glVertex3f( xm-xoff, y-yoff, camdist-zoff+zm );
+        glVertex3f( xp-xoff, y-yoff, camdist-zoff+zm );
+        glVertex3f( xp-xoff, y-yoff, camdist-zoff+zp );
+        glVertex3f( xm-xoff, y-yoff, camdist-zoff+zp );
+    }
+}
+
+void drawZSlice(double camdist, double xoff, double yoff, double zoff, int q,
+                 int draw_border_now)
+{
+    if( draw_border_now )
+        zoff -= .0001;
+    int i,j;
+
+    for( j=0 ; j<Nr ; ++j )
+    {
+        double rm = r_jph[j-1];
+        double rp = r_jph[j];
+        double rc = .5*(rp+rm);
+        double dr = rp-rm;
+
+        if( !draw_border )
+        {
+            rm = rc-.55*dr;
+            rp = rc+.55*dr;
+        }
+        for( i=0 ; i<Np[j] ; ++i )
+        {
+            double phip = p_iph[j][i];
+            double phim;
+            if( i==0 ) 
+                phim = p_iph[j][Np[j]-1]; 
+            else 
+                phim = p_iph[j][i-1];
+
+            if( t_off && !p_off )
+            {
+                phip -= t;
+                phim -= t;
+            }
+            if( p_off )
+            { 
+                phip -= thePlanets[1][1]; 
+                phim -= thePlanets[1][1];
+            }
+
+            double dp   = phip-phim;
+            while( dp < 0.0 ) dp += phimax;
+            while( dp > phimax ) dp -= phimax;
+            double phi = phip - 0.5*dp;
+            phim = phip - dp;
+
+            if( !draw_border )
+            {
+                phip = phi+.55*dp;
+                phim = phi-.55*dp;
+            }
+
+            double val = (getval(theZones[j][i],q)-minval)/(maxval-minval);
+            if(logscale) 
+                val = (log(getval(theZones[j][i],q))/log(10.)-minval)
+                        /(maxval-minval);
+            if( val > 1.0 ) val = 1.0;
+            if( val < 0.0 ) val = 0.0;
+            //double u = getval( theZones[j][i] , 2 );
+            //if( uMax < u ) uMax = u;
+
+            float rrr,ggg,bbb;
+            get_rgb( val , &rrr , &ggg , &bbb , cmap );
+
+            if( (!dim3d || (sin(phi)>0 || cos(phi+.25)<0.0)) && dim3d !=2 )
+            {
+                //if( dp < 1.5 && (!dim3d || (sin(phi)>0 && cos(phi)>0.0)) && dim3d !=2 ){
+                if( !draw_border_now )
+                { 
+                    glColor3f( rrr , ggg , bbb );
+                    glBegin(GL_POLYGON);
+                }
+                else
+                {
+                    glLineWidth(3.0f);
+                    glColor3f(0.0,0.0,0.0);
+                    glBegin(GL_LINE_LOOP);
+                }
+
+                double z0 = 0.0;
+                //if( dim3d ) 
+                    z0 = z_kph[KK];
+
+                drawZCell(rp, rm, phip, phim, z0, camdist, xoff, yoff, zoff);
+
+                glEnd();
+            }
+        }
+    }
+    
+    if( draw_border_now )
+        zoff += .0001;
+}
+
+void drawPhiSlice(double camdist, double xoff, double yoff, double zoff, int q,
+                    int draw_border_now)
+{
+    if( draw_border_now )
+        zoff -= .0001;
+
+    int j, k;
+    for( j=0 ; j<Nr ; ++j )
+    {
+        for( k=0 ; k<Nz ; ++k )
+        {
+            int jk;
+            if(ZRORDER)
+                jk = k*Nr+j;
+            else
+                jk = j*Nz+k;
+            double rp = r_jph[j];
+            double rm = r_jph[j-1];
+            double zp = z_kph[k];
+            double zm = z_kph[k-1];
+
+            double phi = 0.0;//rzZones[jk][Nq];
+
+            double val = (getval(rzZones[jk],q)-minval)/(maxval-minval);
+            if(logscale)
+                val = (log(getval(rzZones[jk],q))/log(10.)-minval)
+                            /(maxval-minval);
+            if( val > 1.0 ) 
+                val = 1.0;
+            if( val < 0.0 ) 
+                val = 0.0;
+            float rrr,ggg,bbb;
+            get_rgb( val , &rrr , &ggg , &bbb , cmap );
+            if( !draw_border_now )
+            { 
+                glColor3f( rrr , ggg , bbb );
+                glBegin(GL_POLYGON);
+            }
+            else
+            {
+                glLineWidth(2.0f);
+                glColor3f(0.0,0.0,0.0);
+                glBegin(GL_LINE_LOOP);
+            } 
+                  
+            drawPhiCell(rp, rm, zp, zm, phi, camdist, xoff, yoff, zoff);
+            glEnd();
+        }
+
+        if( draw_border_now || dim3d == 1 )
+        {
+            glLineWidth(2.0f);
+            glColor3f(0.0,0.0,0.0);
+            glBegin(GL_LINE_LOOP);
+
+            double rp = r_jph[Nr-1];
+            //double rm =-r_jph[Nr-1];
+            double rm = r_jph[-1];
+            double zp = z_kph[Nz-1];
+            double zm = z_kph[  -1];
+            
+            double phi = 0.0;
+            drawPhiCell(rp, rm, zp, zm, phi, 0.0, xoff, yoff, zoff);
+            glEnd();
+        }
+    }
+    
+    if( draw_border_now )
+        zoff += .0001;
+}
+
+void drawData(double RotationAngleX, double RotationAngleY,
+                    double RotationAngleZ, double camdist, double xoff,
+                    double yoff, double zoff, int q)
+{
+    if(dim3d < 2)
+    {
+        drawZSlice(camdist, xoff, yoff, zoff, q, 0);
+        if(draw_border)
+            drawZSlice(camdist, xoff, yoff, zoff, q, 1);
+    }
+    if(dim3d)
+    {
+        drawPhiSlice(camdist, xoff, yoff, zoff, q, 0);
+        if(draw_border)
+            drawPhiSlice(camdist, xoff, yoff, zoff, q, 1);
+    }
+}
+
+// Draw a color bar.
+void drawColorBar(double RotationAngleX, double RotationAngleY,
+                    double RotationAngleZ, double camdist, double xoff,
+                    double yoff, double zoff, int q)
+{
+    glRotatef(-RotationAngleZ, 0, 0, 1);
+    glRotatef(-RotationAngleY, 0, 1, 0);
+    glRotatef(-RotationAngleX, 1, 0, 0);
+    double xb = 0.6;
+    double hb = 1.0;
+    double wb = 0.02;
+    int Nb = 1000;
+    double dy = hb/(double)Nb;
+    int k;
+    for( k=0 ; k<Nb ; ++k )
+    {
+        double y = (double)k*dy - .5*hb;
+        double val = (double)k/(double)Nb;
+        float rrr,ggg,bbb;
+        get_rgb( val , &rrr , &ggg , &bbb , cmap );
+        glLineWidth(0.0f);
+        glColor3f( rrr , ggg , bbb );
+        glBegin(GL_POLYGON);
+        glVertex3f( xb    , y    , camdist + .001 ); 
+        glVertex3f( xb+wb , y    , camdist + .001 ); 
+        glVertex3f( xb+wb , y+dy , camdist + .001 ); 
+        glVertex3f( xb    , y+dy , camdist + .001 ); 
+        glEnd();
+    }
+
+    int Nv = 8;
+
+    for( k=0 ; k<Nv ; ++k )
+    {
+        double y = (double)k*hb/(double)(Nv-1) - .5*hb;
+        double val = ((double)k/(double)(Nv-1))*(maxval-minval) + minval;
+        char valname[256];
+        sprintf(valname,"%+.3e",val);
+        glLineWidth(1.0f);
+        glColor3f(0.0,0.0,0.0);
+        glBegin(GL_LINE_LOOP);
+        glVertex3f( xb    , y , camdist + .0011 );
+        glVertex3f( xb+wb , y , camdist + .0011 );
+        glEnd();
+        glutPrint( xb+1.5*wb , y-.007 , camdist + .001 ,glutFonts[6] , valname , 0.0f, 0.0f , 0.0f , 0.5f );
+    }
+
+    glRotatef(RotationAngleX, 1, 0, 0);
+    glRotatef(RotationAngleY, 0, 1, 0);
+    glRotatef(RotationAngleZ, 0, 0, 1);
+}
+
+void drawPlanet(double RotationAngleX, double RotationAngleY,
+                    double RotationAngleZ, double camdist, double xoff,
+                    double yoff, double zoff)
+{
+    glRotatef(-RotationAngleZ, 0, 0, 1);
+    glRotatef(-RotationAngleY, 0, 1, 0);
+    glRotatef(-RotationAngleX, 1, 0, 0);
+    double eps = 0.01;
+    int p;
+    for( p=0 ; p<Npl ; ++p )
+    {
+        double r   = thePlanets[p][0]/rescale;
+        double phi = thePlanets[p][1];
+        if( t_off && !p_off ) phi -= t;
+        if( p_off ) phi -= thePlanets[1][1];
+
+        glColor3f(0.0,0.0,0.0);
+        glLineWidth(2.0);
+
+        glBegin(GL_LINE_LOOP);
+        glVertex3f( r*cos(phi)-xoff+eps , r*sin(phi)-yoff+eps , camdist+.001 );
+        glVertex3f( r*cos(phi)-xoff-eps , r*sin(phi)-yoff+eps , camdist+.001 );
+        glVertex3f( r*cos(phi)-xoff-eps , r*sin(phi)-yoff-eps , camdist+.001 );
+        glVertex3f( r*cos(phi)-xoff+eps , r*sin(phi)-yoff-eps , camdist+.001 );
+        glEnd();
+    }
+    glRotatef(RotationAngleX, 1, 0, 0);
+    glRotatef(RotationAngleY, 0, 1, 0);
+    glRotatef(RotationAngleZ, 0, 0, 1);
+}
+
+void drawSpiral(double RotationAngleX, double RotationAngleY,
+                    double RotationAngleZ, double camdist, double xoff,
+                    double yoff, double zoff)
+{
+
+    //double rp   = 5.0;//thePlanets[1][0];
+    double Mach = 3.65;
+    double p0 = 1.2;
+    //double dr = .07;
+    int Nr = 200;
+    //double Rmin = 0.5;
+    //double Rmax = 1.1;
+    int k;
+    
+    glLineWidth(3.0f);
+    glColor3f(0.0,0.0,0.0);
+    //glColor3f(1.0,1.0,1.0);
+    glBegin(GL_LINE_LOOP);
+    
+    for( k=0 ; k<Nr ; ++k )
+    {
+        //double phi0 = ((double)k+.5)/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
+        double x = ((double)k+.5)/(double)Nr;
+        double r = .001*pow(.5/.001,x);
+        //double r = .5*pow(1.5/.5,x);
+        double phi0 = p0-log(r/0.001)*Mach;//(3.-2.*sqrt(1./r)-r)*5.;
+        //double phi0 = (3.-2.*sqrt(1./r)-r)*20.;
+        //if( r<1. ) phi0 = -phi0;
+
+        //         double x0 = rp + dr*cos(phi0);
+        //         double y0 = dr*sin(phi0);
+
+        double phi = phi0;
+        //         double r = rp;       
+
+        //         double phi = atan2(y0,x0);
+        //         double phi = ((double)k+.5)/(double)Nr*2.*M_PI*9.32 + 4.*M_PI;
+        //         double r   = sqrt(x0*x0+y0*y0);
+        //         double r = pow(phi/10.,-2.);
+        //         double r   = 2./(1.+sin(phi));//1.0;//((double)k+0.5)/(double)Nr*(Rmax-Rmin) + Rmin;
+        //         if( r<1. ) phi = -phi;
+        r /= rescale;
+
+        glVertex3f( r*cos(phi)-xoff , r*sin(phi)-yoff , camdist + .0011 );
+        if( k%2==1 )
+        {
+            glEnd();
+            glBegin(GL_LINE_LOOP);
+        }
+    }
+    glEnd();
+
+    /*
+    e += 0.01;
+    glBegin(GL_LINE_LOOP);
+    for( k=0 ; k<Nr ; ++k ){
+    double phi0 = ((double)k-.5)/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
+    double x0 = 1.+e*cos(phi0);
+    double y0 = e*sin(phi0);
+
+    double phi = atan2(y0,x0);
+    double r   = sqrt(x0*x0+y0*y0);
+    //         double phi = (double)k/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
+    //         double r   = 2./(1.+sin(phi));//1.0;//((double)k+0.5)/(double)Nr*(Rmax-Rmin) + Rmin;
+    //         if( r<1. ) phi = -phi;
+    r /= rescale;
+
+    glVertex3f( r*cos(phi)-xoff , r*sin(phi)-yoff , camdist + .0011 );
+    if( k%2==1 ){
+    glEnd();
+    glBegin(GL_LINE_LOOP);
+    }
+    }
+    glEnd();
+    */
+}
+
+void drawText(double RotationAngleX, double RotationAngleY,
+                    double RotationAngleZ, double camdist, double xoff,
+                    double yoff, double zoff)
+{
+    char tprint[256];
+    sprintf(tprint,"t = %.2e",t/2./M_PI);
+    glutPrint( -.6 , .5 , camdist + .001 , glutFonts[6] , tprint , 0.0f, 0.0f , 0.0f , 0.5f );
+    //    sprintf(tprint,"uMax = %.1f",uMax);
+    //    glutPrint( -.8 , .4 , camdist + .001 , glutFonts[6] , tprint , 0.0f, 0.0f , 0.0f , 0.5f );
+}
+
+void drawHelp(double RotationAngleX, double RotationAngleY,
+                    double RotationAngleZ, double camdist, double xoff,
+                    double yoff, double zoff)
+{
+    int NLines = 9;
+    double dy = -.04;
+    char help[NLines][256];
+    sprintf(help[0],"Help Display:");
+    sprintf(help[1],"b - Toggle Colorbar");
+    sprintf(help[2],"c - Change Colormap");
+    sprintf(help[3],"f - Toggle Max/Min Floors");
+    sprintf(help[4],"p - Toggle Planet Data");
+    sprintf(help[5],"1-9 - Choose Primitive Variable to Display");
+    sprintf(help[6],"wasd - Move Camera");
+    sprintf(help[7],"z/x - Zoom in/out");
+    sprintf(help[8],"h - Toggle Help Screen");
+    int i;
+    for( i=0 ; i<NLines ; ++i )
+    {
+        glutPrint( -.8 , i*dy , camdist + .001 , glutFonts[6] , help[i] , 
+                    0.0f, 0.0f , 0.0f , 0.5f );
+    }
+} 
+
+/* 
+ * The main drawing function. 
+ */
 void DrawGLScene(){
 
    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -313,360 +1031,45 @@ void DrawGLScene(){
    double yoff    = offy;
    double zoff    = 0.0;
 
-   if( draw_1d ){
-      glColor3f(1.0,1.0,1.0);
-      glBegin(GL_QUADS);
-      glVertex3f(-1./rescale-xoff,-1./rescale-yoff, camdist + zoff );
-      glVertex3f( 1./rescale-xoff,-1./rescale-yoff, camdist + zoff );
-      glVertex3f( 1./rescale-xoff, 1./rescale-yoff, camdist + zoff );
-      glVertex3f(-1./rescale-xoff, 1./rescale-yoff, camdist + zoff );
-      glEnd();
-      glLineWidth( 3.0f );
-      glColor3f(0.0,0.0,0.0);
-      glBegin( GL_LINE_STRIP );
-      int j;
-//      for( j=0 ; j<Nr ; ++j ){
-      for( j=0 ; j<Nr ; ++j ){
-         //if(logscale) val = log(getval(theZones[i],q))/log(10.);
-         double rm = r_jph[j-1];
-         double rp = r_jph[j]; 
-         double val = theRadialData[j][q]/max_1d;//*pow(.5*(rp+rm),1.5);//2.*(theRadialData[j][q]-minval)/(maxval-minval) - 1.;//getval(theZones[i],q);
-         if( q==1 ) val *= 1e2;
-         val = 2.*val - 1.;
-         double c0 = 2.*((.5*(rp+rm)-r_jph[-1])/(r_jph[Nr-1]-r_jph[-1]) - .5)/rescale;
-         double c1 = val/rescale;
-         glVertex3f( c0-xoff, c1-yoff, camdist-zoff+.001 );
-      }    
-      glEnd();
-/*
-      glColor3f(0.5,0.5,0.5);
-      glBegin( GL_LINE_STRIP );
+   if( draw_1d )
+   {
+      draw1dBackground(RotationAngleX, RotationAngleY, RotationAngleZ,
+                        camdist, xoff, yoff, zoff, q);
+      if(theRadialData != NULL)
+         draw1dRadialData(RotationAngleX, RotationAngleY, RotationAngleZ,
+                            camdist, xoff, yoff, zoff, q);
+      if( draw_planet )
+         draw1dPlanet(RotationAngleX, RotationAngleY, RotationAngleZ,
+                            camdist, xoff, yoff, zoff, q);
+   }
+   else
+   {
+       drawData(RotationAngleX, RotationAngleY, RotationAngleZ,
+                        camdist, xoff, yoff, zoff, q);
 
-      for( j=0 ; j<Nr ; ++j ){
-         //if(logscale) val = log(getval(theZones[i],q))/log(10.);
-         double rm = r_jph[j-1];
-         double rp = r_jph[j];
-         double r = .5*(rp+rm); 
-         double val = pow(r,-1.5)/max_1d;// *pow(.5*(rp+rm),1.5);//2.*(theRadialData[j][q]-minval)/(maxval-minval) - 1.;//getval(theZones[i],q);         if( q==1 ) val *= 1e2;
-         val = 2.*val - 1.;
-         double c0 = 2.*((.5*(rp+rm)-r_jph[-1])/(r_jph[Nr-1]-r_jph[-1]) - .5)/rescale;                 double c1 = val/rescale;
-         glVertex3f( c0-xoff, c1-yoff, camdist-zoff+.001 );
-      }       
-      glEnd();
-*/
-      if( draw_planet ){
-         double eps = 0.01;
-         int p;
-         for( p=0 ; p<Npl ; ++p ){
-            double r   = thePlanets[p][0];
-            double x = 2.*(( r - r_jph[-1] )/( r_jph[Nr-1]-r_jph[-1] ) - .5)/rescale;
-            glColor3f(0.0,0.0,0.0);
-            glLineWidth(2.0);
-            glBegin(GL_LINE_LOOP);
-            glVertex3f( x-xoff+eps , 1./rescale-yoff+eps , camdist+.001 );
-            glVertex3f( x-xoff-eps , 1./rescale-yoff+eps , camdist+.001 );
-            glVertex3f( x-xoff-eps , 1./rescale-yoff-eps , camdist+.001 );
-            glVertex3f( x-xoff+eps , 1./rescale-yoff-eps , camdist+.001 );
-            glEnd();
-         }
-      }
+       if( draw_bar )
+          drawColorBar(RotationAngleX, RotationAngleY, RotationAngleZ, camdist,
+                    xoff, yoff, zoff, q);
 
-   }else{
-      int Num_Draws = 1+reflect+draw_border;
-      int count;
-      int i,j;
-      for( count = 0 ; count < Num_Draws ; ++count ){
-         int draw_border_now = 0;
-         int draw_reflected_now = 0;
-         if( count==reflect+1 ) draw_border_now = 1;
-         if( reflect && count==1 ) draw_reflected_now = 1;
-         if( draw_border_now ) zoff -= .0001;
-      for( j=0 ; j<Nr ; ++j ){
-         double rm = r_jph[j-1]/rescale;
-         double rp = r_jph[j]/rescale;
-         double rc = .5*(rp+rm);
-         double dr = rp-rm;
-      
-         if( !draw_border ){
-            rm = rc-.55*dr;
-            rp = rc+.55*dr;
-         }
-         for( i=0 ; i<Np[j] ; ++i ){
+       if( draw_planet )
+          drawPlanet(RotationAngleX, RotationAngleY, RotationAngleZ, camdist,
+                        xoff, yoff, zoff);
 
-            double phip = p_iph[j][i];
-            double phim;
-            if( i==0 ) phim = p_iph[j][Np[j]-1]; else phim = p_iph[j][i-1];
-            if( t_off && !p_off ){ phip -= t; phim -= t; }
-            if( p_off ){ phip -= thePlanets[1][1]; phim -= thePlanets[1][1]; }
-            double dp   = phip-phim;
-            while( dp < 0.0 ) dp += 2.*M_PI;
-            while( dp > 2.*M_PI ) dp -= 2.*M_PI;
-            double phi = phim + 0.5*dp;
-            if( !draw_border ){
-               phip = phi+.55*dp;
-               phim = phi-.55*dp;
-            }
-
-            double val = (getval(theZones[j][i],q)-minval)/(maxval-minval);
-            if(logscale) val = (log(getval(theZones[j][i],q))/log(10.)-minval)/(maxval-minval);
-            if( val > 1.0 ) val = 1.0;
-            if( val < 0.0 ) val = 0.0;
-            //double u = getval( theZones[j][i] , 2 );
-            //if( uMax < u ) uMax = u;
-
-            float rrr,ggg,bbb;
-            get_rgb( val , &rrr , &ggg , &bbb , cmap );
-
-            //if( (!dim3d || (sin(phi)>0 || cos(phi+.25)<0.0)) && dim3d !=2 ){
-            if( dp < 1.5 && (!dim3d || (sin(phi)>0 && cos(phi)>0.0)) && dim3d !=2 ){
-               if( !draw_border_now ){ 
-                  glColor3f( rrr , ggg , bbb );
-                  glBegin(GL_POLYGON);
-               }else{
-                  glLineWidth(3.0f);
-                  glColor3f(0.0,0.0,0.0);
-                  glBegin(GL_LINE_LOOP);
-               }
-
-               double z0 = 0.0;
-               if( dim3d ) z0 = z_kph[Nz-1]/rescale;
-     
-               double c0 = rm*cos(phim);
-               double c1 = rm*sin(phim);
-               glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
-
-               c0 = rp*cos(phim);
-               c1 = rp*sin(phim);
-               glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
-
-               c0 = rp*cos(phi)/cos(.5*dp);
-               c1 = rp*sin(phi)/cos(.5*dp);
-               glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
-
-               c0 = rp*cos(phip);
-               c1 = rp*sin(phip);
-               glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
-
-               c0 = rm*cos(phip);
-               c1 = rm*sin(phip);
-               glVertex3f( c0-xoff, c1-yoff, camdist-zoff+z0 );
-
-               glEnd();
-            }
-         }
-         if( dim3d ){
-            int k;
-            for( k=0 ; k<Nz ; ++k ){
-               int jk;
-               if(ZRORDER)
-                  jk = k*Nr+j;
-               else
-                  jk = j*Nz+k;
-               double rp = r_jph[j]/rescale;
-               double rm = r_jph[j-1]/rescale;
-               double zp = z_kph[k]/rescale;
-               double zm = z_kph[k-1]/rescale;
-
-               double phi = 0.0;//rzZones[jk][Nq];
-
-            double val = (getval(rzZones[jk],q)-minval)/(maxval-minval);
-            if(logscale) val = (log(getval(rzZones[jk],q))/log(10.)-minval)/(maxval-minval);
-            if( val > 1.0 ) val = 1.0;
-            if( val < 0.0 ) val = 0.0;
-            float rrr,ggg,bbb;
-            get_rgb( val , &rrr , &ggg , &bbb , cmap );
-               if( !draw_border_now ){ 
-                  glColor3f( rrr , ggg , bbb );
-                  glBegin(GL_POLYGON);
-               }else{
-                  glLineWidth(2.0f);
-                  glColor3f(0.0,0.0,0.0);
-                  glBegin(GL_LINE_LOOP);
-               } 
-                  
-                  glVertex3f( rp*cos(phi) - xoff , rp*sin(phi) - yoff + zoff, zp );
-                  glVertex3f( rm*cos(phi) - xoff , rm*sin(phi) - yoff + zoff, zp );
-                  glVertex3f( rm*cos(phi) - xoff , rm*sin(phi) - yoff + zoff, zm );
-                  glVertex3f( rp*cos(phi) - xoff , rp*sin(phi) - yoff + zoff, zm );
-                  glEnd();
-            }
-            if( draw_border_now || dim3d == 1 ){
-               glLineWidth(2.0f);
-               glColor3f(0.0,0.0,0.0);
-               glBegin(GL_LINE_LOOP);
-
-               double rp = r_jph[Nr-1]/rescale;
-               //double rm =-r_jph[Nr-1]/rescale;
-               double rm = r_jph[-1]/rescale;
-               double zp = z_kph[Nz-1]/rescale;
-               double zm = z_kph[  -1]/rescale;
-
-               glVertex3f( rp-xoff , -yoff+zoff , zp );
-               glVertex3f( rm-xoff , -yoff+zoff , zp );
-               glVertex3f( rm-xoff , -yoff+zoff , zm );
-               glVertex3f( rp-xoff , -yoff+zoff , zm );
-               glEnd();
-            }
-         }
-      }
+       if( draw_spiral )
+          drawSpiral(RotationAngleX, RotationAngleY, RotationAngleZ, camdist,
+                        xoff, yoff, zoff);
    }
 
+   if( draw_t )
+       drawText(RotationAngleX, RotationAngleY, RotationAngleZ, camdist,
+                        xoff, yoff, zoff);
 
-   if( draw_bar ){
-      double xb = 0.6;
-      double hb = 1.0;
-      double wb = 0.02;
-      int Nb = 1000;
-      double dy = hb/(double)Nb;
-      int k;
-      for( k=0 ; k<Nb ; ++k ){
-         double y = (double)k*dy - .5*hb;
-         double val = (double)k/(double)Nb;
-         float rrr,ggg,bbb;
-         get_rgb( val , &rrr , &ggg , &bbb , cmap );
-         glLineWidth(0.0f);
-         glColor3f( rrr , ggg , bbb );
-         glBegin(GL_POLYGON);
-         glVertex3f( xb    , y    , camdist + .001 ); 
-         glVertex3f( xb+wb , y    , camdist + .001 ); 
-         glVertex3f( xb+wb , y+dy , camdist + .001 ); 
-         glVertex3f( xb    , y+dy , camdist + .001 ); 
-         glEnd();
-      }
-      int Nv = 8;
-      for( k=0 ; k<Nv ; ++k ){
-         double y = (double)k*hb/(double)(Nv-1) - .5*hb;
-         double val = (double)k/(double)(Nv-1)*(maxval-minval) + minval;
-         char valname[256];
-         sprintf(valname,"%+.2e",val);
-         glLineWidth(1.0f);
-         glColor3f(0.0,0.0,0.0);
-         glBegin(GL_LINE_LOOP);
-         glVertex3f( xb    , y , camdist + .0011 );
-         glVertex3f( xb+wb , y , camdist + .0011 );
-         glEnd();
-         glutPrint( xb+1.5*wb , y-.007 , camdist + .001 ,glutFonts[6] , valname , 0.0f, 0.0f , 0.0f , 0.5f );
-      }
-   } 
+   if( help_screen )
+       drawHelp(RotationAngleX, RotationAngleY, RotationAngleZ, camdist,
+                        xoff, yoff, zoff);
 
-   if( draw_planet ){
-      double eps = 0.01;
-      int p;
-      for( p=0 ; p<Npl ; ++p ){
-         double r   = thePlanets[p][0]/rescale;
-         double phi = thePlanets[p][1];
-         if( t_off && !p_off ) phi -= t;
-         if( p_off ) phi -= thePlanets[1][1];
-         glColor3f(0.0,0.0,0.0);
-         glLineWidth(2.0);
-         glBegin(GL_LINE_LOOP);
-         glVertex3f( r*cos(phi)-xoff+eps , r*sin(phi)-yoff+eps , camdist+.001 );
-         glVertex3f( r*cos(phi)-xoff-eps , r*sin(phi)-yoff+eps , camdist+.001 );
-         glVertex3f( r*cos(phi)-xoff-eps , r*sin(phi)-yoff-eps , camdist+.001 );
-         glVertex3f( r*cos(phi)-xoff+eps , r*sin(phi)-yoff-eps , camdist+.001 );
-         glEnd();
-      }
-   }
-
-   if( draw_spiral ){
-
-      double rp   = 5.0;//thePlanets[1][0];
-      double Mach = 3.65;
-      double p0 = 1.2;
-      double dr = .07;
-      int Nr = 200;
-      double Rmin = 0.5;
-      double Rmax = 1.1;
-      int k;
-      glLineWidth(3.0f);
-      glColor3f(0.0,0.0,0.0);
-      //glColor3f(1.0,1.0,1.0);
-      glBegin(GL_LINE_LOOP);
-      for( k=0 ; k<Nr ; ++k ){
-         //double phi0 = ((double)k+.5)/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
-         double x = ((double)k+.5)/(double)Nr;
-         double r = .001*pow(.5/.001,x);
-         //double r = .5*pow(1.5/.5,x);
-         double phi0 = p0-log(r/0.001)*Mach;//(3.-2.*sqrt(1./r)-r)*5.;
-         //double phi0 = (3.-2.*sqrt(1./r)-r)*20.;
-         //if( r<1. ) phi0 = -phi0;
-
-//         double x0 = rp + dr*cos(phi0);
-//         double y0 = dr*sin(phi0);
-  
-         double phi = phi0;
-//         double r = rp;       
-
-//         double phi = atan2(y0,x0);
-//         double phi = ((double)k+.5)/(double)Nr*2.*M_PI*9.32 + 4.*M_PI;
-//         double r   = sqrt(x0*x0+y0*y0);
-//         double r = pow(phi/10.,-2.);
-//         double r   = 2./(1.+sin(phi));//1.0;//((double)k+0.5)/(double)Nr*(Rmax-Rmin) + Rmin;
-//         if( r<1. ) phi = -phi;
-         r /= rescale;
-         
-         glVertex3f( r*cos(phi)-xoff , r*sin(phi)-yoff , camdist + .0011 );
-         if( k%2==1 ){
-            glEnd();
-            glBegin(GL_LINE_LOOP);
-         }
-      }
-      glEnd();
-
-
-/*
-      e += 0.01;
-      glBegin(GL_LINE_LOOP);
-      for( k=0 ; k<Nr ; ++k ){
-         double phi0 = ((double)k-.5)/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
-         double x0 = 1.+e*cos(phi0);
-         double y0 = e*sin(phi0);
-         
-         double phi = atan2(y0,x0);
-         double r   = sqrt(x0*x0+y0*y0);
-//         double phi = (double)k/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
-//         double r   = 2./(1.+sin(phi));//1.0;//((double)k+0.5)/(double)Nr*(Rmax-Rmin) + Rmin;
-//         if( r<1. ) phi = -phi;
-         r /= rescale;
-         
-         glVertex3f( r*cos(phi)-xoff , r*sin(phi)-yoff , camdist + .0011 );
-         if( k%2==1 ){
-            glEnd();
-            glBegin(GL_LINE_LOOP);
-         }
-      }
-      glEnd();
-*/
-   }
-   }
-
-   if( draw_t ){
-      char tprint[256];
-      sprintf(tprint,"t = %.2e",t/2./M_PI);
-      glutPrint( -.6 , .5 , camdist + .001 , glutFonts[6] , tprint , 0.0f, 0.0f , 0.0f , 0.5f );
-  //    sprintf(tprint,"uMax = %.1f",uMax);
-  //    glutPrint( -.8 , .4 , camdist + .001 , glutFonts[6] , tprint , 0.0f, 0.0f , 0.0f , 0.5f );
-   }
-   if( help_screen ){
-      int NLines = 9;
-      double dy = -.04;
-      char help[NLines][256];
-      sprintf(help[0],"Help Display:");
-      sprintf(help[1],"b - Toggle Colorbar");
-      sprintf(help[2],"c - Change Colormap");
-      sprintf(help[3],"f - Toggle Max/Min Floors");
-      sprintf(help[4],"p - Toggle Planet Data");
-      sprintf(help[5],"1-9 - Choose Primitive Variable to Display");
-      sprintf(help[6],"wasd - Move Camera");
-      sprintf(help[7],"z/x - Zoom in/out");
-      sprintf(help[8],"h - Toggle Help Screen");
-      int i;
-      for( i=0 ; i<NLines ; ++i ){
-         glutPrint( -.8 , i*dy , camdist + .001 , glutFonts[6] , help[i] , 0.0f, 0.0f , 0.0f , 0.5f );
-      }
-   } 
-
-   if( CommandMode ){
+   if( CommandMode )
+   {
       TakeScreenshot("out.ppm");
       exit(1);
    }
@@ -694,11 +1097,13 @@ void keyPressed(unsigned char key, int x, int y)
    if( key >= (int)'0' && key < (int)'1'+Nq ) valq = (int)key-(int)'1';
    if( key == 'b' ) draw_bar = !draw_bar;
    if( key == 'd' ) {++dim3d; if(dim3d==3) dim3d=0;}
-   if( key == 'f' ) floors = !floors;
+   if( key == 'f' ){
+       floors = (floors+1)%3;
+       print_vals = 0;
+   }
    if( key == 'g' ) draw_border = !draw_border;
    if( key == 'h' ) help_screen = !help_screen;
    if( key == 'l' ) logscale = !logscale;
-   if( key == 'r' ) reflect = !reflect;
    if( key == 's' ) draw_scale = !draw_scale;
    if( key == 't' ) draw_t = !draw_t;
    if( key == 'u' ) draw_1d = !draw_1d;
@@ -731,6 +1136,72 @@ void keyPressed(unsigned char key, int x, int y)
    if( key == 'p' ) draw_planet = !draw_planet;
    if( key == 's' ) draw_spiral = !draw_spiral;
    if( key == 'Z' ) fix_zero = !fix_zero;
+   if( key == 'q' )
+   {
+       layer++;
+       if(layer > 8)
+          layer = 0;
+
+       if(layer == 0)
+           KK = 0;
+       else if(layer == 1)
+           KK = Nz/8;
+       else if(layer == 2)
+           KK = Nz/4;
+       else if(layer == 3)
+           KK = (3*Nz)/8;
+       else if(layer == 4)
+           KK = Nz/2;
+       else if(layer == 5)
+           KK = (5*Nz)/8;
+       else if(layer == 6)
+           KK = (3*Nz)/4;
+       else if(layer == 7)
+           KK = (7*Nz)/8;
+       else
+           KK = Nz - 1;
+       loadSliceZ(filename, KK);
+       loadDiagnostics(filename, KK);
+   }
+   if( key == ',')
+   {
+       currentFile--;
+       while(currentFile < 0)
+           currentFile += nfiles;
+       loadFile(currentFile, KK);
+   }
+   if( key == '.')
+   {
+       currentFile++;
+       while(currentFile >= nfiles)
+           currentFile -= nfiles;
+       loadFile(currentFile, KK);
+   }
+   if( key == '<')
+   {
+       currentFile -= 5;
+       while(currentFile < 0)
+           currentFile += nfiles;
+       loadFile(currentFile, KK);
+   }
+   if( key == '>')
+   {
+       currentFile += 5;
+       while(currentFile >= nfiles)
+           currentFile -= nfiles;
+       loadFile(currentFile, KK);
+   }
+   if(key == '/')
+   {
+       currentFile = 0;
+       loadFile(currentFile, KK);
+   }
+   if(key == 'm')
+   {
+       val_ceil = maxval;
+       val_floor = minval;
+   }
+
    glutPostRedisplay();
 }
 
@@ -743,22 +1214,60 @@ void specialKeyPressed(int key, int x, int y){
    if (key == GLUT_KEY_DOWN ) offy -= .1;
 }
 
-int main(int argc, char **argv) 
+void freeData()
 {
-   if( argc < 2 ){
-      printf("Please specify the input file.\n");
-      exit(1);
+    int p, i, j;
+
+   for( p=0 ; p<Npl ; ++p ){
+      free(thePlanets[p]);
    }
-   char filename[256];
-   if( argv[1] ){
-      strcpy( filename , argv[1] );
+   free(thePlanets);
+
+   for( j=0 ; j<Nr ; ++j ){
+      for( i=0 ; i<Np[j] ; ++i ){
+         free( theZones[j][i] );
+      }
+      free( theZones[j] );
    }
-   CommandMode=0;
-   if( argc>2 ){ CommandMode=1; FullScreenMode=1; }
+   for( j=0 ; j<Nr*Nz ; ++j ){
+      free( rzZones[j] );
+   }
+   free( rzZones );
+
+   free( theZones );
+   for( j=0 ; j<Nr ; ++j ){
+      free( p_iph[j] );
+      free( theRadialData[j] );
+   }
+   free( p_iph );
+   if(theRadialData != NULL)
+   {
+       for( j=0 ; j<Nr ; ++j ){
+          free( theRadialData[j] );
+       }
+       free( theRadialData );
+   }
+   free( Np );
+   r_jph--;
+   free( r_jph );
+   z_kph--;
+   free( z_kph );
+
+   free(Np_All);
+   free(Tindex_All);
+   free(Id_phi0);
+}
+
+void loadGrid(char *filename)
+{
    char group1[256];
    char group2[256];
+   char group3[256];
+   char group4[256];
    strcpy( group1 , "Grid" );
    strcpy( group2 , "Data" );
+   strcpy( group3 , "Pars" );
+   strcpy( group4 , "Opts" );
 
    hsize_t dims[3];
    
@@ -771,15 +1280,33 @@ int main(int argc, char **argv)
    Np = (int *) malloc( Nr*sizeof(int) );
    r_jph = (double *) malloc( (Nr+1)*sizeof(double) );
    z_kph = (double *) malloc( (Nz+1)*sizeof(double) );
-   int Tindex[Nr];
    
    printf("t = %.2f, Nr = %d Nz = %d\n",t,Nr,Nz);
 
    readSimple( filename , group1 , (char *)"r_jph" , r_jph , H5T_NATIVE_DOUBLE );
    readSimple( filename , group1 , (char *)"z_kph" , z_kph , H5T_NATIVE_DOUBLE );
+   r_jph++;
+   z_kph++;
 
-   //midz = Nz/2;
-   midz = Nz-1;
+   readSimple( filename , group3 , (char *)"Phi_Max", &phimax, 
+                    H5T_NATIVE_DOUBLE);
+
+   char buf[256];
+
+   readString(filename, group4, (char *)"GEOMETRY", buf, 256);
+   if(strlen(buf) == 0)
+       strcpy(buf, "cylindrical");
+
+   printf("Geometry is: %s\n", buf);
+   printf("%lu %d %d\n", strlen(buf), strcmp(buf,"cartesian"), 
+                            strcmp(buf,"cylindrical"));
+
+   if(strcmp(buf, "cylindrical") == 0)
+      geometry = 1;
+   else if(strcmp(buf, "spherical") == 0)
+      geometry = 2;
+   else
+      geometry = 0;
 
    int start[2]    = {0,0};
    int loc_size[2] = {Nz,Nr};
@@ -790,17 +1317,102 @@ int main(int argc, char **argv)
        glo_size[0] = Nr; glo_size[1] = Nz;
    }
 
-   int Np_All[Nr*Nz];
-   int Tindex_All[Nr*Nz];
-   int Id_phi0[Nr*Nz];
+   Np_All = (int *) malloc(Nr*Nz * sizeof(int));
+   Tindex_All = (int *) malloc(Nr*Nz * sizeof(int));
+   Id_phi0 = (int *) malloc(Nr*Nz * sizeof(int));
 
    readPatch( filename , group1 , (char *)"Np"      , Np_All     , H5T_NATIVE_INT , 2 , start , loc_size , glo_size);
    readPatch( filename , group1 , (char *)"Index"   , Tindex_All , H5T_NATIVE_INT , 2 , start , loc_size , glo_size);
    readPatch( filename , group1 , (char *)"Id_phi0" , Id_phi0    , H5T_NATIVE_INT , 2 , start , loc_size , glo_size);
 
-   int i,j,k;
+
+   getH5dims( filename , group2 , (char *)"Cells" , dims );
+   Nc = dims[0];
+   Nq = dims[1]-1;
+   printf("Nc = %d Nr = %d Nq=%d\n",Nc,Nr,Nq);
+}
+
+void loadPlanets(char *filename)
+{
+   char group2[256];
+   strcpy( group2 , "Data" );
+
+   hsize_t dims[3];
+   int p;
+
+   if(thePlanets == NULL)
+   {
+       getH5dims( filename , group2 , (char *)"Planets" , dims );
+       Npl = dims[0];
+       NpDat = dims[1];
+       printf("Npl=%d NpDat=%d\n",Npl, NpDat);
+
+       thePlanets = (double **) malloc( Npl*sizeof(double *) );
+       for( p=0 ; p<Npl ; ++p ){ 
+          thePlanets[p] = (double *) malloc( 2*sizeof(double) );
+       }
+   }
+   
+   int start[2]    = {0,0};
+   int loc_size[2] = {1,NpDat};
+   int glo_size[2] = {Npl,NpDat};
+   for( p=0 ; p<Npl ; ++p ){
+      start[0] = p;
+      double thisPlanet[6];
+      readPatch( filename , group2 , (char *)"Planets" , thisPlanet , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
+      int dp;
+      printf("Planet = ");
+      for( dp=0 ; dp<NpDat ; ++dp ) printf("%e ",thisPlanet[dp]);
+      printf("\n");
+      thePlanets[p][0] = thisPlanet[3];
+      thePlanets[p][1] = thisPlanet[4];
+   }
+}
+
+void loadFile(int fileIndex, int zslice)
+{
+    printf("File %d of %d\n", fileIndex+1, nfiles);
+    strcpy(filename, filenameList[fileIndex]);
+    loadPlanets(filenameList[fileIndex]);
+    loadSliceZ(filenameList[fileIndex], zslice);
+    loadSlicePhi(filenameList[fileIndex]);
+    loadDiagnostics(filenameList[fileIndex], zslice);
+}
+
+void loadSliceZ(char *filename, int k)
+{
+   char group1[256];
+   char group2[256];
+   strcpy( group1 , "Grid" );
+   strcpy( group2 , "Data" );
+
+   int Tindex[Nr];
+
+   printf("Loading Z slice...\n");
+
+   printf("Zones:");
+
+   //Free arrays if already allocated
+   int i,j;
+   if(theZones != NULL)
+   {
+       for( j=0 ; j<Nr ; ++j )
+       {
+           for( i=0 ; i<Np[j] ; ++i )
+               free(theZones[j][i]);
+           free(theZones[j]);
+       }
+       free(theZones);
+   }
+   if(p_iph != NULL)
+   {
+       for( j=0 ; j<Nr ; ++j )
+           free(p_iph[j]);
+       free(p_iph);
+   }
+
+   //Grab zone indices
    for( j=0 ; j<Nr ; ++j ){
-      k = midz;
       int jk = k*Nr+j;
       if(!ZRORDER)
           jk = j*Nz+k;
@@ -808,15 +1420,7 @@ int main(int argc, char **argv)
       Tindex[j] = Tindex_All[jk];
    }
 
-   getH5dims( filename , group2 , (char *)"Cells" , dims );
-   int Nc = dims[0];
-   Nq = dims[1]-1;
-
-   getH5dims( filename , group2 , (char *)"Planets" , dims );
-   Npl = dims[0];
-   int NpDat = dims[1];
-   printf("Nc = %d Nr = %d Nq=%d Npl=%d NpDat=%d\n",Nc,Nr,Nq,Npl,NpDat);
-
+   //Allocate arrays
    theZones = (double ***) malloc( Nr*sizeof(double **) );
    int q;
    for( j=0 ; j<Nr ; ++j ){
@@ -826,32 +1430,18 @@ int main(int argc, char **argv)
       }
    }
 
-   rzZones = (double **) malloc( Nr*Nz*sizeof(double *) );
-   for( j=0 ; j<Nr*Nz ; ++j ){
-      rzZones[j] = (double *) malloc( (Nq+1)*sizeof( double ) );
-   }
-
    p_iph = (double **) malloc( Nr*sizeof( double * ) );
    for( j=0 ; j<Nr ; ++j ){
       p_iph[j] = (double *) malloc( Np[j]*sizeof( double ) );
    }
-   thePlanets = (double **) malloc( Npl*sizeof(double *) );
-   int p;
-   for( p=0 ; p<Npl ; ++p ){ 
-      thePlanets[p] = (double *) malloc( 2*sizeof(double) );
-   }
 
-   getH5dims( filename , group2 , (char *)"Radial_Diagnostics" , dims );
-   N1d = dims[1];
-   theRadialData = (double **) malloc( Nr*sizeof(double *) );
-   for( j=0 ; j<Nr ; ++j ){
-      theRadialData[j] = (double *) malloc( N1d*sizeof(double) );
-   }
+   printf("  Allocated,");
 
-   printf("Zones Allocated\n");
-   loc_size[1] = Nq+1;
-   glo_size[0] = Nc;
-   glo_size[1] = Nq+1;
+   //Load data
+
+   int start[2]    = {0,0};
+   int loc_size[2] = {0,Nq+1};
+   int glo_size[2] = {Nc,Nq+1};
 
    for( j=0 ; j<Nr ; ++j ){
       loc_size[0] = Np[j];
@@ -866,9 +1456,37 @@ int main(int argc, char **argv)
          }
       }
    }
-   printf("theZones built\n");
-/**/
-   loc_size[0] = 1;
+
+   printf("  Initialized.\n");
+}
+
+void loadSlicePhi(char *filename)
+{
+    printf("Loading Phi slice...\n");
+    
+    int j,k;
+    char group2[256];
+    strcpy( group2 , "Data" );
+
+    printf("rzZones:");
+
+    if(rzZones != NULL)
+    {
+        for(j=0; j<Nr*Nz; j++)
+            free(rzZones[j]);
+        free(rzZones);
+    }
+
+    rzZones = (double **) malloc( Nr*Nz*sizeof(double *) );
+    for( j=0 ; j<Nr*Nz ; ++j )
+        rzZones[j] = (double *) malloc( (Nq+1)*sizeof( double ) );
+
+    printf("  Allocated,");
+
+    int glo_size[2] = {Nc, Nq+1};
+    int loc_size[2] = {1, Nq+1};
+    int start[2] = {0, 0};
+   
    if(ZRORDER)
    {
        for( k=0 ; k<Nz ; ++k ){
@@ -889,41 +1507,91 @@ int main(int argc, char **argv)
           }
        }
    }
-/**/
-   printf("rzZones built\n");
 
-   start[1] = 0;
-   loc_size[0] = 1;
-   glo_size[0] = Npl;
-   loc_size[1] = NpDat;
-   glo_size[1] = NpDat;
-   for( p=0 ; p<Npl ; ++p ){
-      start[0] = p;
-      double thisPlanet[6];
-      readPatch( filename , group2 , (char *)"Planets" , thisPlanet , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
-      int dp;
-      printf("Planet = ");
-      for( dp=0 ; dp<NpDat ; ++dp ) printf("%e ",thisPlanet[dp]);
-      printf("\n");
-      thePlanets[p][0] = thisPlanet[3];
-      thePlanets[p][1] = thisPlanet[4];
+   printf("  Initialized.\n");
+}
+
+void loadDiagnostics(char *filename, int k)
+{
+    int j;
+    hsize_t dims[3];
+    char group2[256];
+    strcpy( group2 , "Data" );
+
+    printf("Diagnostics:");
+
+   if(DIAGMODE == 0)
+   {
+       getH5dims( filename , group2 , (char *)"Radial_Diagnostics" , dims );
+       N1d = dims[1];
+   }
+   else if(DIAGMODE == 1)
+   {
+       //Diagnostics are stored in an array Nz x Nr x Ndiag
+       getH5dims( filename , group2 , (char *)"Diagnostics" , dims );
+       N1d = dims[2];
    }
 
-   loc_size[0] = 1;
-   glo_size[0] = Nr;
-   loc_size[1] = N1d;
-   glo_size[1] = N1d;
-   start[1] = 0;
-   for( j=0 ; j<Nr ; ++j ){
-      start[0] = j;
-      double thisQ[N1d];
-      readPatch( filename , group2 , (char *)"Radial_Diagnostics" , thisQ , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
-      int nq;
-      for( nq = 0 ; nq < N1d ; ++nq ) theRadialData[j][nq] = thisQ[nq];
+   theRadialData = (double **) malloc( Nr*sizeof(double *) );
+   for( j=0 ; j<Nr ; ++j )
+      theRadialData[j] = (double *) malloc( N1d*sizeof(double) );
+   
+    printf("  Allocated,");
+
+   if(DIAGMODE == 0)
+   {
+       int loc_size[2] = {1, N1d};
+       int glo_size[2] = {Nr, N1d};
+       int start[2] = {0, 0};
+       for( j=0 ; j<Nr ; ++j ){
+          start[0] = j;
+          double thisQ[N1d];
+          readPatch( filename , group2 , (char *)"Radial_Diagnostics" , thisQ , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
+          int nq;
+          for( nq = 0 ; nq < N1d ; ++nq ) theRadialData[j][nq] = thisQ[nq];
+       }
+   }
+   else if(DIAGMODE == 1)
+   {
+       int loc_size3[3] = {1,1,N1d};
+       int glo_size3[3] = {Nz,Nr,N1d};
+       int start3[3] = {k,0,0};
+       for( j=0 ; j<Nr ; ++j ){
+          start3[1] = j;
+          double thisQ[N1d];
+          readPatch( filename , group2 , (char *)"Diagnostics" , thisQ , H5T_NATIVE_DOUBLE , 3 , start3 , loc_size3 , glo_size3 );
+          int nq;
+          for( nq = 0 ; nq < N1d ; ++nq ) theRadialData[j][nq] = thisQ[nq];
+       }
    }
 
-   r_jph++;
-   z_kph++;
+    printf("  Initialized.\n");
+}
+
+int main(int argc, char *argv[]) 
+{
+   if( argc < 2 ){
+      printf("Please specify the input file.\n");
+      exit(1);
+   }
+
+    filenameList = &(argv[1]);
+    nfiles = argc - 1;
+    currentFile = 0;
+
+    strcpy( filename , filenameList[0] );
+   CommandMode=0;
+   //if( argc>2 ){ CommandMode=1; FullScreenMode=1; }
+
+   loadGrid(filename);
+   loadPlanets(filename);
+
+   KK = Nz/2;
+   layer = 4;
+   loadSliceZ(filename, KK);
+   loadSlicePhi(filename);
+   loadDiagnostics(filename, KK);
+   
 
    //double RR = r_iph[0][Nr[0]-1];
    //double r_max = .98*RR;
@@ -958,36 +1626,10 @@ int main(int argc, char **argv)
    glutSpecialFunc(&specialKeyPressed);
    InitGL(WindowWidth, WindowHeight);
    glutMainLoop();  
+//////////////////////////////
 
-   for( p=0 ; p<Npl ; ++p ){
-      free(thePlanets[p]);
-   }
-   free(thePlanets);
+   freeData();
 
-   for( j=0 ; j<Nr ; ++j ){
-      for( i=0 ; i<Np[j] ; ++i ){
-         free( theZones[j][i] );
-      }
-      free( theZones[j] );
-   }
-   for( j=0 ; j<Nr*Nz ; ++j ){
-      free( rzZones[j] );
-   }
-   free( rzZones );
-
-   free( theZones );
-   for( j=0 ; j<Nr ; ++j ){
-      free( p_iph[j] );
-      free( theRadialData[j] );
-   }
-   free( p_iph );
-   free( theRadialData );
-   free( Np );
-   r_jph--;
-   free( r_jph );
-   z_kph--;
-   free( z_kph );
-
-   return (0);
-
+   return 0;
 }
+

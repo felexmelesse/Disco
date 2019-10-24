@@ -1,7 +1,7 @@
 
 #include "paul.h"
 
-double get_moment_arm( double * , double * );
+double get_centroid( double , double , int);
 double get_dV( double * , double * );
 
 int num_diagnostics( void );
@@ -9,7 +9,6 @@ void initializePlanets( struct planet * );
 
 void setICparams( struct domain * );
 void setHydroParams( struct domain * );
-void setGeometryParams( struct domain * );
 void setRiemannParams( struct domain * );
 void setGravParams( struct domain * );
 void setPlanetParams( struct domain * );
@@ -20,12 +19,14 @@ void setMetricParams( struct domain * );
 void setFrameParams(struct domain * );
 void setDiagParams( struct domain * );
 void setNoiseParams( struct domain * );
+void setBCParams( struct domain * );
+void setSinkParams( struct domain * );
 
 int get_num_rzFaces( int , int , int );
 
 void setupDomain( struct domain * theDomain ){
 
-   srand(theDomain->rank);
+   srand(314159);
    rand();
 
    int Nr = theDomain->Nr;
@@ -50,22 +51,47 @@ void setupDomain( struct domain * theDomain ){
    int i;
    for( i=0 ; i<Nr*Nz*num_tools ; ++i ) theDomain->theTools.Qrz[i] = 0.0;
 
-   double Pmax = theDomain->theParList.phimax;
-   for( jk=0 ; jk<Nr*Nz ; ++jk ){
-      double p0 = Pmax*(double)rand()/(double)RAND_MAX;
-      double dp = Pmax/(double)Np[jk];
-      for( i=0 ; i<Np[jk] ; ++i ){
-         double phi = p0+dp*(double)i;
-         if( phi > Pmax ) phi -= Pmax;
-         theDomain->theCells[jk][i].piph = phi;
-         theDomain->theCells[jk][i].dphi = dp;
-      }
-   }
+    //Setup independent of node layout: pick the right rand()'s
+    double Pmax = theDomain->phi_max;
+    int j, k;
+
+    //Discard everything from lower (global) z-layers.
+    for(k=theDomain->N0z_glob; k<theDomain->N0z; k++)
+        for(j=0; j<theDomain->Nr_glob; j++)
+            rand();
+
+    for( k=0 ; k<Nz ; ++k )
+    {
+        //Discard randoms from inner (global) annuli
+        for(j=theDomain->N0r_glob; j<theDomain->N0r; j++)
+            rand();
+
+        //DO the work
+        for( j=0 ; j<Nr ; ++j )
+        {
+            jk = k*Nr + j;
+            double p0 = Pmax*(double)rand()/(double)RAND_MAX;
+            double dp = Pmax/(double)Np[jk];
+            for( i=0 ; i<Np[jk] ; ++i )
+            {
+                double phi = p0+dp*(double)i;
+                if( phi > Pmax ) phi -= Pmax;
+                    theDomain->theCells[jk][i].piph = phi;
+                    theDomain->theCells[jk][i].dphi = dp;
+            }
+        }
+        //Discard randoms from outer (global) annuli
+        for(j=theDomain->N0r+Nr; j<theDomain->N0r_glob + theDomain->Nr_glob;
+                j++)
+        {
+            rand();
+        }
+
+    }
 
    theDomain->t       = theDomain->theParList.t_min;
    theDomain->t_init  = theDomain->theParList.t_min;
    theDomain->t_fin   = theDomain->theParList.t_max;
-   theDomain->phi_max = theDomain->theParList.phimax;
 
    theDomain->N_rpt = theDomain->theParList.NumRepts;
    theDomain->N_snp = theDomain->theParList.NumSnaps;
@@ -89,7 +115,6 @@ void setupDomain( struct domain * theDomain ){
 
    setICparams( theDomain );
    setHydroParams( theDomain );
-   setGeometryParams( theDomain );
    setRiemannParams( theDomain );
    setHlldParams( theDomain );
    setOmegaParams( theDomain );
@@ -98,7 +123,8 @@ void setupDomain( struct domain * theDomain ){
    setFrameParams( theDomain );
    setDiagParams( theDomain );
    setNoiseParams( theDomain );
-
+   setBCParams( theDomain );
+   setSinkParams( theDomain );
 }
 
 void initial( double * , double * ); 
@@ -108,9 +134,12 @@ void restart( struct domain * );
 void calc_dp( struct domain * );
 void set_wcell( struct domain * );
 void adjust_gas( struct planet * , double * , double * , double );
+int set_B_flag();
 void set_B_fields( struct domain * );
 void subtract_omega( double * );
 void addNoise(double *prim, double *x);
+void get_centroid_arr(double *, double *, double *);
+void exchangeData(struct domain *, int);
 
 void setupCells( struct domain * theDomain ){
 
@@ -126,13 +155,32 @@ void setupCells( struct domain * theDomain ){
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
    int * Np = theDomain->Np;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int Npl = theDomain->Npl;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
    int atmos = theDomain->theParList.include_atmos;
 
-   for( j=0 ; j<Nr ; ++j ){
-      for( k=0 ; k<Nz ; ++k ){
+   //Null setup for all cells
+   for(k=0; k<Nz; k++){
+      for(j=0; j<Nr; j++){
+         int jk = j+Nr*k;
+         for(i=0; i<Np[jk]; i++){
+            struct cell * c = &(theCells[jk][i]);
+            c->wiph = 0.0; 
+            c->real = 0;
+         }
+      }
+   }
+
+   //Setup real cells.
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
+      double z = get_centroid( z_kph[k], z_kph[k-1], 2);
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
+         double r = get_centroid( r_jph[j], r_jph[j-1], 1);
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);
@@ -141,10 +189,10 @@ void setupCells( struct domain * theDomain ){
             c->wiph = 0.0; 
             double xp[3] = {r_jph[j  ],phip,z_kph[k  ]};
             double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
-            double r = get_moment_arm( xp , xm );
             double dV = get_dV( xp , xm );
             double phi = c->piph-.5*c->dphi;
-            double x[3] = { r , phi , .5*(z_kph[k]+z_kph[k-1])};
+            double x[3] = {r, phi, z};
+
             if( !restart_flag )
             {
                initial( c->prim , x );
@@ -158,16 +206,43 @@ void setupCells( struct domain * theDomain ){
                }
             }
             if(noiseType != 0)
-                addNoise(c->prim, x);            
+                addNoise(c->prim, x);
             prim2cons( c->prim , c->cons , x , dV );
-            cons2prim( c->cons , c->prim , x , dV );
             c->real = 1;
          }    
       }    
    }
 
-   set_wcell( theDomain );
+   if(!restart_flag && set_B_flag() && theDomain->theParList.CT)
+   {
+      // Communicate piph values to ghost zones.
+      exchangeData(theDomain, 0);
+      if( Nz > 1 )
+         exchangeData(theDomain, 1);
 
+      set_B_fields(theDomain);
+   }
+
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
+      double z = get_centroid( z_kph[k], z_kph[k-1], 2);
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
+         double r = get_centroid( r_jph[j], r_jph[j-1], 1);
+         int jk = j+Nr*k;
+         for( i=0 ; i<Np[jk] ; ++i ){
+            struct cell * c = &(theCells[jk][i]);
+            double phip = c->piph;
+            double phim = phip-c->dphi;
+            double xp[3] = {r_jph[j  ],phip,z_kph[k  ]};
+            double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
+            double dV = get_dV( xp , xm );
+            double phi = c->piph-.5*c->dphi;
+            double x[3] = {r, phi, z};
+            cons2prim( c->cons , c->prim , x , dV );
+         }
+      }
+   }
+
+   set_wcell( theDomain );
 }
 
 
@@ -229,8 +304,10 @@ void check_dt( struct domain * theDomain , double * dt ){
       if( latest ){ check = 1; fclose(latest); remove("latest");}
    }
 
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , &final , 1 , MPI_INT , MPI_SUM , theDomain->theComm );
    MPI_Allreduce( MPI_IN_PLACE , &check , 1 , MPI_INT , MPI_SUM , theDomain->theComm );
+#endif
    if( final ) theDomain->final_step = 1;
    if( check ) theDomain->check_plz = 1;
 

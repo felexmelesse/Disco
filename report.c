@@ -4,6 +4,7 @@
 void planetaryForce( struct planet * , double , double , double , double * , double * , double * , int );
 
 double get_dV( double * , double * );
+double get_centroid( double , double , int);
 
 void report( struct domain * theDomain ){
 
@@ -12,11 +13,14 @@ void report( struct domain * theDomain ){
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
    int * Np = theDomain->Np;
-   int Ng = theDomain->Ng;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int rank = theDomain->rank;
-   int * dim_rank = theDomain->dim_rank;
-   int * dim_size = theDomain->dim_size;
+#if USE_MPI
    MPI_Comm grid_comm = theDomain->theComm;
+#endif
 
    double gamma_law = theDomain->theParList.Adiabatic_Index;
 
@@ -29,14 +33,10 @@ void report( struct domain * theDomain ){
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
 
-   int jmin = Ng;
-   int jmax = Nr-Ng;
-   if( dim_rank[0]==0             ) jmin = 0;
-   if( dim_rank[0]==dim_size[0]-1 ) jmax = Nr;
-   int kmin = Ng;
-   int kmax = Nz-Ng;
-   if( dim_rank[1]==0             ) kmin = 0;
-   if( dim_rank[1]==dim_size[1]-1 ) kmax = Nz;
+   int jmin = NgRa;
+   int jmax = Nr-NgRb;
+   int kmin = NgZa;
+   int kmax = Nz-NgZb;
 
    int j,k,i;
    double L1_isen = 0.0;
@@ -68,7 +68,6 @@ void report( struct domain * theDomain ){
    //for( j=0 ; j<10 ; ++j ){ T_cut[j]=0.;  P_cut[j]=0.; }
 
    for( j=jmin ; j<jmax ; ++j ){
-      double r = .5*(r_jph[j]+r_jph[j-1]);
       double rho0 = 1.0;//pow( r , -1.5 );
       double rho_avg = 0.0;
       double Vol_avg = 0.0;
@@ -85,6 +84,7 @@ void report( struct domain * theDomain ){
             double xp[3] = {r_jph[j]  ,phip,z_kph[k]  };
             double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
             double dV = get_dV( xp , xm );
+            double r = get_centroid( xp[0] , xm[0], 1 );
 
             PsiR += rho*dV*cos(phi);
             PsiI += rho*dV*sin(phi);
@@ -92,7 +92,7 @@ void report( struct domain * theDomain ){
             L1_isen += fabs(Pp/pow(rho,gamma_law)-1.)*dV;
             L1_rho  += fabs(rho/rho0-1.)*dV;
             L1_P    += fabs(Pp/pow(rho,5./3.)/0.01-1.)*dV;
-            if( NUM_Q > BRR ){
+            if( NUM_C > BZZ ){
                double Br = c->prim[BRR];
                double Bp = c->prim[BPP];
                double Bz = c->prim[BZZ];
@@ -153,6 +153,7 @@ void report( struct domain * theDomain ){
       if( rhoavg_min > rho_avg/rho0 ) rhoavg_min = rho_avg/rho0;
    }
 
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , &L1_isen , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    MPI_Allreduce( MPI_IN_PLACE , &L1_rho  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    MPI_Allreduce( MPI_IN_PLACE , &L1_P    , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
@@ -177,6 +178,7 @@ void report( struct domain * theDomain ){
 
 //   MPI_Allreduce( MPI_IN_PLACE , T_cut  , 10 , MPI_DOUBLE , MPI_SUM , grid_comm );
 //   MPI_Allreduce( MPI_IN_PLACE , P_cut  , 10 , MPI_DOUBLE , MPI_SUM , grid_comm );
+#endif
 
    L1_isen /= Vol;
    L1_rho  /= Vol;
@@ -190,7 +192,7 @@ void report( struct domain * theDomain ){
 
    if( rank==0 ){
       FILE * rFile = fopen("report.dat","a");
-      fprintf(rFile,"%e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n",
+      fprintf(rFile,"%le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le\n",
                 t,Torque,Power,Fr,rho_min,rhoavg_min,PsiR,PsiI,Mass,Mdot,S_R,
                 L1_rho,L1_isen,L1_B,Br2,aM,bM);
       //fprintf(rFile,"%e %e %e ",t,Torque,Power);

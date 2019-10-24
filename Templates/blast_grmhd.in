@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = blast_grmhd
 HYDRO    = grmhd2
+GEOMETRY = cylindrical
 BOUNDARY = fixed
 OUTPUT   = h5out
 RESTART  = h5in

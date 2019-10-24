@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = torus_fm_grmhd
 HYDRO    = greuler
+GEOMETRY = cylindrical
 BOUNDARY = fixrreflz
 OUTPUT   = h5out
 RESTART  = h5in

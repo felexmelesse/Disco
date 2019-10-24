@@ -42,6 +42,7 @@ void initializePlanets( struct planet * thePlanets ){
    thePlanets[0].r     = R*mu; 
    thePlanets[0].phi   = M_PI; 
    thePlanets[0].eps   = 0.0;
+   thePlanets[0].type  = PLPOINTMASS;
 
    thePlanets[1].M     = mu; 
    thePlanets[1].vr    = 0.0; 
@@ -49,6 +50,7 @@ void initializePlanets( struct planet * thePlanets ){
    thePlanets[1].r     = R*(1.0-mu); 
    thePlanets[1].phi   = 0.0; 
    thePlanets[1].eps   = 0.5/Mach;
+   thePlanets[1].type  = PLPOINTMASS;
 
 }
 

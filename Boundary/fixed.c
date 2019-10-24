@@ -15,7 +15,8 @@ void boundary_trans( struct domain * theDomain , int dim ){
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
    int * Np = theDomain->Np;
-   int Ng = theDomain->Ng;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
    int * dim_rank = theDomain->dim_rank;
@@ -23,14 +24,15 @@ void boundary_trans( struct domain * theDomain , int dim ){
 
    if( dim==1 && dim_rank[0] == dim_size[0]-1 ){
       int j;
-      for( j=Nr-1 ; j>Nr-1-Ng ; --j ){
+      for( j=Nr-1 ; j>Nr-1-NgRb ; --j ){
          int i,k;
          for( k=0 ; k<Nz ; ++k ){
             int jk = j+Nr*k;
             for( i=0 ; i<Np[jk] ; ++i ){
                struct cell * c = &(theCells[jk][i]);
                double phi = c->piph - .5*c->dphi;
-               double x[3] = { .5*(r_jph[j]+r_jph[j-1]) , phi , .5*(z_kph[k]+z_kph[k-1]) };
+               double x[3] = { .5*(r_jph[j]+r_jph[j-1]) , phi , 
+                                .5*(z_kph[k]+z_kph[k-1]) };
                initial( c->prim , x );
                subtract_omega( c->prim );
             }
@@ -39,14 +41,15 @@ void boundary_trans( struct domain * theDomain , int dim ){
    }
    if( dim==1 && dim_rank[0] == 0 ){
       int j;
-      for( j=0 ; j<Ng ; ++j ){
+      for( j=0 ; j<NgRa ; ++j ){
          int i,k;
          for( k=0 ; k<Nz ; ++k ){
             int jk = j+Nr*k;
             for( i=0 ; i<Np[jk] ; ++i ){
                struct cell * c = &(theCells[jk][i]);
                double phi = c->piph - .5*c->dphi;
-               double x[3] = { .5*(r_jph[j]+r_jph[j-1]) , phi , .5*(z_kph[k]+z_kph[k-1]) };
+               double x[3] = { .5*(r_jph[j]+r_jph[j-1]) , phi , 
+                                .5*(z_kph[k]+z_kph[k-1]) };
                initial( c->prim , x ); 
                subtract_omega( c->prim );
             }    

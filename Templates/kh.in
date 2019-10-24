@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = kh
 HYDRO    = euler
+GEOMETRY = cylindrical
 BOUNDARY = fixed
 OUTPUT   = h5out
 RESTART  = h5in

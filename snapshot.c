@@ -90,8 +90,10 @@ void snapshot( struct domain * theDomain , char * filestart ){
       }
    }
 
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , cons_1d_avg , NUM_R*NUM_Q , MPI_DOUBLE , MPI_SUM , theDomain->theComm );
    MPI_Allreduce( MPI_IN_PLACE , prim_1d_avg , NUM_R*NUM_Q , MPI_DOUBLE , MPI_SUM , theDomain->theComm );
+#endif
 
    double THETA_MIN = theDomain->theParList.thmin;
    double THETA_MAX = theDomain->theParList.thmax;
@@ -149,7 +151,9 @@ void snapshot( struct domain * theDomain , char * filestart ){
    struct { double value ; int index ; } minbuf;
    minbuf.value = delta;
    minbuf.index = rank;
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , &minbuf , 1 , MPI_DOUBLE_INT , MPI_MINLOC , theDomain->theComm );
+#endif
 
    int thRank = minbuf.index;
    if( rank==thRank ){
@@ -176,7 +180,9 @@ void snapshot( struct domain * theDomain , char * filestart ){
       }
    }
 
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , &maxgam , 1 , MPI_DOUBLE , MPI_MAX , theDomain->theComm );
+#endif
    int Ngam = 1000;
    double Ebin[Ngam];
    double Mtot = 0.0;
@@ -200,8 +206,10 @@ void snapshot( struct domain * theDomain , char * filestart ){
          Mtot += theCells[j][i].cons[DEN];
       }
    }
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , Ebin , Ngam , MPI_DOUBLE , MPI_SUM , theDomain->theComm );
    MPI_Allreduce( MPI_IN_PLACE , &Mtot ,  1  , MPI_DOUBLE , MPI_SUM , theDomain->theComm );
+#endif
 
    char fname_ebins[256];
    strcpy( fname_ebins , filestart );
@@ -275,7 +283,9 @@ void snapshot( struct domain * theDomain , char * filestart ){
       }
       fclose(thFile);
    }
+#if USE_MPI
    MPI_Barrier(theDomain->theComm);
+#endif
    }
 
 }

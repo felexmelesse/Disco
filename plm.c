@@ -20,8 +20,8 @@ void plm_phi( struct domain * theDomain ){
    int * Np = theDomain->Np;
    double PLM = theDomain->theParList.PLM;
    int i,j,k,q;
-   for( j=0 ; j<Nr ; ++j ){
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=0 ; k<Nz ; ++k ){
+      for( j=0 ; j<Nr ; ++j ){
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
             int im = i-1;
@@ -51,6 +51,11 @@ void plm_phi( struct domain * theDomain ){
 }
 
 double get_dA( double * , double * , int );
+double get_centroid(double , double , int );
+void geom_grad(double *prim, double *grad, double *xp, double *xm, 
+                double PLM, int dim, int LR);
+void plm_geom_boundary(struct domain *theDomain, int jmin, int jmax, int kmin,
+                        int kmax, int dim, int LR);
 
 void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , int dim ){
 
@@ -61,6 +66,7 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
    double PLM = theDomain->theParList.PLM;
+   
    int i,j,k,q;
 
    //Clear gradients
@@ -72,6 +78,9 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
          }
       }
    }
+
+   if(PLM == 0.0)
+       return;
 
    //Add weighted slopes
    int n;
@@ -123,7 +132,7 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
             if( (dim==1 && j==Nr-1) || (dim==2 && k==Nz-1) ) dAtot = dAm;
             for( q=0 ; q<NUM_Q ; ++q ){
                c->grad[q] /= dAtot;
-            }    
+            }
          }    
       }    
    }
@@ -159,6 +168,53 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
          }    
       }    
    }
+
+   // Geometric boundaries don't have ghost zones, so the gradients there need
+   // to be fixed.  
+   
+   if(dim == 1 && theDomain->NgRa == 0)
+      plm_geom_boundary(theDomain, 0, 0, 0, Nz-1, dim, 0);
+
+   if(dim == 1 && theDomain->NgRb == 0)
+      plm_geom_boundary(theDomain, Nr-1, Nr-1, 0, Nz-1, dim, 1);
+
+   if(dim == 2 && theDomain->NgZa == 0)
+      plm_geom_boundary(theDomain, 0, Nr-1, 0, 0, dim, 0);
+
+   if(dim == 2 && theDomain->NgZb == 0)
+      plm_geom_boundary(theDomain, 0, Nr-1, Nz-1, Nz-1, dim, 1);
 }
 
+void plm_geom_boundary(struct domain *theDomain, int jmin, int jmax, 
+                        int kmin, int kmax, int dim, int LR)
+{
+    struct cell ** theCells = theDomain->theCells;
+    int Nr = theDomain->Nr;
+    int * Np = theDomain->Np;
+    double * r_jph = theDomain->r_jph;
+    double * z_kph = theDomain->z_kph;
+    double PLM = theDomain->theParList.PLM;
 
+    int i,j,k;
+
+    double xp[3], xm[3];
+    for(k=kmin; k<=kmax; k++)
+    {
+       xp[2] = z_kph[k];
+       xm[2] = z_kph[k-1];
+       for(j=jmin; j<=jmax; j++)
+       {
+           int jk = j+Nr*k;
+           xp[0] = r_jph[j];
+           xm[0] = r_jph[j-1];
+           for(i=0; i < Np[jk]; i++)
+           {
+               struct cell * c = &(theCells[jk][i]);
+               xp[1] = c->piph;
+               xm[1] = c->piph - c->dphi;
+
+               geom_grad(c->prim, c->grad, xp, xm, PLM, dim, LR); 
+           }
+       }
+    }
+}
