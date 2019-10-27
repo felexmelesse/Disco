@@ -98,9 +98,13 @@ Disco outputs HDF5 checkpoint files with names `checkpoint_0123.h5` and appends 
 
 ### Post-processing in Python: discopy
 
-The `Python/` directory contains user-friendly scripts for making plots of fluid variables.  It also contains the `discopy` package which provides utilities for loading and processing Disco data.  To set up `discopy` simply run `python3 setup.py develop` from the `Python/` directory.  The included plotting scripts are:
+The `Python/` directory contains user-friendly scripts for making plots of fluid variables.  It also contains the `discopy` package which provides utilities for loading and processing Disco data.  
+
+`discopy` requires Python 3.  To set up `discopy` run `pip install --user -e` from the `Python/` directory (make sure your pip refers to Python3, if not you may have to run pip3 instead).  The included plotting scripts are:
 
     - `plotDiscoEq.py`: Make plots of equatorial slices through the domain (ie. the x-y plane).
     - `plotDiscoPhi0.py`: Make plots of the phi=0 surface (ie. the x-z plane, x>0).
     - `plotDiscoR.py`: Scatterplot of fluid variables as a function of r.
     - `plotDiscoDiagRZ`: plot the Diagnostic (phi and t averaged) fields as a function of R and z.
+
+    You can pass `--help` to these tools on the command-line to see the format for arguments and options.

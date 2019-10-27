@@ -3,6 +3,17 @@ import numpy as np
 from . import geom as dg
 
 
+def loadGitVersion(filename):
+
+    f = h5.File(filename, "r")
+
+    gv = f['GIT_VERSION'][0]
+
+    f.close()
+
+    return gv
+
+
 def loadPars(filename):
 
     f = h5.File(filename, "r")
