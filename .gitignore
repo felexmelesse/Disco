@@ -6,6 +6,8 @@ Makefile_dir.in*
 Makefile_opt.in*
 in.par*
 bins/
+latest
+abort
 
 # Output files
 *.dat
@@ -14,10 +16,12 @@ bins/
 
 # Build/editor files
 *.o
+*.a
 *.swp
 .DS_Store
 *.pyc
 *.so
+Python/*.egg-info
 
 # Viewer files
 Viewer/Movies/
@@ -27,6 +31,6 @@ Viewer/vdisco
 *.eps
 *.ppm
 test*
-out*
+out
 UnitTest
 disco.dSYM

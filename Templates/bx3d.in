@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = bx3d
 HYDRO    = mhd
+GEOMETRY = cylindrical
 BOUNDARY = polar
 OUTPUT   = h5out
 RESTART  = h5in

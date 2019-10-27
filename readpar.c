@@ -43,8 +43,13 @@ int readvar( char * filename , char * varname , int vartype , void * ptr ){
 
 int read_par_file( struct domain * theDomain ){
 
+#if USE_MPI
    MPI_Comm_rank(MPI_COMM_WORLD,&(theDomain->rank));
    MPI_Comm_size(MPI_COMM_WORLD,&(theDomain->size));
+#else
+   theDomain->rank = 0;
+   theDomain->size = 1;
+#endif
 
    int rank = theDomain->rank;
    int size = theDomain->size;
@@ -57,6 +62,7 @@ int read_par_file( struct domain * theDomain ){
 
    int tTimes_2pi;
    int pTimes_2pi;
+   int zTimes_pi = 0;
 
    int nrank;
    for( nrank=0 ; nrank<size ; ++nrank ){
@@ -76,10 +82,16 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Phi_Max"               , VAR_DOUB , &(theList->phimax)          );
          err += readvar( pfile , "Use_Logtime"           , VAR_INT  , &(theList->Out_LogTime)     );
          err += readvar( pfile , "Log_Zoning"            , VAR_INT  , &(theList->LogZoning)       );
+         err += readvar( pfile , "R_Periodic"            , VAR_INT  , &(theList->R_Periodic)      );
          err += readvar( pfile , "Z_Periodic"            , VAR_INT  , &(theList->Z_Periodic)      );
+         err += readvar( pfile , "NoBC_Rmin"             , VAR_INT , &(theList->NoBC_Rmin)       );
+         err += readvar( pfile , "NoBC_Rmax"             , VAR_INT , &(theList->NoBC_Rmax)       );
+         err += readvar( pfile , "NoBC_Zmin"             , VAR_INT , &(theList->NoBC_Zmin)       );
+         err += readvar( pfile , "NoBC_Zmax"             , VAR_INT , &(theList->NoBC_Zmax)       );
          err += readvar( pfile , "Log_Radius"            , VAR_DOUB , &(theList->LogRadius)       );
          err += readvar( pfile , "Max_Aspect_Short"      , VAR_DOUB , &(theList->MaxShort)        );
          err += readvar( pfile , "Max_Aspect_Long"       , VAR_DOUB , &(theList->MaxLong)         );
+         err += readvar( pfile , "Timestep"                   , VAR_INT , &(theList->Timestep)             );
          err += readvar( pfile , "CFL"                   , VAR_DOUB , &(theList->CFL)             );
          err += readvar( pfile , "Max_DT"                   , VAR_DOUB , &(theList->maxDT)             );
          err += readvar( pfile , "PLM"                   , VAR_DOUB , &(theList->PLM)             );
@@ -106,6 +118,7 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Include_Atmos"         , VAR_INT  , &(theList->include_atmos)   );
          err += readvar( pfile , "T_Times_2pi"           , VAR_INT  , &tTimes_2pi );
          err += readvar( pfile , "P_Times_2pi"           , VAR_INT  , &pTimes_2pi );
+         err += readvar( pfile , "Z_Times_pi"           , VAR_INT  , &zTimes_pi );
          err += readvar( pfile , "Mach_Number"           , VAR_DOUB , &(theList->Disk_Mach)       );
          err += readvar( pfile , "Mass_Ratio"            , VAR_DOUB , &(theList->Mass_Ratio)      );
          err += readvar( pfile , "Eccentricity"          , VAR_DOUB , &(theList->Eccentricity)    );
@@ -123,11 +136,27 @@ int read_par_file( struct domain * theDomain ){
          err += readvar( pfile , "Init_Par2" , VAR_DOUB  , &(theList->initPar2));
          err += readvar( pfile , "Init_Par3" , VAR_DOUB  , &(theList->initPar3));
          err += readvar( pfile , "Init_Par4" , VAR_DOUB  , &(theList->initPar4));
+         err += readvar( pfile , "Init_Par5" , VAR_DOUB  , &(theList->initPar5));
+         err += readvar( pfile , "Init_Par6" , VAR_DOUB  , &(theList->initPar6));
+         err += readvar( pfile , "Init_Par7" , VAR_DOUB  , &(theList->initPar7));
+         err += readvar( pfile , "Init_Par8" , VAR_DOUB  , &(theList->initPar8));
          err += readvar( pfile , "Noise_Type" , VAR_INT  , &(theList->noiseType));
          err += readvar( pfile , "Noise_Abs" , VAR_DOUB  , &(theList->noiseAbs));
          err += readvar( pfile , "Noise_Rel" , VAR_DOUB  , &(theList->noiseRel));
+         err += readvar(pfile, "Sink_Type", VAR_INT , &(theList->sinkType));
+         err += readvar(pfile, "Sink_Par1", VAR_DOUB, &(theList->sinkPar1));
+         err += readvar(pfile, "Sink_Par2", VAR_DOUB, &(theList->sinkPar2));
+         err += readvar(pfile, "Sink_Par3", VAR_DOUB, &(theList->sinkPar3));
+         err += readvar(pfile, "Sink_Par4", VAR_DOUB, &(theList->sinkPar4));
+         err += readvar(pfile, "Nozzle_Type", VAR_INT , &(theList->nozzleType));
+         err += readvar(pfile, "Nozzle_Par1", VAR_DOUB, &(theList->nozzlePar1));
+         err += readvar(pfile, "Nozzle_Par2", VAR_DOUB, &(theList->nozzlePar2));
+         err += readvar(pfile, "Nozzle_Par3", VAR_DOUB, &(theList->nozzlePar3));
+         err += readvar(pfile, "Nozzle_Par4", VAR_DOUB, &(theList->nozzlePar4));
       }
+#if USE_MPI
       MPI_Barrier(MPI_COMM_WORLD);
+#endif
    }
 
    if( tTimes_2pi ){
@@ -137,9 +166,17 @@ int read_par_file( struct domain * theDomain ){
    if( pTimes_2pi ){
       theList->phimax *= 2.*M_PI;
    }
+   if( zTimes_pi ){
+      theList->zmin *= M_PI;
+      theList->zmax *= M_PI;
+   }
 
    int errtot;
+#if USE_MPI
    MPI_Allreduce( &err , &errtot , 1 , MPI_INT , MPI_SUM , MPI_COMM_WORLD );
+#else
+   errtot = err;
+#endif
 
    if( errtot > 0 ){
       printf("Read Failed\n");

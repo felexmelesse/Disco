@@ -31,6 +31,7 @@ void getUstar( double * , double * , double * , double , double , double * , dou
 void get_Ustar_HLLD( double , double * , double * , double * , double * , double * , double * );
 void vel( double * , double * , double * , double * , double * , double * , double * , double * );
 double get_signed_dp( double , double );
+double get_scale_factor( double * , int );
 
 void visc_flux( double * , double * , double * , double * , double * );
 void flux_to_E( double * , double * , double * , double * , double * , double * , double * , int );
@@ -39,7 +40,6 @@ void solve_riemann( double * , double * , double *, double * , double * , double
 
 void riemann_phi( struct cell * cL , struct cell * cR, double * x , double dAdt ){
 
-   double r = x[0];
    double primL[NUM_Q];
    double primR[NUM_Q];
 
@@ -50,6 +50,7 @@ void riemann_phi( struct cell * cL , struct cell * cR, double * x , double dAdt 
    }
 
    double n[3] = {0.0,1.0,0.0};
+   double hn = get_scale_factor(x, 0);
 
    if( use_B_fields && NUM_Q > BPP ){
       double Bp = .5*(primL[BPP]+primR[BPP]);
@@ -58,7 +59,7 @@ void riemann_phi( struct cell * cL , struct cell * cR, double * x , double dAdt 
    }
 
    double Er,Ez,Br,Bz;
-   solve_riemann( primL , primR , cL->cons , cR->cons , cL->gradp , cR->gradp , x , n , r*cL->wiph , dAdt , 0 , &Ez , &Br , &Er , &Bz );
+   solve_riemann( primL , primR , cL->cons , cR->cons , cL->gradp , cR->gradp , x , n , hn*cL->wiph , dAdt , 0 , &Ez , &Br , &Er , &Bz );
 
    if( NUM_EDGES == 4 ){
       cL->E[0] = .5*Ez;
@@ -135,8 +136,9 @@ void riemann_trans( struct face * F , double dt , int dim ){
       primR[BTRANS] = Bavg;
    }
 
-   double Erz,Brz,Ephi,buffer;
-   solve_riemann( primL , primR , cL->cons , cR->cons , cL->grad , cR->grad , F->cm , n , 0.0 , dAdt , dim , &Erz , &Brz , &Ephi , &buffer );
+   double Erz,Brz,Ephi;
+   solve_riemann( primL , primR , cL->cons , cR->cons , cL->grad , cR->grad , 
+                  F->cm , n , 0.0 , dAdt , dim , &Erz , &Brz , &Ephi , NULL );
  
    double fracL = F->dphi / cL->dphi;
    double fracR = F->dphi / cR->dphi;
@@ -155,8 +157,10 @@ void riemann_trans( struct face * F , double dt , int dim ){
       cR->B[2] += .5*Brz*fracR;
    }
    if( NUM_AZ_EDGES == 4 && dim==1 ){
-      cL->E_phi[1] = Ephi;
-      cR->E_phi[0] = Ephi;
+      if(F->LRtype==0)
+         cL->E_phi[1] = Ephi;
+      else
+         cR->E_phi[0] = Ephi;
    }
    if( NUM_EDGES == 8 && dim==2){
       cL->E[5] += .5*Erz*fracL;
@@ -172,8 +176,10 @@ void riemann_trans( struct face * F , double dt , int dim ){
       cR->B[6] += .5*Brz*fracR;
    }
    if( NUM_AZ_EDGES == 4 && dim==2 ){
-      cL->E_phi[3] = Ephi;
-      cR->E_phi[2] = Ephi;
+      if(F->LRtype==0)
+         cL->E_phi[3] = Ephi;
+      else
+         cR->E_phi[2] = Ephi;
    }
 }
 
@@ -181,7 +187,6 @@ void riemann_trans( struct face * F , double dt , int dim ){
 void solve_riemann( double * primL , double * primR , double * consL , double * consR , double * gradL , double * gradR , double * x , double * n , double w , double dAdt , int dim , double * E1_riemann , double * B1_riemann , double * E2_riemann , double * B2_riemann ){
 
    int q;
-   double r = x[0];
 
    double Flux[NUM_Q];
    double Ustr[NUM_Q];
@@ -249,13 +254,13 @@ void solve_riemann( double * primL , double * primR , double * consL , double * 
    }
 
    if( visc_flag ){
+      double hn = get_scale_factor(x, dim);
       double vFlux[NUM_Q];
       double prim[NUM_Q];
       double gprim[NUM_Q];
       for( q=0 ; q<NUM_Q ; ++q ){
          prim[q] = .5*(primL[q]+primR[q]);
-         gprim[q] = .5*(gradL[q]+gradR[q]);
-         if( dim==0 ) gprim[q] /= r;
+         gprim[q] = .5*(gradL[q]+gradR[q])/hn;
          vFlux[q] = 0.0;
       }
       visc_flux( prim , gprim , vFlux , x , n );
@@ -268,24 +273,6 @@ void solve_riemann( double * primL , double * primR , double * consL , double * 
    }
 
    flux_to_E( Flux , Ustr , x , E1_riemann , B1_riemann , E2_riemann , B2_riemann , dim );
-/*
-   if( use_B_fields && NUM_Q > BZZ ){
-      if( dim==0 ){
-         *E1_riemann = Flux[BRR]*r;   //Ez
-         *B1_riemann = Ustr[BRR]*r*r; // r*Br
-         *E2_riemann = Flux[BZZ];    //Er
-         *B2_riemann = Ustr[BZZ]*r;  //-r*Bz
-      }else if( dim==1 ){
-         *E1_riemann = -Flux[BPP]*r;  //Ez
-         *B1_riemann = Ustr[BRR]*r*r; // r*Br
-         *E2_riemann = 1.0*Flux[BZZ];     //Ephi
-      }else{
-         *E1_riemann = -Flux[BPP]*r;   //Er
-         *B1_riemann = Ustr[BZZ]*r;  //-r*Bz
-         *E2_riemann = 1.0*-Flux[BRR]*r;  //Ephi
-      }
-   }
-*/
 }
 
 

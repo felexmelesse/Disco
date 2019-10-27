@@ -82,8 +82,8 @@ Metric_Par4     0.0
 Init_Par0       2       // ring profile - 0:flat, 1:gaussian, 2:Smoothed tophat
 Init_Par1       16.0    // r0 - center of ring
 Init_Par2       5.0     // dr - (half) width of ring
-Init_Par3       1.0e-2  // sig0 - surface density of atmosphere
-Init_Par4       1.0     // sig1 - surface density of ring
+Init_Par3       3.2     // dr2 - width of transition region
+Init_Par4       1.0e-2  // sig0 - surface density of atmosphere
 
 //Noise Parameters
 Noise_Type      0       // 0: No Noise, 1: URR and UPP 

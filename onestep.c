@@ -36,11 +36,54 @@ void exchangeData( struct domain * , int );
 //int get_num_rzFaces( int , int , int );
 int set_B_flag( void );
 
+void checkNaNs(struct domain *theDomain, char label[])
+{
+    int Nz = theDomain->Nz;
+    int Nr = theDomain->Nr;
+    int *Np = theDomain->Np;
+
+    int i, j, k, q;
+    int count_p = 0;
+    int count_c = 0;
+    for(k=0; k<Nz; k++)
+        for(j=0; j<Nr; j++)
+        {
+            int jk = j + Nr*k;
+            for(i=0; i<Np[jk]; i++)
+            {
+                struct cell *c = &(theDomain->theCells[jk][i]);
+
+                int flag = 0;
+                for(q=0; q<NUM_Q; q++)
+                {
+                    if(c->prim[q] != c->prim[q])
+                    {
+                        count_p++;
+                        flag = 1;
+
+                    }
+                    if(c->cons[q] != c->cons[q])
+                    {
+                        count_c++;
+                        flag = 1;
+                    }
+                }
+                //if(flag)
+                //    printf("  NaN action at k = %d, j = %d, i = %d\n", k,j,i);
+            }
+        }
+    if(count_p > 0)
+        printf("NaNs in prim @ %s!\n", label);
+    if(count_c > 0)
+        printf("NaNs in cons @ %s!\n", label);
+}
+
+
 void onestep( struct domain * theDomain , double RK , double dt , int first_step , int last_step , double global_dt ){
 
    int Nz = theDomain->Nz;
    int bflag = set_B_flag();
- 
+
    if( first_step ) set_wcell( theDomain );
    adjust_RK_cons( theDomain , RK );
 
@@ -59,7 +102,7 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
       subtract_advective_B_fluxes( theDomain );
       update_B_fluxes( theDomain , dt );
    }
-
+   
    add_source( theDomain , dt );
 
    if( first_step ){
@@ -73,6 +116,7 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
          }
       }
    }
+   
 
    if( !planet_motion_analytic() || first_step ){
       adjust_RK_planets( theDomain , RK );
@@ -80,30 +124,35 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
    }
    clean_pi( theDomain );
    calc_dp( theDomain );
+
    
    if( bflag && theDomain->theParList.CT ){
       B_faces_to_cells( theDomain , 1 );
    }
    
-
+   
    calc_prim( theDomain ); //ORDERING??? AFTER?
    
-   /*if( bflag && theDomain->theParList.CT ){
+   /*
+   if( bflag && theDomain->theParList.CT ){
       B_faces_to_cells( theDomain , 0 );
-   }
+   } 
+   */
 
    //TODO: interaction with MHD? Hail Mary
+   /*
    calc_cons(theDomain);
    */
 
-   boundary_trans( theDomain , 1 );
    exchangeData( theDomain , 0 );
+   if(! theDomain->theParList.R_Periodic)
+      boundary_trans( theDomain , 1 );
    if( Nz > 1 ){
-      int Periodic = theDomain->theParList.Z_Periodic;
-      if( !Periodic ) boundary_trans( theDomain , 2 );
       exchangeData( theDomain , 1 );
+      if(! theDomain->theParList.Z_Periodic)
+         boundary_trans( theDomain , 2 );
    }
-
+   
    //TODO: This was BEFORE BCs, but if wrecks cell pointers...
    //      Here, the BCs may not be satisfied if boundary zones are AMR'd...
    //TODO 2: AMR leading to STRANGE behaviour in 3d? Z boundaries being
@@ -117,4 +166,3 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
    if( theDomain->theFaces_2 ) free( theDomain->theFaces_2 );
 
 }
-

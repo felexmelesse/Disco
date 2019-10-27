@@ -3,7 +3,7 @@
 
 double get_dA( double * , double * , int );
 double get_dV( double * , double * );
-double get_moment_arm( double * , double * );
+double get_centroid( double , double , int);
 
 void clean_pi( struct domain * theDomain ){
    
@@ -42,6 +42,10 @@ double getmindt( struct domain * theDomain ){
    struct cell ** theCells = theDomain->theCells;
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int * Np = theDomain->Np;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
@@ -51,8 +55,8 @@ double getmindt( struct domain * theDomain ){
        dt = 1.0e100; //HUGE_VAL
 
    int i,j,k;
-   for( j=1 ; j<Nr-1 ; ++j ){
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);
@@ -73,7 +77,9 @@ double getmindt( struct domain * theDomain ){
       }
    }
    dt *= theDomain->theParList.CFL; 
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , &dt , 1 , MPI_DOUBLE , MPI_MIN , theDomain->theComm );
+#endif
 
    return( dt );
 }
@@ -96,7 +102,7 @@ void clear_w( struct domain * theDomain ){
 }*/
 
 double get_omega( double * , double * );
-double mesh_om( double );
+double mesh_om( double *);
 
 void set_wcell( struct domain * theDomain ){
    struct cell ** theCells = theDomain->theCells;
@@ -108,33 +114,24 @@ void set_wcell( struct domain * theDomain ){
    double * z_kph = theDomain->z_kph;
 
    int i,j,k;
-   for( j=0 ; j<Nr ; ++j ){
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=0 ; k<Nz ; ++k ){
+      double z = get_centroid(z_kph[k], z_kph[k-1], 2);
+      for( j=0 ; j<Nr ; ++j ){
          int jk = j+Nr*k;
-         double rm = r_jph[j-1];
-         double rp = r_jph[j];
-         double zm = z_kph[k-1];
-         double zp = z_kph[k];
+         double r = get_centroid(r_jph[j], r_jph[j-1], 1);
          for( i=0 ; i<Np[jk] ; ++i ){
-            struct cell * cL = &(theCells[jk][i ]);  
+            struct cell * cL = &(theCells[jk][i]);  
             double w = 0.0;
             if( mesh_motion ){
-               int ip = (i+1)%Np[jk];
                double phip = cL->piph;
                double phim = phip-cL->dphi;
-               double xp[3] = {rp,phip,zp};
-               double xm[3] = {rm,phim,zm};
-               double r = get_moment_arm( xp , xm );
-               double x[3] = {r, 0.5*(phim+phip), 0.5*(zm+zp)};
+               double x[3] = {r, 0.5*(phim+phip), z};
                double wL = get_omega( cL->prim , x );
 
+               int ip = (i+1)%Np[jk];
                struct cell * cR = &(theCells[jk][ip]);
                phip = cR->piph;
                phim = phip-cR->dphi;
-               xp[1] = phip;
-               xm[1] = phim;
-               r = get_moment_arm( xp , xm );
-               x[0] = r;
                x[1] = 0.5*(phim+phip);
                double wR = get_omega( cR->prim , x );
 
@@ -145,8 +142,8 @@ void set_wcell( struct domain * theDomain ){
       }    
    }
    if( mesh_motion == 3 ){
-      for( j=0 ; j<Nr ; ++j ){
-         for( k=0 ; k<Nz ; ++k ){
+      for( k=0 ; k<Nz ; ++k ){
+         for( j=0 ; j<Nr ; ++j ){
             int jk = j+Nr*k;
             double w = 0.0;
             for( i=0 ; i<Np[jk] ; ++i ){
@@ -160,17 +157,20 @@ void set_wcell( struct domain * theDomain ){
       } 
    }
    if( mesh_motion == 4 ){
-      for( j=0 ; j<Nr ; ++j ){
-         double r = .5*(r_jph[j]+r_jph[j-1]);
-         for( k=0 ; k<Nz ; ++k ){
+      for( k=0 ; k<Nz ; ++k ){
+         double z = get_centroid(z_kph[k], z_kph[k-1], 2);
+         for( j=0 ; j<Nr ; ++j ){
             int jk = j+Nr*k;
+            double r = get_centroid(r_jph[j], r_jph[j-1], 1);
             for( i=0 ; i<Np[jk] ; ++i ){
-               theCells[jk][i].wiph = r*mesh_om(r); 
+               double phip = theCells[jk][i].piph;
+               double phim = phip-theCells[jk][i].dphi;
+               double x[3] = {r, 0.5*(phim+phip), z};
+               theCells[jk][i].wiph = mesh_om(x); 
             }    
          }    
       } 
    }
-
 }
 
 void initial( double * , double * );
@@ -300,25 +300,32 @@ void calc_prim( struct domain * theDomain ){
    struct cell ** theCells = theDomain->theCells;
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int * Np = theDomain->Np;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
 
    int i,j,k;
-   for( j=0 ; j<Nr ; ++j ){
-      double rm = r_jph[j-1];
-      double rp = r_jph[j];
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
+      double zm = z_kph[k-1];
+      double zp = z_kph[k];
+      double z = get_centroid(zp, zm, 2);
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
          int jk = j+Nr*k;
+         double rm = r_jph[j-1];
+         double rp = r_jph[j];
+         double r = get_centroid(rp, rm, 1);
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);
             double phip = c->piph;
             double phim = phip-c->dphi;
-            double xp[3] = {rp,phip,z_kph[k]  };
-            double xm[3] = {rm,phim,z_kph[k-1]};
-            double r = get_moment_arm( xp , xm );
+            double xp[3] = {rp, phip, zp};
+            double xm[3] = {rm, phim, zm};
             double dV = get_dV( xp , xm );
-            double x[3] = {r, 0.5*(phim+phip), 0.5*(z_kph[k]+z_kph[k-1])};
+            double x[3] = {r, 0.5*(phim+phip), z};
             cons2prim( c->cons , c->prim , x , dV );
          }
       }
@@ -330,25 +337,34 @@ void calc_cons( struct domain * theDomain ){
    struct cell ** theCells = theDomain->theCells;
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int * Np = theDomain->Np;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
 
    int i,j,k;
-   for( j=0 ; j<Nr ; ++j ){
-      double rm = r_jph[j-1];
-      double rp = r_jph[j];
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
+      double zm = z_kph[k-1];
+      double zp = z_kph[k];
+      double z = get_centroid(zp, zm, 2);
+
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
+         double rm = r_jph[j-1];
+         double rp = r_jph[j];
+         double r = get_centroid(rp, rm, 1);
+
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);
             double phip = c->piph;
             double phim = phip-c->dphi;
-            double xp[3] = {rp,phip,z_kph[k]  };
-            double xm[3] = {rm,phim,z_kph[k-1]};
-            double r = get_moment_arm( xp , xm );
+            double xp[3] = {rp, phip, zp};
+            double xm[3] = {rm, phim, zm};
             double dV = get_dV( xp , xm );
-            double x[3] = {r, 0.5*(phim+phip), 0.5*(z_kph[k]+z_kph[k-1])};
+            double x[3] = {r, 0.5*(phim+phip), z};
             prim2cons( c->prim , c->cons , x , dV );
          }
       }
@@ -357,29 +373,62 @@ void calc_cons( struct domain * theDomain ){
 
 void plm_phi( struct domain * );
 void riemann_phi( struct cell * , struct cell * , double * , double );
+int set_B_flag();
 
 void phi_flux( struct domain * theDomain , double dt ){
 
    struct cell ** theCells = theDomain->theCells;
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int * Np = theDomain->Np;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
+
+   int bflag = set_B_flag();
+   int CT = theDomain->theParList.CT;
+   int jmin, jmax, kmin, kmax;
+   if(bflag && CT)
+   {
+       jmin = NgRa==0 ? 0  : NgRa-1;
+       jmax = NgRb==0 ? Nr : Nr-NgRb+1;
+       kmin = NgZa==0 ? 0  : NgZa-1;
+       kmax = NgZb==0 ? Nz : Nz-NgZb+1;
+   }
+   else
+   {
+       jmin = NgRa;
+       jmax = Nr-NgRb;
+       kmin = NgZa;
+       kmax = NgZb;
+   }
+
+
    int i,j,k;
    plm_phi( theDomain );
-   for( j=0 ; j<Nr ; ++j ){
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=kmin ; k<kmax ; ++k ){
+      double zp = z_kph[k];
+      double zm = z_kph[k-1];
+      double z = get_centroid(zp, zm, 2);
+
+      for( j=jmin ; j<jmax ; ++j ){
+         double rp = r_jph[j];
+         double rm = r_jph[j-1];
+         double r = get_centroid(rp, rm, 1);
+         
          int jk = j+Nr*k;
+         struct cell * cp = theCells[jk];
+
          for( i=0 ; i<Np[jk] ; ++i ){
-            int ip = (i+1)%Np[jk];
-            struct cell * cp = theCells[jk];
+            int ip = i<Np[jk]-1 ? i+1 : 0;
             double phi = cp[i].piph;
-            double xp[3] = {r_jph[j]  ,phi,z_kph[k]  };
-            double xm[3] = {r_jph[j-1],phi,z_kph[k-1]};
-            double r = get_moment_arm(xp,xm);
+            double xp[3] = {rp, phi, zp};
+            double xm[3] = {rm, phi, zm};
             double dA = get_dA(xp,xm,0); 
-            double x[3] = {r, phi, 0.5*(z_kph[k-1]+z_kph[k])};
+            double x[3] = {r, phi, z};
             riemann_phi( &(cp[i]) , &(cp[ip]) , x , dA*dt );
          }
       }
@@ -393,23 +442,86 @@ void riemann_trans( struct face * , double , int );
 
 void trans_flux( struct domain * theDomain , double dt , int dim ){
 
-   int Nf;
-   struct face * theFaces;
-   if( dim==1 ){
-      Nf = theDomain->fIndex_r[theDomain->N_ftracks_r];
-      theFaces = theDomain->theFaces_1;
-   }else{
-      Nf = theDomain->fIndex_z[theDomain->N_ftracks_z];
-      theFaces = theDomain->theFaces_2;
-   }
+    /*
+     * Need to calculate fluxes for all interior faces.
+     * For CT also need one level of fluxes outside the interior
+     * ie. need the z-fluxes directly outside the r-boundary and vice-versa
+     */ 
 
-   plm_trans( theDomain , theFaces , Nf , dim );
+    int Nr = theDomain->Nr;
+    int Nz = theDomain->Nz;
+    int NgRa = theDomain->NgRa;
+    int NgRb = theDomain->NgRb;
+    int NgZa = theDomain->NgZa;
+    int NgZb = theDomain->NgZb;
+    
+    int bflag = set_B_flag();
+    int CT = theDomain->theParList.CT;
 
+    int jmin, jmax, kmin, kmax, Nfr;
+
+    int *fI;
+    int Nf;
+    struct face * theFaces;
+
+    if( dim==1 )
+    {
+        Nf = theDomain->fIndex_r[theDomain->N_ftracks_r];
+        fI = theDomain->fIndex_r;
+        theFaces = theDomain->theFaces_1;
+        Nfr = Nr-1;
+        jmin = NgRa==0 ? 0 : NgRa-1;
+        jmax = NgRb==0 ? Nr-1 : Nr-NgRb;
+
+        if(bflag && CT)
+        {
+            kmin = NgZa==0 ? 0 : NgZa-1;
+            kmax = NgZb==0 ? Nz : Nz-NgZb+1;
+        }
+        else
+        {
+            kmin = NgZa;
+            kmax = Nz-NgZb;
+        }
+    }
+    else
+    {
+        Nf = theDomain->fIndex_z[theDomain->N_ftracks_z];
+        fI = theDomain->fIndex_z;
+        theFaces = theDomain->theFaces_2;
+        Nfr = Nr;
+        if(bflag && CT)
+        {
+            jmin = NgRa==0 ? 0  : NgRa-1;
+            jmax = NgRb==0 ? Nr : Nr-NgRb+1;
+        }
+        else
+        {
+            jmin = NgRa;
+            jmax = Nr-NgRb;
+        }
+        kmin = NgZa==0 ? 0  : NgZa-1;
+        kmax = NgZb==0 ? Nz-1 : Nz-NgZb;
+    }
+
+    plm_trans(theDomain, theFaces, Nf, dim);
+
+    int j, k;
+    for(k=kmin; k<kmax; k++)
+        for(j=jmin; j<jmax; j++)
+        {
+            int JK = j + Nfr*k;
+            int f;
+            for(f=fI[JK]; f<fI[JK+1]; f++)
+                riemann_trans(theFaces + f, dt, dim);
+        }
+
+   /*
    int f;
    for( f=0 ; f<Nf ; ++f ){
       riemann_trans( theFaces + f , dt , dim );
    }
-
+   */
 }
 
 
@@ -438,6 +550,7 @@ void setup_faces( struct domain * theDomain , int dim ){
 void source( double * , double * , double * , double * , double );
 void planet_src( struct planet * , double * , double * , double * , double * , double );
 void omega_src( double * , double * , double * , double * , double );
+void sink_src( double * , double * , double * , double * , double );
 
 void add_source( struct domain * theDomain , double dt ){
 
@@ -445,6 +558,10 @@ void add_source( struct domain * theDomain , double dt ){
    struct planet * thePlanets = theDomain->thePlanets;
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int * Np = theDomain->Np;
    int Npl = theDomain->Npl;
 
@@ -452,8 +569,8 @@ void add_source( struct domain * theDomain , double dt ){
    double * z_kph = theDomain->z_kph;
 
    int i,j,k,p;
-   for( j=0 ; j<Nr ; ++j ){
-      for( k=0 ; k<Nz ; ++k ){
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
             struct cell * c = &(theCells[jk][i]);
@@ -467,6 +584,7 @@ void add_source( struct domain * theDomain , double dt ){
                planet_src( thePlanets+p , c->prim , c->cons , xp , xm , dV*dt );
             }
             omega_src( c->prim , c->cons , xp , xm , dV*dt );
+            sink_src( c->prim , c->cons , xp , xm , dV*dt );
          }    
       }    
    }   
@@ -549,7 +667,7 @@ void AMRsweep( struct domain * theDomain , struct cell ** swptr , int jk ){
       double phim = phip - sweep[iS].dphi;
       double xp[3] = {r_jph[j]  ,phip,z_kph[k]  };
       double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
-      double r  = get_moment_arm( xp , xm );
+      double r  = get_centroid( xp[0] , xm[0], 1 );
       double dV = get_dV( xp , xm );
       double x[3] = {r, 0.5*(phim+phip), 0.5*(z_kph[k-1]+z_kph[k])};
       cons2prim( sweep[iS].cons , sweep[iS].prim , x , dV );
@@ -590,14 +708,14 @@ void AMRsweep( struct domain * theDomain , struct cell ** swptr , int jk ){
       double xp[3] = {r_jph[j]  ,phi0,z_kph[k]  };
       double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
       double dV = get_dV( xp , xm );
-      double r  = get_moment_arm( xp , xm );
+      double r  = get_centroid( xp[0] , xm[0], 1 );
       double x[3] = {r, 0.5*(xp[1]+xm[1]), 0.5*(xp[2]+xm[2])};
       cons2prim( sweep[iL].cons , sweep[iL].prim , x , dV );
 
       xp[1] = phip;
       xm[1] = phi0;
       dV = get_dV( xp , xm );
-      r  = get_moment_arm( xp , xm );
+      r  = get_centroid( xp[0] , xm[0], 1 );
       x[0] = r;
       x[1] = 0.5*(xp[1]+xm[1]);
       cons2prim( sweep[iL+1].cons , sweep[iL+1].prim , x , dV );
@@ -621,6 +739,7 @@ void print_welcome()
     printf("Git Version: %s\n\n", GIT_VERSION);
     printf("*Compile-time Options*\n");
     printf("HYDRO: %s\n", HYDRO);
+    printf("GEOMETRY: %s\n", GEOMETRY);
     printf("INITIAL: %s\n", INITIAL);
     printf("BOUNDARY: %s\n", BOUNDARY);
     printf("OUTPUT: %s\n", OUTPUT);

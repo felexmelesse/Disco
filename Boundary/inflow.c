@@ -4,6 +4,7 @@
 
 void initial( double * , double * );
 double get_dV( double * , double * );
+double get_centroid( double , double , int );
 void cons2prim( double * , double * , double * , double );
 void prim2cons( double * , double * , double * , double );
 void subtract_omega( double * );
@@ -17,7 +18,8 @@ void boundary_trans( struct domain * theDomain , int dim ){
    int Nr = theDomain->Nr;
    int Nz = theDomain->Nz;
    int * Np = theDomain->Np;
-   int Ng = theDomain->Ng;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
    int * dim_rank = theDomain->dim_rank;
@@ -25,7 +27,7 @@ void boundary_trans( struct domain * theDomain , int dim ){
 
    if( dim==1 && dim_rank[0] == dim_size[0]-1 ){
       int i,j,k;
-      for( j=Nr-1 ; j>Nr-1-Ng ; --j ){
+      for( j=Nr-1 ; j>Nr-1-NgRb ; --j ){
          for( k=0 ; k<Nz ; ++k ){
             int jk = j+Nr*k;
             for( i=0 ; i<Np[jk] ; ++i ){
@@ -68,16 +70,15 @@ void boundary_trans( struct domain * theDomain , int dim ){
       double k0 = 0.5;
       double nu0 = 0.5;
 
-      for( j=0 ; j<Ng ; ++j ){
-         rp = r_jph[j];
-         rm = r_jph[j-1];
-         double r = .5*(rp+rm);
+      for( j=0 ; j<NgRa ; ++j ){
+         double r = get_centroid(r_jph[j], r_jph[j-1], 1);
          for( k=0 ; k<Nz ; ++k ){
+            double z = get_centroid(z_kph[k], z_kph[k-1], 2);
             int jk = j+Nr*k;
             for( i=0 ; i<Np[jk] ; ++i ){
                struct cell * c = &(theCells[jk][i]);
                double phi = c->piph - .5*c->dphi;
-               double x[3] = { .5*(r_jph[j]+r_jph[j-1]) , phi , .5*(z_kph[k]+z_kph[k-1]) };
+               double x[3] = {r , phi , z};
                initial( c->prim , x ); 
                subtract_omega( c->prim );
                c->prim[RHO] = rho_in*pow(r/rg,-k0);

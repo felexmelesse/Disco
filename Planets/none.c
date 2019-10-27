@@ -18,6 +18,7 @@ void initializePlanets( struct planet * thePlanets ){
    thePlanets[0].r     = 0.0; 
    thePlanets[0].phi   = 0.0; 
    thePlanets[0].eps   = 1.0;
+   thePlanets[0].type  = PLPOINTMASS;
 }
 
 void movePlanets( struct planet * thePlanets , double dt ){

@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = shocktube
 HYDRO    = euler
+GEOMETRY = cylindrical
 BOUNDARY = polar
 OUTPUT   = ascii
 RESTART  = h5in

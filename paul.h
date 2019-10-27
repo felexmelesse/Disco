@@ -1,7 +1,10 @@
 enum{RHO,PPP,URR,UPP,UZZ,BRR,BPP,BZZ};
 enum{DDD,TAU,SRR,LLL,SZZ};
+enum{PLPOINTMASS, PLPW, PLSURFACEGRAV};
 
+#if USE_MPI
 #include <mpi.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -45,10 +48,12 @@ struct param_list{
    double zmin, zmax;
    double phimax;
 
-   int LogZoning, Z_Periodic;
+   int NoBC_Rmin, NoBC_Rmax, NoBC_Zmin, NoBC_Zmax;
+
+   int LogZoning, R_Periodic, Z_Periodic;
    double LogRadius;
    double MaxShort, MaxLong;
-   int Mesh_Motion, Riemann_Solver;
+   int Mesh_Motion, Riemann_Solver, Timestep;
    int Absorb_BC, Initial_Regrid, visc_flag, include_atmos;
 
    double CFL, PLM, maxDT;
@@ -88,10 +93,25 @@ struct param_list{
    double initPar2;
    double initPar3;
    double initPar4;
+   double initPar5;
+   double initPar6;
+   double initPar7;
+   double initPar8;
 
    int noiseType;
    double noiseAbs;
    double noiseRel;
+
+   int sinkType;
+   double sinkPar1;
+   double sinkPar2;
+   double sinkPar3;
+   double sinkPar4;
+   int nozzleType;
+   double nozzlePar1;
+   double nozzlePar2;
+   double nozzlePar3;
+   double nozzlePar4;
 };
 
 struct diagnostic_avg{
@@ -107,6 +127,8 @@ struct domain{
    struct planet * thePlanets;
    int * Np;
    int Nr,Nz,Ng;
+   int NgRa, NgRb, NgZa, NgZb;
+   int N0r, N0z, Nr_glob, Nz_glob, N0r_glob, N0z_glob;
    int N_ftracks_r;
    int N_ftracks_z;
    int Npl;
@@ -122,7 +144,9 @@ struct domain{
    int dim_size[2];
    int left_rank[2];
    int right_rank[2];
+#if USE_MPI
    MPI_Comm theComm;
+#endif
 
    struct param_list theParList;
    int num_tools;
@@ -207,4 +231,6 @@ struct planet{
    double eps;
    double Fr;
    double Fp;
+
+   int type;
 };

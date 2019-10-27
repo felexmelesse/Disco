@@ -10,6 +10,7 @@ OUTPUT   = h5out
 RESTART  = h5in
 PLANETS  = bin_rot
 HLLD     = hlld
+GEOMETRY = cylindrical
 ANALYSIS = diag_disk2d
 
 METRIC   = flat_rpz

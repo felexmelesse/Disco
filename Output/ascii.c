@@ -30,7 +30,9 @@ void output( struct domain * theDomain , char * filestart ){
       FILE * pFile = fopen( filename , "w" );
       fclose(pFile);
    }
+#if USE_MPI
    MPI_Barrier( theDomain->theComm );
+#endif
 
    int j_min = 0;
    int j_max = Nr;
@@ -69,7 +71,9 @@ void output( struct domain * theDomain , char * filestart ){
          }
          fclose( pFile );
       }
+#if USE_MPI
       MPI_Barrier( theDomain->theComm );
+#endif
    }
 /*
    double Rmin = theCells[0][0].riph;

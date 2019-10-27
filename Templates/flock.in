@@ -5,7 +5,8 @@
 # Build options
 INITIAL  = flock
 HYDRO    = mhd
-BOUNDARY = fixed
+GEOMETRY = cylindrical
+BOUNDARY = zerograd
 OUTPUT   = h5out
 RESTART  = h5in
 PLANETS  = sun

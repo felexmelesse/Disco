@@ -1,9 +1,10 @@
 
 #include "../paul.h"
 
-double get_om( double );
-double get_om1( double );
-double get_cs2( double );
+double get_om( double *);
+double get_om1( double *);
+double get_cs2( double *);
+double bfield_scale_factor(double x, int dim);
 
 static double gamma_law = 0.0; 
 static double RHO_FLOOR = 0.0; 
@@ -11,6 +12,7 @@ static double PRE_FLOOR = 0.0;
 static double explicit_viscosity = 0.0;
 static int include_viscosity = 0;
 static int isothermal = 0;
+static int polar_sources = 0;
 
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
@@ -19,6 +21,8 @@ void setHydroParams( struct domain * theDomain ){
    PRE_FLOOR = theDomain->theParList.Pressure_Floor;
    explicit_viscosity = theDomain->theParList.viscosity;
    include_viscosity = theDomain->theParList.visc_flag;
+   if(theDomain->NgRa == 0)
+       polar_sources = 1;
 }
 
 int set_B_flag(void){
@@ -39,7 +43,7 @@ void prim2cons( double * prim , double * cons , double * x , double dV ){
    double vr  = prim[URR];
    double vp  = prim[UPP]*r;
    double vz  = prim[UZZ];
-   double om  = get_om( r );
+   double om  = get_om( x );
    double vp_off = vp - om*r;
 
    double Br = prim[BRR];
@@ -57,7 +61,7 @@ void prim2cons( double * prim , double * cons , double * x , double dV ){
    cons[LLL] = r*rho*vp*dV;
    cons[SZZ] = rho*vz*dV;
 
-   cons[BRR] = Br*dV/r;
+   cons[BRR] = Br*dV * bfield_scale_factor(r, 0);
    cons[BPP] = Bp*dV/r;
    cons[BZZ] = Bz*dV;
 
@@ -124,7 +128,7 @@ void getUstar( double * prim , double * Ustar , double * x , double Sk , double 
    Ustar[SZZ] = Msz;
    Ustar[TAU] = Estar;
 
-   Ustar[BRR] = Bsr/r;
+   Ustar[BRR] = Bsr * bfield_scale_factor(r, 0);
    Ustar[BPP] = Bsp/r;
    Ustar[BZZ] = Bsz;
 
@@ -132,39 +136,6 @@ void getUstar( double * prim , double * Ustar , double * x , double Sk , double 
    for( q=NUM_C ; q<NUM_Q ; ++q ){
       Ustar[q] = prim[q]*Ustar[DDD];
    }
-/*
-   double rho = prim[RHO];
-   double vr  = prim[URR];
-   double vp  = prim[UPP]*r;
-   double vz  = prim[UZZ];
-   double Pp  = prim[PPP];
-
-   double om = get_om( r );
-   double vp_off = vp - om*r;
-   double v2 = vr*vr+vp_off*vp_off+vz*vz;
-
-   double vn = vr*n[0] + vp*n[1] + vz*n[2];
-
-   double vn_off = vn - om*r*n[1];
-   double Ss_off = Ss + vn_off - vn;
-
-   double rhoe = Pp/(gamma_law - 1.);
-
-   double rhostar = rho*(Sk - vn)/(Sk - Ss);
-   double Pstar = Pp*(Ss - vn)/(Sk - Ss);
-   double Us = rhoe*(Sk - vn)/(Sk - Ss);
-
-   Ustar[DDD] = rhostar;
-   Ustar[SRR] =   rhostar*( vr + (Ss-vn)*n[0] );
-   Ustar[LLL] = r*rhostar*( vp + (Ss-vn)*n[1] );
-   Ustar[SZZ] =   rhostar*( vz + (Ss-vn)*n[2] );
-   Ustar[TAU] = .5*rhostar*v2 + Us + rhostar*Ss_off*(Ss - vn) + Pstar;
-
-   int q;
-   for( q=NUM_C ; q<NUM_Q ; ++q ){
-      Ustar[q] = prim[q]*Ustar[DDD];
-   }
-*/
 }
 
 void cons2prim( double * cons , double * prim , double * x , double dV ){
@@ -177,14 +148,14 @@ void cons2prim( double * cons , double * prim , double * x , double dV ){
    double Sp  = cons[LLL]/dV/r;
    double Sz  = cons[SZZ]/dV;
    double E   = cons[TAU]/dV;
-   double om  = get_om( r );
+   double om  = get_om( x );
    
    double vr = Sr/rho;
    double vp = Sp/rho;
    double vp_off = vp - om*r;
    double vz = Sz/rho;
 
-   double Br  = cons[BRR]/dV*r;
+   double Br  = cons[BRR]/(dV * bfield_scale_factor(r, 0));
    double Bp  = cons[BPP]/dV*r;
    double Bz  = cons[BZZ]/dV;
    double B2 = Br*Br+Bp*Bp+Bz*Bz;
@@ -195,7 +166,7 @@ void cons2prim( double * cons , double * prim , double * x , double dV ){
 
    if( Pp  < PRE_FLOOR*rho ) Pp = PRE_FLOOR*rho;
    if( isothermal ){
-      double cs2 = get_cs2( r );
+      double cs2 = get_cs2( x );
       Pp = cs2*rho/gamma_law;
    }
 
@@ -243,7 +214,7 @@ void flux( double * prim , double * flux , double * x , double * n ){
    flux[SZZ] =     rho*vz*vn + (Pp+.5*B2)*n[2] - Bz*Bn;
    flux[TAU] = ( .5*rho*v2 + rhoe + Pp + B2 )*vn - vB*Bn;
 
-   flux[BRR] =(Br*vn - vr*Bn)/r;
+   flux[BRR] =(Br*vn - vr*Bn) * bfield_scale_factor(r, 0);
    flux[BPP] =(Bp*vn - vp*Bn)/r;
    flux[BZZ] = Bz*vn - vz*Bn;
 
@@ -255,6 +226,7 @@ void flux( double * prim , double * flux , double * x , double * n ){
 }
 
 double get_dp( double , double );
+double get_centroid( double , double , int);
 
 void source( double * prim , double * cons , double * xp , double * xm , double dVdt ){
    
@@ -267,6 +239,9 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    double r2_3 = (rp*rp + rp*rm + rm*rm)/3.;
    double vr  = prim[URR];
    double omega = prim[UPP];
+   double r = get_centroid(rp, rm, 1);
+   double z = get_centroid(xp[2], xm[2], 2);
+   double x[3] = {r, 0.5*(xm[1]+xp[1]), z};
 
    double Br = prim[BRR];
    double Bp = prim[BPP];
@@ -275,14 +250,22 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    double B2 = Br*Br+Bp*Bp+Bz*Bz;
  
    //double centrifugal = ( rho*omega*omega*r2_3 - Bp*Bp )/r_1*sin(.5*dphi)/(.5*dphi);
-   double centrifugal = ( rho*omega*omega*r2_3 )/r_1*sin(.5*dphi)/(.5*dphi);
-   centrifugal -= Bp*Bp/r_1;
+   double centrifugal;
+   if(polar_sources)
+   {
+      centrifugal = ( rho*omega*omega*r2_3 )/r_1*sin(.5*dphi)/(.5*dphi);
+      centrifugal -= Bp*Bp/r_1;
+   }
+   else
+   {
+       centrifugal = rho*omega*omega*r - Bp*Bp/r;
+   }
    double press_bal   = (Pp+.5*B2)/r_1;
 
    cons[SRR] += dVdt*( centrifugal + press_bal );
 
-   double om  = get_om( r_1 );
-   double om1 = get_om1( r_1 );
+   double om  = get_om( x );
+   double om1 = get_om1( x );
 
    cons[TAU] += dVdt*rho*vr*( om*om*r2_3/r_1 - om1*(omega-om)*r2_3 );
  
@@ -301,7 +284,7 @@ void visc_flux( double * prim , double * gprim , double * flux , double * x , do
    double rho = prim[RHO];
    double vr  = prim[URR];
    double om  = prim[UPP];
-   double om_off = om - get_om(r);
+   double om_off = om - get_om(x);
    double vz  = prim[UZZ];
 
    double dnvr = gprim[URR];
@@ -318,20 +301,24 @@ void visc_flux( double * prim , double * gprim , double * flux , double * x , do
 void flux_to_E( double * Flux , double * Ustr , double * x , double * E1_riemann , double * B1_riemann , double * E2_riemann , double * B2_riemann , int dim ){
 
    double r = x[0];
+   double irfac = 1.0/bfield_scale_factor(x[0], 0);
 
    if( dim==0 ){
-      *E1_riemann = Flux[BRR]*r;   //Ez 
-      *B1_riemann = Ustr[BRR]*r*r; // r*Br
-      *E2_riemann = Flux[BZZ];    //Er 
-      *B2_riemann = Ustr[BZZ]*r;  //-r*Bz
+       //PHI
+      *E1_riemann =  Flux[BRR]*irfac;   // Ez 
+      *B1_riemann =  Ustr[BRR]*irfac;   // Br
+      *E2_riemann = -Flux[BZZ];         // Er 
+      *B2_riemann =  Ustr[BZZ];         // Bz
    }else if( dim==1 ){
-      *E1_riemann = -Flux[BPP]*r;  //Ez 
-      *B1_riemann = Ustr[BRR]*r*r; // r*Br
-      *E2_riemann = 1.0*Flux[BZZ];     //Ephi
+       //R
+      *E1_riemann = -Flux[BPP]*r;       // Ez 
+      *B1_riemann =  Ustr[BRR]*irfac;   // Br
+      *E2_riemann =  Flux[BZZ];         // Ephi
    }else{
-      *E1_riemann = -Flux[BPP]*r;   //Er 
-      *B1_riemann = Ustr[BZZ]*r;  //-r*Bz
-      *E2_riemann = 1.0*-Flux[BRR]*r;  //Ephi
+       //Z
+      *E1_riemann =  Flux[BPP]*r;       // Er 
+      *B1_riemann =  Ustr[BZZ];         // Bz
+      *E2_riemann = -Flux[BRR]*irfac;   // Ephi
    }
 
 }
@@ -473,7 +460,7 @@ double get_dL( double * , double * , int );
 
 double mindt(double * prim , double w , double * xp , double * xm ){
 
-   double r = .5*(xp[0]+xm[0]);
+   double r = get_centroid(xp[0], xm[0], 1);
    double Pp  = prim[PPP];
    double rho = prim[RHO];
    double vp  = (prim[UPP]-w)*r;
@@ -535,4 +522,16 @@ void reflect_prims(double * prim, double * x, int dim)
         prim[UPP] = -prim[UPP];
     else if(dim == 2)
         prim[UZZ] = -prim[UZZ];
+}
+
+double bfield_scale_factor(double x, int dim)
+{
+    // Returns the factor used to scale B_cons.
+    // x is coordinate location in direction dim.
+    // dim == 0: r, dim == 1: p, dim == 2: z
+
+    if(dim == 0)
+        return 1.0/x;
+    else
+        return 1.0;
 }

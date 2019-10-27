@@ -1,4 +1,3 @@
-//http://www.aanda.org/articles/aa/pdf/2010/08/aa12443-09.pdf
 #include "../paul.h"
 #include "../Hydro/frame.h"
 

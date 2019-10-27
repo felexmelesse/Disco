@@ -5,7 +5,8 @@
 # Build options
 INITIAL  = spinring
 HYDRO    = mhd
-BOUNDARY = polar
+GEOMETRY = cylindrical
+BOUNDARY = fixed3d
 OUTPUT   = h5out
 RESTART  = h5in
 PLANETS  = none

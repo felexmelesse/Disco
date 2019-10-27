@@ -10,11 +10,11 @@ T_Times_2pi		1
 //Output Frequency//
 Num_Reports		4e4
 Num_Snapshots		0
-Num_Checkpoints		1
+Num_Checkpoints		10
 Use_Logtime		0
 
 //Grid Dimensions//
-Num_R			128
+Num_R			64
 Num_Z			1
 aspect			1.0	//Cell Aspect Ratio, for calculating N_phi
 Max_Aspect_Short	1.5	
@@ -25,24 +25,31 @@ R_Min			0.0
 R_Max			0.5
 Z_Min			-0.25 //-0.0625
 Z_Max			0.25  //0.0625
+R_Periodic		0
 Z_Periodic		0
 Phi_Max			1.0
 P_Times_2pi		1
+Z_Times_pi		0
 Log_Zoning		0	//0=Uniform, 1=Log, 2=Hybrid
 Log_Radius		0.25	//Only for option 2 of Log_Zoning
+
+NoBC_Rmin       1   //0 = Regular boundary. Ghost zones added and
+NoBC_Rmax       0   //    boundary condition applied.
+NoBC_Zmin       0   //1 = Coordinate boundary (like r=0 origin).
+NoBC_Zmax       0   //    No ghost zones or explicit BC applied.
 
 //Numerical Parameters
 CFL			0.5
 PLM			1.5
 Max_DT                  0.0 //If > 0.0, the maximum allowed time step.
-Riemann_Solver		2	//0=HLL, 1=HLLC, 2=HLLD
-Mesh_Motion		3	//0=Fixed, 1=By Cell, 2=Riemann Solver, 3=Avg
+Riemann_Solver		    2	//0=HLL, 1=HLLC, 2=HLLD
+Mesh_Motion		        3	//0=Fixed, 1=By Cell, 2=Riemann Solver, 3=Avg
 Exact_Mesh_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep
 Exact_Mesh_Omega_Par    0.0 //unused so far
-Absorbing_BC		0
-Initial_Regrid		0
-Density_Floor		0.0 //1e-5
-Pressure_Floor		0.0 //1e-5
+Absorbing_BC		    0
+Initial_Regrid		    0
+Density_Floor		    0.0 //1e-5
+Pressure_Floor		    0.0 //1e-5
 Constrained_Transport   1
 
 //Hydro Parameters
@@ -76,6 +83,10 @@ Init_Par1       0.0   // doub
 Init_Par2       0.0   // doub
 Init_Par3       0.0   // doub
 Init_Par4       0.0   // doub
+Init_Par5       0.0   // doub
+Init_Par6       0.0   // doub
+Init_Par7       0.0   // doub
+Init_Par8       0.0   // doub
 
 //Noise Parameters
 Noise_Type      0       // 0: No Noise, 1: URR and UPP 

@@ -5,6 +5,7 @@
 # Build options
 INITIAL  = sorathia
 HYDRO    = mhd
+GEOMETRY = cylindrical
 BOUNDARY = fixed
 OUTPUT   = h5out
 RESTART  = h5in

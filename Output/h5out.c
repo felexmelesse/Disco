@@ -115,6 +115,10 @@ void writeOpts(struct domain *theDomain, char filename[])
     buf[255] = '\0';
     dumpVal(filename, "Opts", "HYDRO", buf2, strtype);
     
+    strncpy(buf, GEOMETRY, 256);
+    buf[255] = '\0';
+    dumpVal(filename, "Opts", "GEOMETRY", buf2, strtype);
+    
     strncpy(buf, BOUNDARY, 256);
     buf[255] = '\0';
     dumpVal(filename, "Opts", "BOUNDARY", buf2, strtype);
@@ -195,8 +199,14 @@ void writePars(struct domain *theDomain, char filename[])
                     H5T_NATIVE_INT);
     dumpVal(filename, "Pars", "Log_Zoning", &(pars->LogZoning),
                     H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "R_Periodic", &(pars->R_Periodic),
+                    H5T_NATIVE_INT);
     dumpVal(filename, "Pars", "Z_Periodic", &(pars->Z_Periodic),
                     H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "NoBC_Rmin", &(pars->NoBC_Rmin), H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "NoBC_Rmax", &(pars->NoBC_Rmax), H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "NoBC_Zmin", &(pars->NoBC_Zmin), H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "NoBC_Zmax", &(pars->NoBC_Zmax), H5T_NATIVE_INT);
 
     dumpVal(filename, "Pars", "Log_Radius", &(pars->LogRadius),
                     H5T_NATIVE_DOUBLE);
@@ -291,12 +301,41 @@ void writePars(struct domain *theDomain, char filename[])
                     H5T_NATIVE_DOUBLE);
     dumpVal(filename, "Pars", "Init_Par4", &(pars->initPar4),
                     H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Init_Par5", &(pars->initPar5),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Init_Par6", &(pars->initPar6),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Init_Par7", &(pars->initPar7),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Init_Par8", &(pars->initPar8),
+                    H5T_NATIVE_DOUBLE);
     
     dumpVal(filename, "Pars", "Noise_Type", &(pars->noiseType),
                     H5T_NATIVE_INT);
     dumpVal(filename, "Pars", "Noise_Abs", &(pars->noiseAbs),
                     H5T_NATIVE_DOUBLE);
     dumpVal(filename, "Pars", "Noise_Rel", &(pars->noiseRel),
+                    H5T_NATIVE_DOUBLE);
+
+    dumpVal(filename, "Pars", "Sink_Type", &(pars->sinkType),
+                    H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "Sink_Par1", &(pars->sinkPar1),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Sink_Par2", &(pars->sinkPar2),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Sink_Par3", &(pars->sinkPar3),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Sink_Par4", &(pars->sinkPar4),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Nozzle_Type", &(pars->nozzleType),
+                    H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "Nozzle_Par1", &(pars->nozzlePar1),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Nozzle_Par2", &(pars->nozzlePar2),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Nozzle_Par3", &(pars->nozzlePar3),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Nozzle_Par4", &(pars->nozzlePar4),
                     H5T_NATIVE_DOUBLE);
 }
 
@@ -315,6 +354,10 @@ void output( struct domain * theDomain , char * filestart ){
    int * Np = theDomain->Np;
    int Npl = theDomain->Npl;
    int Ng = theDomain->Ng;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
    int Nr_Tot = theDomain->theParList.Num_R;
    int Nz_Tot = theDomain->theParList.Num_Z;
    double * r_jph = theDomain->r_jph;
@@ -323,29 +366,27 @@ void output( struct domain * theDomain , char * filestart ){
    int size = theDomain->size;
    int * dim_rank = theDomain->dim_rank;
    int * dim_size = theDomain->dim_size;
-   int Z_Periodic = theDomain->theParList.Z_Periodic;
 
-   int NpDat = 6;
+   int NpDat = 7;
    int Ntools = theDomain->num_tools;
    avg_diagnostics( theDomain );
 
    char filename[256];
    sprintf(filename,"%s.h5",filestart);
-   int jmin = 0;
-   if( dim_rank[0] != 0 ) jmin = Ng;
-   int jmax = Nr;
-   if( dim_rank[0] != dim_size[0]-1 ) jmax = Nr-Ng;
-   int kmin = 0;
-   //if( dim_rank[1] != 0 || Z_Periodic ) kmin = Ng;
-   if( dim_rank[1] != 0 ) kmin = Ng;
-   int kmax = Nz;
-   //if( dim_rank[1] != dim_size[1]-1 || Z_Periodic ) kmax = Nz-Ng;
-   if( dim_rank[1] != dim_size[1]-1 ) kmax = Nz-Ng;
 
-   if(Z_Periodic)
-   {
-       Nz_Tot += 2*Ng;
-   }
+   int jmin = NgRa;
+   int jmax = Nr - NgRb;
+   int kmin = NgZa;
+   int kmax = Nz - NgZb;
+   if(dim_rank[0] == 0) jmin = 0;
+   if(dim_rank[0] == dim_size[0]-1) jmax = Nr;
+   if(dim_rank[1] == 0) kmin = 0;
+   if(dim_rank[1] == dim_size[1]-1) kmax = Nz;
+
+   if(!theDomain->theParList.NoBC_Rmin) Nr_Tot += Ng;
+   if(!theDomain->theParList.NoBC_Rmax) Nr_Tot += Ng;
+   if(Nz_Tot > 1 && !theDomain->theParList.NoBC_Zmin) Nz_Tot += Ng;
+   if(Nz_Tot > 1 && !theDomain->theParList.NoBC_Zmax) Nz_Tot += Ng;
 
    int Ntot = 0;
    int j,k;
@@ -356,7 +397,9 @@ void output( struct domain * theDomain , char * filestart ){
       }
    }
    int myNtot = Ntot;
+#if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , &Ntot  , 1 , MPI_INT , MPI_SUM , theDomain->theComm );
+#endif
 
    int Ndoub = Cell2Doub(NULL,NULL,0);
 
@@ -391,7 +434,9 @@ void output( struct domain * theDomain , char * filestart ){
       hsize_t fdims3[3] = {Nz_Tot, Nr_Tot, Ntools};
       createDataset(filename,"Data","Diagnostics",3,fdims3,H5T_NATIVE_DOUBLE);
    }
+#if USE_MPI
    MPI_Barrier( theDomain->theComm );
+#endif
    if( rank==0 ){
       writeSimple(filename,"Grid","T",&(theDomain->t),H5T_NATIVE_DOUBLE);
       writePars(theDomain, filename);
@@ -406,6 +451,7 @@ void output( struct domain * theDomain , char * filestart ){
          PlanetData[NpDat*p + 3] = pl->r;
          PlanetData[NpDat*p + 4] = pl->phi;
          PlanetData[NpDat*p + 5] = pl->eps;
+         PlanetData[NpDat*p + 6] = (double)pl->type;
       }
       writeSimple(filename,"Data","Planets",PlanetData,H5T_NATIVE_DOUBLE);
    }
@@ -421,7 +467,9 @@ void output( struct domain * theDomain , char * filestart ){
          j0 = jSum;
          if( dim_rank[1] == 0 ) jSum += jSize;
       }
+#if USE_MPI
       MPI_Allreduce( MPI_IN_PLACE , &jSum , 1 , MPI_INT , MPI_MAX , theDomain->theComm );
+#endif
    }
    int kSum = 0;
    for( nrk=0 ; nrk < dim_size[1] ; ++nrk ){
@@ -429,7 +477,9 @@ void output( struct domain * theDomain , char * filestart ){
          k0 = kSum;
          if( dim_rank[0] == 0 ) kSum += kSize;
       }
+#if USE_MPI
       MPI_Allreduce( MPI_IN_PLACE , &kSum , 1 , MPI_INT , MPI_MAX , theDomain->theComm );
+#endif
    }
 
 
@@ -471,11 +521,13 @@ void output( struct domain * theDomain , char * filestart ){
    }
 
    int runningTot = 0;
+#if USE_MPI
    for( nrk=0 ; nrk < size ; ++nrk ){
       int thisTot = myNtot;
       MPI_Bcast( &thisTot , 1 , MPI_INT , nrk , theDomain->theComm );
       if( rank > nrk ) runningTot += thisTot;
    }
+#endif
 
    int jk;
    for( jk=0 ; jk<jSize*kSize ; ++jk ){
@@ -527,7 +579,9 @@ void output( struct domain * theDomain , char * filestart ){
             writePatch( filename , "Grid" , "z_kph" , z_kph-1+offset , H5T_NATIVE_DOUBLE , 1 , start1 , loc_size1 , glo_size1 );
          }
       }
+#if USE_MPI
       MPI_Barrier( theDomain->theComm );
+#endif
    }
    zero_diagnostics( theDomain );
 
@@ -536,7 +590,9 @@ void output( struct domain * theDomain , char * filestart ){
    free(Id_phi0);
    free(Qwrite);
    free(diagRZwrite);
+#if USE_MPI
    MPI_Barrier(theDomain->theComm);
+#endif
 }
 
 

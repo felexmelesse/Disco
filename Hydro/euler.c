@@ -1,9 +1,9 @@
 
 #include "../paul.h"
 
-double get_om( double );
-double get_om1( double );
-double get_cs2( double );
+double get_om( double *);
+double get_om1( double *);
+double get_cs2( double *);
 
 static double gamma_law = 0.0; 
 static double RHO_FLOOR = 0.0; 
@@ -12,6 +12,7 @@ static double explicit_viscosity = 0.0;
 static int include_viscosity = 0;
 static int isothermal = 0;
 static int alpha_flag = 0;
+static int polar_sources = 0;
 
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
@@ -21,6 +22,8 @@ void setHydroParams( struct domain * theDomain ){
    explicit_viscosity = theDomain->theParList.viscosity;
    include_viscosity = theDomain->theParList.visc_flag;
    alpha_flag = theDomain->theParList.alpha_flag;
+   if(theDomain->NgRa == 0)
+       polar_sources = 1;
 }
 
 int set_B_flag(void){
@@ -41,7 +44,7 @@ void prim2cons( double * prim , double * cons , double * x , double dV ){
    double vr  = prim[URR];
    double vp  = prim[UPP]*r;
    double vz  = prim[UZZ];
-   double om  = get_om( r );
+   double om  = get_om( x );
    double vp_off = vp - om*r;
 
    double v2  = vr*vr + vp_off*vp_off + vz*vz;
@@ -69,7 +72,7 @@ void getUstar( double * prim , double * Ustar , double * x , double Sk , double 
    double vz  = prim[UZZ];
    double Pp  = prim[PPP];
 
-   double om = get_om( r );
+   double om = get_om( x );
    double vp_off = vp - om*r;
    double v2 = vr*vr+vp_off*vp_off+vz*vz;
 
@@ -106,7 +109,7 @@ void cons2prim( double * cons , double * prim , double * x , double dV ){
    double Sp  = cons[LLL]/dV/r;
    double Sz  = cons[SZZ]/dV;
    double E   = cons[TAU]/dV;
-   double om  = get_om( r );
+   double om  = get_om( x );
    
    double vr = Sr/rho;
    double vp = Sp/rho;
@@ -119,7 +122,7 @@ void cons2prim( double * cons , double * prim , double * x , double dV ){
 
    if( Pp  < PRE_FLOOR*rho ) Pp = PRE_FLOOR*rho;
    if( isothermal ){
-      double cs2 = get_cs2( r );
+      double cs2 = get_cs2( x );
       Pp = cs2*rho/gamma_law;
    }
 
@@ -137,14 +140,14 @@ void cons2prim( double * cons , double * prim , double * x , double dV ){
 }
 
 void flux( double * prim , double * flux , double * x , double * n ){
-   
+  
    double r = x[0];
    double rho = prim[RHO];
    double Pp  = prim[PPP];
    double vr  = prim[URR];
    double vp  = prim[UPP]*r;
    double vz  = prim[UZZ];
-   double om  = get_om( r );
+   double om  = get_om( x );
 
    double vn = vr*n[0] + vp*n[1] + vz*n[2];
    double wn = om*r*n[1];
@@ -167,6 +170,7 @@ void flux( double * prim , double * flux , double * x , double * n ){
 }
 
 double get_dp( double , double );
+double get_centroid( double , double , int);
 
 void source( double * prim , double * cons , double * xp , double * xm , double dVdt ){
    
@@ -175,18 +179,35 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    double dphi = get_dp(xp[1],xm[1]);
    double rho = prim[RHO];
    double Pp  = prim[PPP];
+   double r = get_centroid(rp, rm, 1);
+   double z = get_centroid(xp[2], xm[2], 2);
    double r_1  = .5*(rp+rm);
    double r2_3 = (rp*rp + rp*rm + rm*rm)/3.;
    double vr  = prim[URR];
    double omega = prim[UPP];
- 
-   double centrifugal = rho*omega*omega*r2_3/r_1*sin(.5*dphi)/(.5*dphi);
+
+   double x[3] = {r, 0.5*(xm[1]+xp[1]), z};
+
+   //Polar_Sources are the result of integrating the centripetal source term
+   //in a cartesian frame, assuming rho and omega are constant. This leads to
+   //better behaviour at r=0.
+   //
+   //The naive source term (polar_sources==0), on the other hand, can exactly
+   //cancel with gravitational source terms.
+   //
+   double centrifugal;
+   if(polar_sources)
+      centrifugal = rho*omega*omega*r2_3/r_1*sin(.5*dphi)/(.5*dphi);
+   else
+      centrifugal = rho*omega*omega*r;
+
    double press_bal   = Pp/r_1;
 
    cons[SRR] += dVdt*( centrifugal + press_bal );
 
-   double om  = get_om( r_1 );
-   double om1 = get_om1( r_1 );
+   //TODO: These used to be evaluated at r_1, not r.  Check that r is ok.
+   double om  = get_om( x );
+   double om1 = get_om1( x );
 
    cons[TAU] += dVdt*rho*vr*( om*om*r2_3/r_1 - om1*(omega-om)*r2_3 );
  
@@ -218,7 +239,7 @@ void visc_flux( double * prim , double * gprim , double * flux , double * x , do
    double rho = prim[RHO];
    double vr  = prim[URR];
    double om  = prim[UPP];
-   double om_off = om - get_om(r);
+   double om_off = om - get_om(x);
    double vz  = prim[UZZ];
 
    double dnvr = gprim[URR];
@@ -267,7 +288,7 @@ double get_dL( double * , double * , int );
 
 double mindt(double * prim , double w , double * xp , double * xm ){
 
-   double r = .5*(xp[0]+xm[0]);
+   double r = get_centroid(xp[0], xm[0], 1);
    double Pp  = prim[PPP];
    double rho = prim[RHO];
    double vp  = (prim[UPP]-w)*r;
@@ -342,4 +363,13 @@ void reflect_prims(double * prim, double * x, int dim)
         prim[UPP] = -prim[UPP];
     else if(dim == 2)
         prim[UZZ] = -prim[UZZ];
+}
+
+double bfield_scale_factor(double x, int dim)
+{
+    // Returns the factor used to scale B_cons.
+    // x is coordinate location in direction dim.
+    // dim == 0: r, dim == 1: p, dim == 2: z
+    
+    return 1.0;
 }

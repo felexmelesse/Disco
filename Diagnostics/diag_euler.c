@@ -26,7 +26,7 @@ void get_diagnostics( double * x , double * prim , double * Qrz,
    double vr = prim[URR];
    double omega = prim[UPP];
    double vz = prim[UZZ];
-   double Pp = prim[UPP];
+   double Pp = prim[PPP];
 
    Qrz[0] = rho;
    Qrz[1] = 2.*M_PI*r*rho*vr;

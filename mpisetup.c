@@ -3,6 +3,7 @@
 
 int mpiSetup( struct domain * theDomain , int argc, char * argv[] ){
 
+#if USE_MPI
    MPI_Comm_size(MPI_COMM_WORLD,&(theDomain->size));
    int size = theDomain->size;
    int * dim_rank   = theDomain->dim_rank;
@@ -54,6 +55,17 @@ int mpiSetup( struct domain * theDomain , int argc, char * argv[] ){
       MPI_Cart_rank(theDomain->theComm,next_rank,&(left_rank[i]));
       next_rank[i] += 1;
    }
+#else
+    printf("Compiled in serial mode.\n");
+    theDomain->dim_rank[0] = 0;
+    theDomain->dim_rank[1] = 0;
+    theDomain->dim_size[0] = 1;
+    theDomain->dim_size[1] = 1;
+    theDomain->right_rank[0] = 0;
+    theDomain->right_rank[1] = 0;
+    theDomain->left_rank[0] = 0;
+    theDomain->left_rank[1] = 0;
+#endif
 
    return(0);
 }
