@@ -54,10 +54,36 @@ void initial( double * prim , double * x ){
    double dr_dPhi	= -a*sin(phi);
    double dphi_dPhi	= 1.0 - (a/r)*cos(phi);
 
+   double vr_global	= dr_dPhi*(sqrt(1./R) - sqrt(1./a));
+   double vp_global	= dphi_dPhi*(sqrt(1./(R*R*R)) - sqrt(1./(a*a*a))) + rot_om;
+   double vp_local	= sqrt(mu/(r*r*r));
+   
+   //Fixing angular velocity profile 
+   double r_in		= 0.005;
+   double r_out		= 0.01;
+   double vr_f, vp_f, slope_p, slope_r;
+   
+   if (r < r_in)
+   {
+	vp_f	= vp_local;
+	vr_f	= 0;
+   }
+   else if (r_in < r && r < r_out)
+   {
+	slope_p	= (vp_global - vp_local)/(r_out - r_in);
+	vp_f	= vp_local + slope_p*(r-r_in);
+
+	slope_r	= (vr_global - 0)/(r_out - r_in);
+	vr_f	= 0 + slope_r*(r-r_in);
+   }else{
+	vp_f	= vp_global;
+	vr_f	= vr_global;
+   }
+
    prim[RHO] = rho;
    prim[PPP] = Pp;
-   prim[URR] = dr_dPhi*(sqrt(1./R) - sqrt(1./a)); //-sin(xi) * (sqrt(1./(R)) - sqrt(1./(a)); //-1.5*nu/r;
-   prim[UPP] = dphi_dPhi*(sqrt(1./(R*R*R)) - sqrt(1./(a*a*a))) + rot_om; //cos(xi) R * sqrt(1./(a*a*a));
+   prim[URR] = vr_f; //-sin(xi) * (sqrt(1./(R)) - sqrt(1./(a)); //-1.5*nu/r;
+   prim[UPP] = vp_f; //cos(xi) R * sqrt(1./(a*a*a));
    prim[UZZ] = 0.0;
    if( NUM_N>0 ) prim[NUM_C] = X;
 
