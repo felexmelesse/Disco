@@ -3,6 +3,17 @@ import numpy as np
 from . import geom as dg
 
 
+def loadGitVersion(filename):
+
+    f = h5.File(filename, "r")
+
+    gv = f['GIT_VERSION'][0]
+
+    f.close()
+
+    return gv
+
+
 def loadPars(filename):
 
     f = h5.File(filename, "r")
@@ -175,14 +186,14 @@ def getVarNames(filename):
             texnames.append(r'$q_{0:d}$'.format(q))
 
     elif hydro == 'greuler' and num_c <= 5:
-        names = ['rho', 'P', 'u_r', 'u_p', 'u_z'][:num_c]
+        names = ['rho', 'P', 'ur', 'up', 'uz'][:num_c]
         texnames = [r'$\rho$', r'$P$', r'$u_r$', r'$u_\phi$', r'$u_z$'][:num_c]
         for q in range(num_n):
             names.append('q{0:d}'.format(q))
             texnames.append(r'$q_{0:d}$'.format(q))
 
     elif (hydro == 'grmhd' or hydro == 'grmhd2') and num_c <= 8:
-        names = ['rho', 'P', 'u_r', 'u_p', 'u_z', 'Br', 'Bp', 'Bz'][:num_c]
+        names = ['rho', 'P', 'ur', 'up', 'uz', 'Br', 'Bp', 'Bz'][:num_c]
         texnames = [r'$\rho$', r'$P$', r'$u_r$', r'$u_\phi$', r'$u_z$',
                     r'$B^r$', r'$B^\phi$', r'$B^z$'][:num_c]
         for q in range(num_n):
