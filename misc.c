@@ -173,7 +173,6 @@ void set_wcell( struct domain * theDomain ){
    }
 }
 
-void initial( double * , double * );
 void clear_cell( struct cell * );
 
 void regrid( struct domain * theDomain ){

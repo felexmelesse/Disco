@@ -700,7 +700,7 @@ void drawZSlice(double camdist, double xoff, double yoff, double zoff, int q,
 
                 double z0 = 0.0;
                 //if( dim3d ) 
-                    z0 = z_kph[KK];
+                    z0 = 0.5*(z_kph[KK-1] + z_kph[KK]);
 
                 drawZCell(rp, rm, phip, phim, z0, camdist, xoff, yoff, zoff);
 
@@ -1358,7 +1358,7 @@ void loadPlanets(char *filename)
    int glo_size[2] = {Npl,NpDat};
    for( p=0 ; p<Npl ; ++p ){
       start[0] = p;
-      double thisPlanet[6];
+      double thisPlanet[NpDat];
       readPatch( filename , group2 , (char *)"Planets" , thisPlanet , H5T_NATIVE_DOUBLE , 2 , start , loc_size , glo_size );
       int dp;
       printf("Planet = ");
