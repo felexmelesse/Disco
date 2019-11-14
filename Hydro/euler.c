@@ -158,7 +158,7 @@ void flux( double * prim , double * flux , double * x , double * n ){
 
    flux[DDD] = rho*vn;
    flux[SRR] = rho*vr*vn + Pp*n[0];
-   flux[LLL] = r*rho*vp*vn + r*Pp*n[1];
+   flux[LLL] = r*(rho*vp*vn + Pp*n[1]);
    flux[SZZ] = rho*vz*vn + Pp*n[2];
    flux[TAU] = ( .5*rho*v2 + rhoe + Pp )*vn - Pp*wn;
 

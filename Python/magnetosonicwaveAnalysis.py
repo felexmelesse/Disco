@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import discopy.util as util
 import discopy.geom as geom
-import calc as ca
+import discopy.calc as ca
 
 
 def rhoProf(x, a, x0, L, rho0):

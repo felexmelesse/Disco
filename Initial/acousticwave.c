@@ -52,7 +52,6 @@ void initial(double *prim, double *x)
         rho = rho_ref;
 
     P = P_ref * pow(rho/rho_ref, gam);
-
     double cs = sqrt(gam*P/rho);
     v = v_ref + 2*(cs-cs_ref)/(gam-1);
 
