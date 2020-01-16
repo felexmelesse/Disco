@@ -402,7 +402,7 @@ void phi_flux( struct domain * theDomain , double dt ){
        jmin = NgRa;
        jmax = Nr-NgRb;
        kmin = NgZa;
-       kmax = NgZb;
+       kmax = Nz-NgZb;
    }
 
 
@@ -752,4 +752,51 @@ void print_welcome()
     printf("NUM_N: %d\n", NUM_N);
     printf("CT_MODE: %d\n", CT_MODE);
     printf("\n");
+}
+
+void get_centroid_arr(double *xp, double *xm, double *x);
+
+void dump_grid(struct domain *theDomain, char filename[])
+{
+   struct cell ** theCells = theDomain->theCells;
+   int Nr = theDomain->Nr;
+   int Nz = theDomain->Nz;
+   int NgRa = theDomain->NgRa;
+   int NgRb = theDomain->NgRb;
+   int NgZa = theDomain->NgZa;
+   int NgZb = theDomain->NgZb;
+   int * Np = theDomain->Np;
+
+   double * r_jph = theDomain->r_jph;
+   double * z_kph = theDomain->z_kph;
+
+   int i,j,k, q;
+
+   FILE *f = fopen(filename, "w");
+
+   for( k=NgZa ; k<Nz-NgZb ; ++k ){
+      for( j=NgRa ; j<Nr-NgRb ; ++j ){
+         int jk = j+Nr*k;
+         for( i=0 ; i<Np[jk] ; ++i ){
+            struct cell * c = &(theCells[jk][i]);
+            double phip = c->piph;
+            double phim = c->piph - c->dphi;
+            double xp[3] = {r_jph[j]  ,phip,z_kph[k]  };
+            double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
+            double x[3];
+            get_centroid_arr(xp, xm, x);
+            fprintf(f, "%d %d %d %.12le %.12le %.12le",
+                    k, j, i, x[0], x[1], x[2]);
+            for(q=0; q<NUM_Q; q++)
+                fprintf(f, " %.12le", c->prim[q]);
+            for(q=0; q<NUM_Q; q++)
+                fprintf(f, " %.12le", c->cons[q]);
+            for(q=0; q<NUM_Q; q++)
+                fprintf(f, " %.12le", c->RKcons[q]);
+            fprintf(f, "\n");
+         }    
+      }    
+   }
+   fclose(f);
+
 }

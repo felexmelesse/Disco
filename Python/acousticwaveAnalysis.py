@@ -1,21 +1,22 @@
 import sys
 import math
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import discopy.util as util
 import discopy.geom as geom
+
 
 def rhoProf(x, a, x0, L, rho0):
 
     rho = np.empty(x.shape)
     rho[:] = rho0
-    inn = np.fabs(x-x0)<L
+    inn = np.fabs(x-x0) < L
     xin = x[inn]
     f = (xin-x0)*(xin-x0)/(L*L) - 1.0
     rho[inn] *= 1.0 + a*f*f*f*f
 
     return rho
+
 
 def calcAcousticWave(t, x, pars, tol=1.0e-6):
     rho0 = 1.0
@@ -47,11 +48,11 @@ def calcAcousticWave(t, x, pars, tol=1.0e-6):
         v = v0 + 2*(cs-cs0)/(gam-1)
         xf = xc + (v+cs)*t
         err = (xf-x) / (xR-xL)
-        over = err>0
-        under = err<0
+        over = err > 0
+        under = err < 0
         xb[over] = xc[over]
         xa[under] = xc[under]
-        
+
     xc = 0.5*(xa+xb)
     rho = rhoProf(xc, a, x0, L, rho0)
     cs = cs0*np.power(rho/rho0, 0.5*(gam-1))
@@ -70,11 +71,11 @@ def analyzeSingle(filename):
     nx = pars['Num_R']
     gam = pars['Adiabatic_Index']
 
-    rho = prim[:,0]
-    P = prim[:,1]
-    v1 = prim[:,2]
-    v2 = prim[:,3]
-    v3 = prim[:,4]
+    rho = prim[:, 0]
+    P = prim[:, 1]
+    v1 = prim[:, 2]
+    v2 = prim[:, 3]
+    v3 = prim[:, 4]
     eS = P * np.power(rho, -gam)
     cs = np.sqrt(gam*P/rho)
 
@@ -100,19 +101,25 @@ def analyzeSingle(filename):
     JmS = VS + 2*csS/(gam-1)
     JpS = VS - 2*csS/(gam-1)
 
-
     dV = geom.getDV(dat, opts, pars)
 
-    errRho = geom.integrate(np.fabs(rho-rhoS), dat, opts, pars, dV)
-    errP = geom.integrate(np.fabs(P-PS), dat, opts, pars, dV)
-    errVx = geom.integrate(np.fabs(vx-kx*VS), dat, opts, pars, dV)
-    errVy = geom.integrate(np.fabs(vy-ky*VS), dat, opts, pars, dV)
-    errVz = geom.integrate(np.fabs(vz-kz*VS), dat, opts, pars, dV)
-    errS = geom.integrate(np.fabs(eS-eSS), dat, opts, pars, dV)
-    errJp = geom.integrate(np.fabs(Jp-JpS), dat, opts, pars, dV)
-    errJm = geom.integrate(np.fabs(Jm-JmS), dat, opts, pars, dV)
+    maskDistance = 0.1
+
+    dVmask = dV.copy()
+    dVmask[(x1 < pars['R_Min']+maskDistance)
+           | (x1 > pars['R_Max']-maskDistance)] = 0.0
+
+    errRho = geom.integrate(np.fabs(rho-rhoS), dat, opts, pars, dVmask)
+    errP = geom.integrate(np.fabs(P-PS), dat, opts, pars, dVmask)
+    errVx = geom.integrate(np.fabs(vx-kx*VS), dat, opts, pars, dVmask)
+    errVy = geom.integrate(np.fabs(vy-ky*VS), dat, opts, pars, dVmask)
+    errVz = geom.integrate(np.fabs(vz-kz*VS), dat, opts, pars, dVmask)
+    errS = geom.integrate(np.fabs(eS-eSS), dat, opts, pars, dVmask)
+    errJp = geom.integrate(np.fabs(Jp-JpS), dat, opts, pars, dVmask)
+    errJm = geom.integrate(np.fabs(Jm-JmS), dat, opts, pars, dVmask)
 
     return t, nx, errRho, errP, errVx, errVy, errVz, errS, errJp, errJm
+
 
 def analyze(filenames):
 
@@ -129,7 +136,7 @@ def analyze(filenames):
     errJp = np.empty(N)
     errJm = np.empty(N)
 
-    for i,f in enumerate(filenames):
+    for i, f in enumerate(filenames):
         dat = analyzeSingle(f)
         t[i] = dat[0]
         nx[i] = dat[1]
@@ -159,18 +166,18 @@ def makeErrPlot(t, nx, err, name, label):
     NX = np.unique(nx)
     figname = name + "_nx.png"
     if len(NX) > 1:
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1, 1)
         for tt in T:
-            ind = t==tt
+            ind = t == tt
             ax.plot(nx[ind], err[ind], marker='+', ms=10, mew=1, ls='')
-        nn = np.logspace(math.log10(NX[1]), math.log10(NX[-1]), 
-                            num=10, base=10.0)
-        ax.plot(nn, err.max() * np.power(nn/nn[0], -2), ls='--', lw=2, 
-                    color='grey')
+        nn = np.logspace(math.log10(NX[1]), math.log10(NX[-1]),
+                         num=10, base=10.0)
+        ax.plot(nn, err.max() * np.power(nn/nn[0], -2), ls='--', lw=2,
+                color='grey')
         ax.set_xlabel(r"$n_x$")
         ax.set_ylabel(label)
         ax.set_xscale('log')
-        if (err>0).any():
+        if (err > 0).any():
             ax.set_yscale('log')
             ylim = ax.get_ylim()
             if ylim[1] < 10*ylim[0]:
@@ -181,14 +188,14 @@ def makeErrPlot(t, nx, err, name, label):
 
     figname = name + "_t.png"
     if len(T) > 1:
-        fig, ax = plt.subplots(1,1)
+        fig, ax = plt.subplots(1, 1)
         for nn in NX:
-            ind = nn==nx
+            ind = nn == nx
             ax.plot(t[ind], err[ind])
         ax.set_xlabel(r"$t$")
         ax.set_ylabel(label)
         ax.set_xscale('log')
-        if (err>0).any():
+        if (err > 0).any():
             ax.set_yscale('log')
             ylim = ax.get_ylim()
             if ylim[1] < 10*ylim[0]:
@@ -196,6 +203,7 @@ def makeErrPlot(t, nx, err, name, label):
         print("Saving " + figname)
         fig.savefig(figname)
         plt.close(fig)
+
 
 if __name__ == "__main__":
 

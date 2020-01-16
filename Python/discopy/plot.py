@@ -80,7 +80,7 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
         ax.set_ylim(pimh_min, piph.max())
     
     if colorbar:
-        cb = fig.colorbar(C)
+        cb = fig.colorbar(C, ax=ax)
         cb.set_label(label, fontsize=24)
 
     if xlabel == None:
