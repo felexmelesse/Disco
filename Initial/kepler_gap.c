@@ -44,7 +44,9 @@ void initial( double * prim , double * x ){
    double nom		= f_r*K/(3.0*M_PI);
    double denom		= 1.0 + f_0*K/(3.0*M_PI);
    double rho		= rho_0 * (1.0 - (nom/denom)*sqrt(a/R));
-   double Pp		= rho/Mach/Mach;
+   if(q_planet <= 0.0)
+       rho = rho_0;
+   double Pp		= rho/(gam*Mach*Mach);
 
    double X = 0.0; 
    if( r*cos(x[1]) > 0.0 ) X = 1.0; 

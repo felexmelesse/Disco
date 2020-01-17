@@ -83,7 +83,9 @@ void setupDomain( struct domain * theDomain ){
         //Discard randoms from outer (global) annuli
         for(j=theDomain->N0r+Nr; j<theDomain->N0r_glob + theDomain->Nr_glob;
                 j++)
+        {
             rand();
+        }
 
     }
 
