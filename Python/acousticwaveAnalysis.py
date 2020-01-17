@@ -106,8 +106,8 @@ def analyzeSingle(filename):
     maskDistance = 0.1
 
     dVmask = dV.copy()
-    dVmask[(x1 < pars['R_Min']+maskDistance)
-           | (x1 > pars['R_Max']-maskDistance)] = 0.0
+    # dVmask[(x1 < pars['R_Min']+maskDistance)] = 0.0
+    dVmask[(x1 > pars['R_Max']-maskDistance)] = 0.0
 
     errRho = geom.integrate(np.fabs(rho-rhoS), dat, opts, pars, dVmask)
     errP = geom.integrate(np.fabs(P-PS), dat, opts, pars, dVmask)

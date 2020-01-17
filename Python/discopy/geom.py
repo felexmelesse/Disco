@@ -91,6 +91,8 @@ def getVecXYZ(x1, x2, x3, v1, v2, v3, opts):
 
     if opts['GEOMETRY'] == "cylindrical":
         return getVecXYZcyl(x1, x2, x3, v1, v2, v3)
+    elif opts['GEOMETRY'] == "spherical":
+        return getVecXYZsph(x1, x2, x3, v1, v2, v3)
     else:
         return getVecXYZcart(x1, x2, x3, v1, v2, v3)
 
@@ -98,6 +100,8 @@ def getVecXYZ(x1, x2, x3, v1, v2, v3, opts):
 def getScaleFactors(x1, x2, x3, opts):
     if opts['GEOMETRY'] == "cylindrical":
         return getScaleFactorscyl(x1, x2, x3)
+    elif opts['GEOMETRY'] == "spherical":
+        return getScaleFactorssph(x1, x2, x3)
     else:
         return getScaleFactorscart(x1, x2, x3)
 
@@ -306,6 +310,18 @@ def getScaleFactorscyl(r, phi, z):
     return hr, hp, hz
 
 
+def getScaleFactorssph(r, phi, th):
+
+    hr = np.ones(phi.shape)
+    hp = np.empty(phi.shape)
+    ht = np.empty(phi.shape)
+
+    hp[:] = r * np.sin(th)
+    ht[:] = r
+
+    return hr, hp, ht
+
+
 def getVecXYZcart(x, y, z, vx, vy, vz):
     return vx, vy, vz
 
@@ -317,6 +333,20 @@ def getVecXYZcyl(r, phi, z, vr, vp, vz):
 
     vx = cp*vr - sp*vp
     vy = sp*vr + cp*vp
+
+    return vx, vy, vz
+
+
+def getVecXYZsph(r, phi, th, vr, vp, vt):
+
+    cp = np.cos(phi)
+    sp = np.sin(phi)
+    ct = np.cos(th)
+    st = np.sin(th)
+
+    vx = cp*(st*vr + ct*vt) - sp*vp
+    vy = sp*(st*vr + ct*vt) + cp*vp
+    vz = ct*vr - st*vt
 
     return vx, vy, vz
 

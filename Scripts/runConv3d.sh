@@ -15,7 +15,7 @@ do
         sed -i "s/^Num_Z\s.*$/Num_Z ${nr}/" in.par
         sed -i "s/^Num_Checkpoints\s.*$/Num_Checkpoints 0/" in.par
     fi
-    if [ "$nr" -lt 100 ]; then
+    if [ "$nr" -lt 50 ]; then
         ./disco
     else
         mpiexec -np 4 ./disco
@@ -23,6 +23,6 @@ do
     mv output.h5 output.$nr.h5
 done
 
-#python Python/acousticwaveAnalysis.py output.*.h5
+python Python/acousticwaveAnalysis.py output.*.h5
 #python Python/alfvenwaveAnalysis.py output.*.h5
-python Python/magnetosonicwaveAnalysis.py output.*.h5
+# python Python/magnetosonicwaveAnalysis.py output.*.h5
