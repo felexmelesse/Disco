@@ -166,7 +166,7 @@ if __name__ == "__main__":
     planets = args.planets
     noghost = args.noghost
     ncpu = args.ncpu
-
+    
     files = args.checkpoints
 
     names, texnames, num_c, num_n = util.getVarNames(files[0])
