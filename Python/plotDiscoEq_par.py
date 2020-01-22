@@ -151,8 +151,8 @@ if __name__ == "__main__":
                             help="Set plot limits to RMAX.")
     parser.add_argument('-o', '--omega', type=float, 
                             help="Rotate frame at rate OMEGA.")
-    parser.add_argument('-n', '--ncpu', type=int, action='store', default = os.cpu_count() - 1,
-                            help="Number of CPU cores. Default is N-1.")
+    parser.add_argument('-n', '--ncpu', type=int, nargs='?', action='store', const= os.cpu_count() - 1, default = False,
+                            help="Turns on parallel processing. If number of cores not given, then it will default to N-1 cores.")
     parser.add_argument('--noghost', action='store_true', 
                             help="Do not plot ghost zones.")
 
@@ -167,15 +167,19 @@ if __name__ == "__main__":
     noghost = args.noghost
     ncpu = args.ncpu
     
+    if ncpu < 1:
+        raise SystemExit("CPU only has one core! Turn off parallel processing flag.")
+    
     files = args.checkpoints
 
     names, texnames, num_c, num_n = util.getVarNames(files[0])
 
     bounds = getBounds(use_bounds, names, files)
     
-    process_images(files, vars, logvars, bounds, om, rmax, noghost, planets, ncpu)
-
-    #for f in files:
-    #    plotCheckpoint(f, vars=vars, logvars=logvars, bounds=bounds, om=om, 
-    #                    rmax=rmax, noGhost=noghost, planets=planets)
+    if ncpu:
+        process_images(files, vars, logvars, bounds, om, rmax, noghost, planets, ncpu)
+    else:
+        for f in files:
+                plotCheckpoint(f, vars=vars, logvars=logvars, bounds=bounds, om=om, 
+			rmax=rmax, noGhost=noghost, planets=planets)
 
