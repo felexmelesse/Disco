@@ -151,7 +151,7 @@ if __name__ == "__main__":
                             help="Set plot limits to RMAX.")
     parser.add_argument('-o', '--omega', type=float, 
                             help="Rotate frame at rate OMEGA.")
-    parser.add_argument('-n', '--ncpu', type=int, nargs='?', action='store', const= os.cpu_count() - 1, default = False,
+    parser.add_argument('-n', '--ncpu', type=int, nargs='?', action='store', const= os.cpu_count() - 1, default=False,
                             help="Turns on parallel processing. If number of cores not given, then it will default to N-1 cores.")
     parser.add_argument('--noghost', action='store_true', 
                             help="Do not plot ghost zones.")
