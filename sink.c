@@ -12,6 +12,8 @@ static double nozzlePar3 = 0.0;
 static double nozzlePar4 = 0.0;
 static double gamma_law = 0.0;
 static int twoD = 0;
+static int Npl = 0;
+static struct planet *thePlanets = NULL;
 
 void setSinkParams(struct domain *theDomain)
 {
@@ -29,6 +31,9 @@ void setSinkParams(struct domain *theDomain)
     gamma_law = theDomain->theParList.Adiabatic_Index;
     if(theDomain->Nz == 1)
         twoD = 1;
+
+    thePlanets = theDomain->thePlanets;
+    Npl = theDomain->Npl;
 }
 
 double get_om(double *x);
@@ -77,10 +82,10 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
 
         double cosp = cos(phi);
         double sinp = sin(phi);
-        double gx = r*cosp
-        double gy = r*sinp
+        double gx = r*cosp;
+        double gy = r*sinp;
 
-        double px, py, pz, dx, dy, dz, mag, eps;
+        double px, py, dx, dy, mag, eps;
         double argTot = 0.0;
         //Pretend for now that p1 is an array with planet 1 coords, p2 is similar
         int pi;
@@ -92,8 +97,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
 
             dx = gx-px;
             dy = gy-py;
-            dz = z-thePlanets[pi].z;
-            mag = dx*dx + dy*dy + dz*dz;
+            mag = dx*dx + dy*dy + z*z;
             mag = mag*mag;
             eps = thePlanets[pi].eps;
             eps = eps*eps*eps*eps;
@@ -103,15 +107,15 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
         //sinkPar1 is the sink rate, should be > 1/100 (Duffell+ 2019)
         //sinkPar2 is the ratio floor
 
-        double rate = sinkPar1*fmax(thePlanets[0].om,thePlanets[1].om);
+        double rate = sinkPar1*fmax(thePlanets[0].omega,thePlanets[1].omega);
         double surfdiff = rate*argTot;
         double ratio = 1.0-surfdiff;
         ratio = fmax(ratio,sinkPar2);
-        CONS[URR] *= ratio;
-        CONS[UZZ] *= ratio;
-        CONS[UPP] *= ratio;
-        CONS[RHO] *= ratio;
-        CONS[TAU] *= ratio;
+        cons[URR] *= ratio;
+        cons[UZZ] *= ratio;
+        cons[UPP] *= ratio;
+        cons[RHO] *= ratio;
+        cons[TAU] *= ratio;
     }
 
 
