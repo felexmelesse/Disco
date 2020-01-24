@@ -68,4 +68,51 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
         if(NUM_Q > NUM_C)
             cons[NUM_C] += rhodot*dVdt;
     }
+
+    if(sinkType == 2)
+    {
+     	double r = 0.5*(xp[0]+xm[0]);
+        double phi = 0.5*(xp[1]+xm[1]);
+        double z = 0.5*(xp[2]+xm[2]);
+
+        double cosp = cos(phi);
+        double sinp = sin(phi);
+        double gx = r*cosp
+        double gy = r*sinp
+
+        double px, py, pz, dx, dy, dz, mag, eps;
+        double argTot = 0.0;
+        //Pretend for now that p1 is an array with planet 1 coords, p2 is similar
+        int pi;
+        for (pi=0; pi<Npl; pi++){
+            cosp = cos(thePlanets[pi].phi);
+            sinp = sin(thePlanets[pi].phi);
+            px = thePlanets[pi].r*cosp;
+            py = thePlanets[pi].r*sinp;
+
+            dx = gx-px;
+            dy = gy-py;
+            dz = z-thePlanets[pi].z;
+            mag = dx*dx + dy*dy + dz*dz;
+            mag = mag*mag;
+            eps = thePlanets[pi].eps;
+            eps = eps*eps*eps*eps;
+
+            argTot += exp(-mag*mag/eps);
+        }
+        //sinkPar1 is the sink rate, should be > 1/100 (Duffell+ 2019)
+        //sinkPar2 is the ratio floor
+
+        double rate = sinkPar1*fmax(thePlanets[0].om,thePlanets[1].om);
+        double surfdiff = rate*argTot;
+        double ratio = 1.0-surfdiff;
+        ratio = fmax(ratio,sinkPar2);
+        CONS[URR] *= ratio;
+        CONS[UZZ] *= ratio;
+        CONS[UPP] *= ratio;
+        CONS[RHO] *= ratio;
+        CONS[TAU] *= ratio;
+    }
+
+
 }
