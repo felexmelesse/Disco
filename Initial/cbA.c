@@ -28,24 +28,25 @@ void initial(double *prim, double *x)
 {
     double r = x[0];
     double R = r/R0;
-    double phi = x[1];
+    //double phi = x[1];
 
     double cs2 = get_cs2(x);
 
-    double xi = 4.0;
+    double xi = 2.0;
     double p = 0.5;
-    double rho;
+    double rho, fact;
 
     double sig0 = Mdot*Mach*Mach/(3.0*3.14159265*visc);
 
-    rho = sig0*pow(R,-p)*exp(-pow((R+0.5),-xi))+0.01;
+    fact = exp(-pow((R),-xi));
+    rho = sig0*pow(R,-p)*fact+0.01;
     double om = 1.0;
-    if (r>1.0) om = pow(r,-1.5);
+    if (r > 1.0) om = pow(r,-1.5);
 
     double nu;
     nu = visc*cs2/om;
 
-    double v = -1.5*nu/r;
+    double v = -1.5*nu/(r+0.0001);
     double P = rho*cs2/gam;
  
     prim[RHO] = rho;

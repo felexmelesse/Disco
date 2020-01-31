@@ -16,6 +16,9 @@ static double r2 = 0.0;
 static double H0 = 0.0;
 static double M = 0.0;
 
+static struct planet *thePlanets = NULL;
+
+
 void setOmegaParams( struct domain * theDomain ){
    meshOmChoice = theDomain->theParList.Exact_Mesh_Omega;
    meshOmPar    = theDomain->theParList.Exact_Mesh_Omega_Par;
@@ -31,6 +34,8 @@ void setOmegaParams( struct domain * theDomain ){
    r2 = theDomain->theParList.initPar3; // Outer Edge
    H0 = theDomain->theParList.initPar4; // Scale Height
    M = theDomain->theParList.metricPar2;
+
+   thePlanets = theDomain->thePlanets;
 
    if(strcmp(PLANETS, "bin_rot") == 0)
    {
@@ -131,6 +136,32 @@ double get_cs2( double *x ){
     {
         double v2 = M/r;
         cs2 = v2/(Mach*Mach);
+    }
+    else if(cs2Choice == 5)
+    {
+      double r = 0.5*x[0];
+      double phi = 0.5*x[1];
+
+      double cosp = cos(phi);
+      double sinp = sin(phi);
+      double gx = r*cosp;
+      double gy = r*sinp;
+      int pi;
+      double px, py, pr;
+      double n = 2.0;
+      double phip = 0.0;
+ 
+      for (pi = 0; pi<2; pi++)
+      {
+        cosp = cos(thePlanets[pi].phi);
+        sinp = sin(thePlanets[pi].phi);
+        px = thePlanets[pi].r*cosp;
+        py = thePlanets[pi].r*sinp;
+        pr = (px-gx)*(px-gx) + (py-gy)*(py-gy);
+
+        phip += M/pow( pr + pow(thePlanets[pi].eps,n) , 1./n );
+      }
+      cs2 = phip/(Mach*Mach);        
     }
     else
         cs2 = 1.0;
