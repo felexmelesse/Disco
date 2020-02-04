@@ -12,7 +12,7 @@ void setGravParams( struct domain * theDomain ){
 
 }
 
-double phigrav( double M , double r , double eps , int type)
+double phigrav( double M , double r , double eps , int type, double * prim, double z)
 {
     if(type == PLPOINTMASS)
     {
@@ -27,6 +27,21 @@ double phigrav( double M , double r , double eps , int type)
     {
         return M*r; // M is gravitational acceleration
                     // only makes sense if grav2D is on
+    }
+    else if(type == PLTR)
+    {
+        //generalized Newtonian potential from Tejeda and Rosswog 2013
+        double vr  = prim[URR];
+        double vz  = prim[UZZ];
+        double omega = prim[UPP];
+        doube phi2 = vz*vz + sin(z)*sin(z)*omega*omega;
+
+        double part1 = M / r;
+        double denom = r - 2*M;
+        double paren1 = (r-M)*vr*vr/denom;
+        double paren2 = r*r*phi2*0.5;
+        double ret = part1 + (2*M/denom)*(paren1 + paren2);
+        return ret;
     }
 
     return 0.0;
@@ -65,7 +80,8 @@ void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
    double dy = r*sinp-rp*sin(pp);
    double script_r = sqrt(dx*dx+dy*dy);
 
-   double pot = phigrav( pl->M , script_r , pl->eps , pl->type);
+   double z = M_PI*0.5; //x[2];
+   double pot = phigrav( pl->M , script_r , pl->eps , pl->type, prim, z);
 
    double c2 = gam*prim[PPP]/prim[RHO];
    double factor = 1. + (gam-1.)*pot/c2;
@@ -75,7 +91,7 @@ void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
 
 }
 
-void planetaryForce( struct planet * pl , double r , double phi , double z , double * fr , double * fp , double * fz , int mode ){
+void planetaryForce( struct planet * pl , double r , double phi , double z , double * fr , double * fp , double * fz , int mode, double * prim ){
 
    double rp = pl->r;
    double pp = pl->phi;
@@ -95,37 +111,55 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
    double script_r = sqrt(dx*dx+dy*dy+z*z);
    double script_r_perp = sqrt(dx*dx+dy*dy);
 
-   double f1 = -fgrav( pl->M , script_r , pl->eps , pl->type);
-
-   double cosa = dx/script_r_perp;
-   double sina = dy/script_r_perp;
-
-   double cosap = cosa*cosp+sina*sinp;
-   double sinap = sina*cosp-cosa*sinp;
-
-   if( mode==1 ){
-      cosap = cosa*cos(pp)+sina*sin(pp);
-      sinap = sina*cos(pp)-cosa*sin(pp);
-   }
-
-   if(script_r_perp <= 0.0)
+   if (pl->type == PLTR)
    {
-       cosap = 0.0;
-       sinap = 0.0;
+       //Tejeda and Rosswog 2013 equations 2.14 - 2.16, for now assumes spherical coordinates
+       double rm2rg = r - 2.0*M;
+       double rm3rg = r - 3.0*M;
+       double vr  = prim[URR];
+       double vz  = prim[UZZ];
+       double omega = prim[UPP];
+       double zc = M_pi*0.5;
+       double ctheta = cos(zc);
+       double stheta = sin(zc);
+       double cottheta = ctheta/sintheta;
+       *fr = (M/(r*r))*pow(1-2.0*M/r, 2.0) - 2.0*M*vr*vr/(r*rm2rg) - rm3rg*(vz*vz + stheta*stheta*omega*omega);
+       *fz = (2*vr*vz/r)*rm3rg/rm2rg - stheta*ctheta*omega*omega;
+       *fp = (2*vr*omega/r)*rm3rg/rm2rg + 2*cottheta*omega*vz;
    }
-/*
-   double rH = rp*pow( pl->M/3.,1./3.);
-   double pd = 0.8; 
-   double fd = 1./(1.+exp(-( script_r/rH-pd)/(pd/10.)));
-*/
+   else
+   {
+       double f1 = -fgrav( pl->M , script_r , pl->eps , pl->type);
 
-   double sint = script_r_perp/script_r;
-   double cost = z/script_r;
+       double cosa = dx/script_r_perp;
+       double sina = dy/script_r_perp;
 
-   *fr = cosap*f1*sint; //*fd;
-   *fp = sinap*f1*sint; //*fd;
-   *fz = f1*cost;
+       double cosap = cosa*cosp+sina*sinp;
+       double sinap = sina*cosp-cosa*sinp;
 
+       if( mode==1 ){
+          cosap = cosa*cos(pp)+sina*sin(pp);
+          sinap = sina*cos(pp)-cosa*sin(pp);
+       }
+
+       if(script_r_perp <= 0.0)
+       {
+           cosap = 0.0;
+           sinap = 0.0;
+       }
+       /*
+       double rH = rp*pow( pl->M/3.,1./3.);
+       double pd = 0.8; 
+       double fd = 1./(1.+exp(-( script_r/rH-pd)/(pd/10.)));
+       */
+
+       double sint = script_r_perp/script_r;
+       double cost = z/script_r;
+
+       *fr = cosap*f1*sint; //*fd;
+       *fp = sinap*f1*sint; //*fd;
+       *fz = f1*cost;
+   }
 }
 
 double get_centroid( double , double , int);
@@ -152,7 +186,7 @@ void planet_src( struct planet * pl , double * prim , double * cons , double * x
    
    double Fcyl[3], F[3];
    planetaryForce( pl, xcyl[0], xcyl[1], xcyl[2],
-                    &(Fcyl[0]), &(Fcyl[1]), &(Fcyl[2]), 0);
+                    &(Fcyl[0]), &(Fcyl[1]), &(Fcyl[2]), 0, prim);
    get_vec_from_rpz(x, Fcyl, F);
 
    double hr = get_scale_factor(x, 1);
