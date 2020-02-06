@@ -32,7 +32,7 @@ void initial(double *prim, double *x)
 
     double cs2 = get_cs2(x);
 
-    double xi = 2.0;
+    double xi = 4.0;
     double p = 0.5;
     double rho, fact;
 

@@ -550,6 +550,7 @@ void source( double * , double * , double * , double * , double );
 void planet_src( struct planet * , double * , double * , double * , double * , double );
 void omega_src( double * , double * , double * , double * , double );
 void sink_src( double * , double * , double * , double * , double );
+void cooling( double * , double * , double * , double * , double);
 
 void add_source( struct domain * theDomain , double dt ){
 
@@ -584,10 +585,10 @@ void add_source( struct domain * theDomain , double dt ){
             }
             omega_src( c->prim , c->cons , xp , xm , dV*dt );
             sink_src( c->prim , c->cons , xp , xm , dV*dt );
+            cooling( c->prim , c->cons , xp , xm , dt );
          }    
       }    
    }   
-
 }
 
 void longandshort( struct domain * theDomain , double * L , double * S , int * iL , int * iS , struct cell * sweep , int j , int k ){

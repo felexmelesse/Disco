@@ -10,6 +10,13 @@ static double nozzlePar1 = 0.0;
 static double nozzlePar2 = 0.0;
 static double nozzlePar3 = 0.0;
 static double nozzlePar4 = 0.0;
+
+static int coolType = 0;
+static double coolPar1 = 0.0;
+static double coolPar2 = 0.0;
+static double coolPar3 = 0.0;
+static double coolPar4 = 0.0;
+
 static double gamma_law = 0.0;
 static int twoD = 0;
 static int Npl = 0;
@@ -27,6 +34,11 @@ void setSinkParams(struct domain *theDomain)
     nozzlePar2 = theDomain->theParList.nozzlePar2;
     nozzlePar3 = theDomain->theParList.nozzlePar3;
     nozzlePar4 = theDomain->theParList.nozzlePar4;
+    coolType = theDomain->theParList.coolType;
+    coolPar1 = theDomain->theParList.coolPar1;
+    coolPar2 = theDomain->theParList.coolPar2;
+    coolPar3 = theDomain->theParList.coolPar3;
+    coolPar4 = theDomain->theParList.coolPar4;
 
     gamma_law = theDomain->theParList.Adiabatic_Index;
     if(theDomain->Nz == 1)
@@ -117,6 +129,25 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
         cons[RHO] *= ratio;
         cons[TAU] *= ratio;
     }
+}
 
-
+void cooling(double *prim, double *cons, double *xp, double *xm, double dVdt )
+{
+    if(coolType == 1)
+    {
+        double press = prim[PPP];
+     	double r = 0.5*(xp[0]+xm[0]);
+        double gm1 = gamma_law-1.0;
+        double beta = coolPar1;
+        cons[TAU] *= (press/gm1)*(1.0 - beta)*pow(r, -1.5);
+    }
+    if(coolType == 2)
+    {
+        double tfact = coolPar1;	//sigma_sb/kappa?
+        double press, T, gm1;
+        press = prim[PPP];
+        gm1 = gamma_law-1.0;
+        T = press/prim[RHO];
+        cons[TAU] -= (press/gm1)*(pow(1.0 + 8.0*gm1*tfact*T*T*T*dVdt/(prim[RHO]*prim[RHO]), -1.0/3.0) - 1.0);
+    }
 }

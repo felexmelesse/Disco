@@ -337,6 +337,19 @@ void writePars(struct domain *theDomain, char filename[])
                     H5T_NATIVE_DOUBLE);
     dumpVal(filename, "Pars", "Nozzle_Par4", &(pars->nozzlePar4),
                     H5T_NATIVE_DOUBLE);
+
+    dumpVal(filename, "Pars", "Cool_Type", &(pars->coolType),
+                    H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "Cool_Par1", &(pars->coolPar1),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Cool_Par2", &(pars->coolPar2),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Cool_Par3", &(pars->coolPar3),
+                    H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Cool_Par4", &(pars->coolPar4),
+                    H5T_NATIVE_DOUBLE);
+
+
 }
 
 double get_dV( double * , double * );
