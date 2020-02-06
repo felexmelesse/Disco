@@ -86,7 +86,13 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
             cons[NUM_C] += rhodot*dVdt;
     }
 
-    if(sinkType == 2)
+    if (sinkType == 1) 		//sink a la Farris et al. 2014
+    {
+
+
+    }
+
+    if(sinkType == 2)		//sink a la Duffell et al. 2019
     {
      	double r = 0.5*(xp[0]+xm[0]);
         double phi = 0.5*(xp[1]+xm[1]);
@@ -131,7 +137,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
     }
 }
 
-void cooling(double *prim, double *cons, double *xp, double *xm, double dVdt )
+void cooling(double *prim, double *cons, double *xp, double *xm, double dt )
 {
     if(coolType == 1)
     {
@@ -139,7 +145,9 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dVdt )
      	double r = 0.5*(xp[0]+xm[0]);
         double gm1 = gamma_law-1.0;
         double beta = coolPar1;
-        cons[TAU] *= (press/gm1)*(1.0 - beta)*pow(r, -1.5);
+        double om = 1.0;
+        if (r > 1.0) om = pow(r,-1.5);
+        cons[TAU] = cons[TAU] - (press/gm1)*beta*om;
     }
     if(coolType == 2)
     {
@@ -148,6 +156,6 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dVdt )
         press = prim[PPP];
         gm1 = gamma_law-1.0;
         T = press/prim[RHO];
-        cons[TAU] -= (press/gm1)*(pow(1.0 + 8.0*gm1*tfact*T*T*T*dVdt/(prim[RHO]*prim[RHO]), -1.0/3.0) - 1.0);
+        cons[TAU] -= (press/gm1)*(pow(1.0 + 8.0*gm1*tfact*T*T*T*dt/(prim[RHO]*prim[RHO]), -1.0/3.0) - 1.0);
     }
 }
