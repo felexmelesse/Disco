@@ -307,7 +307,7 @@ double mindt(double * prim , double w , double * xp , double * xm ){
    double dt = dtr;
    if( dt > dtp ) dt = dtp;
    if( dt > dtz ) dt = dtz;
-/*
+
    double dL0 = get_dL(xp,xm,0);
    double dL1 = get_dL(xp,xm,1);
    double dL2 = get_dL(xp,xm,2);
@@ -326,7 +326,7 @@ double mindt(double * prim , double w , double * xp , double * xm ){
 
    double dt_visc = .03*dx*dx/nu;
    if( dt > dt_visc ) dt = dt_visc;
-*/
+
    return( dt );
 
 }

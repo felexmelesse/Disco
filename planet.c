@@ -64,7 +64,7 @@ void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
    double dy = r*sinp-rp*sin(pp);
    double script_r = sqrt(dx*dx+dy*dy);
 
-   double z = M_PI*0.5; //x[2];
+   //double z = M_PI*0.5; //x[2];
    double pot = phigrav( pl->M , script_r , pl->eps , pl->type);
 
    double c2 = gam*prim[PPP]/prim[RHO];

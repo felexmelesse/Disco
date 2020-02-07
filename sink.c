@@ -22,6 +22,9 @@ static int twoD = 0;
 static int Npl = 0;
 static struct planet *thePlanets = NULL;
 
+static double visc = 0.0;
+static double Mach = 1.0;
+
 void setSinkParams(struct domain *theDomain)
 {
     sinkType = theDomain->theParList.sinkType;
@@ -43,6 +46,9 @@ void setSinkParams(struct domain *theDomain)
     gamma_law = theDomain->theParList.Adiabatic_Index;
     if(theDomain->Nz == 1)
         twoD = 1;
+
+    visc = theDomain->theParList.viscosity;
+    Mach = theDomain->theParList.Disk_Mach;
 
     thePlanets = theDomain->thePlanets;
     Npl = theDomain->Npl;
@@ -86,13 +92,53 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
             cons[NUM_C] += rhodot*dVdt;
     }
 
-    if (sinkType == 1) 		//sink a la Farris et al. 2014
+    //sink a la Farris et al. 2014
+    if (sinkType == 1)
     {
+      double r = 0.5*(xp[0]+xm[0]);
+      double phi = 0.5*(xp[1]+xm[1]);
+      double z = 0.5*(xp[2]+xm[2]);
 
+      double cosp = cos(phi);
+      double sinp = sin(phi);
+      double gx = r*cosp;
+      double gy = r*sinp;
 
+      double px, py, dx, dy, mag, eps;
+      double arg = 0.0;
+      double factor = Mach*Mach/(3.0*M_PI*visc*thePlanets[0].omega);		//assumes alpha viscosity for now
+      int pi;
+      for (pi=0; pi<Npl; pi++)
+      {
+          cosp = cos(thePlanets[pi].phi);
+          sinp = sin(thePlanets[pi].phi);
+          px = thePlanets[pi].r*cosp;
+          py = thePlanets[pi].r*sinp;
+          dx = gx-px;
+          dy = gy-py;
+          eps = thePlanets[pi].eps;
+          mag = dx*dx + dy*dy + z*z + eps*eps;
+
+          if (mag < 0.5)
+          {
+            arg = factor*pow(mag, -1.5)*pow(thePlanets[pi].M, -0.5);
+          }          
+      }
+      //0.0: remove cons propto mass, 
+      if (sinkPar4 == 0.0)	
+      {
+        double ratio = 1.0 - 1.0/arg;
+        ratio = fmax(ratio,sinkPar2);
+        cons[URR] *= ratio;
+        cons[UZZ] *= ratio;
+        cons[UPP] *= ratio;
+        cons[RHO] *= ratio;
+        cons[TAU] *= ratio;
+      }
     }
 
-    if(sinkType == 2)		//sink a la Duffell et al. 2019
+    //sink a la Duffell et al. 2019
+    if(sinkType == 2)		
     {
      	double r = 0.5*(xp[0]+xm[0]);
         double phi = 0.5*(xp[1]+xm[1]);
@@ -105,7 +151,6 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
 
         double px, py, dx, dy, mag, eps;
         double argTot = 0.0;
-        //Pretend for now that p1 is an array with planet 1 coords, p2 is similar
         int pi;
         for (pi=0; pi<Npl; pi++){
             cosp = cos(thePlanets[pi].phi);
