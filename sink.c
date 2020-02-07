@@ -117,24 +117,21 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
           dx = gx-px;
           dy = gy-py;
           eps = thePlanets[pi].eps;
-          mag = dx*dx + dy*dy + z*z + eps*eps;
+          mag = sqrt(dx*dx + dy*dy + z*z + eps*eps);
 
           if (mag < 0.5)
           {
-            arg = factor*pow(mag, -1.5)*pow(thePlanets[pi].M, -0.5);
+            arg += factor*pow(mag, -1.5)*pow(thePlanets[pi].M, -0.5);
           }          
       }
-      //0.0: remove cons propto mass, 
-      if (sinkPar4 == 0.0)	
-      {
-        double ratio = 1.0 - 1.0/arg;
-        ratio = fmax(ratio,sinkPar2);
-        cons[URR] *= ratio;
-        cons[UZZ] *= ratio;
-        cons[UPP] *= ratio;
-        cons[RHO] *= ratio;
-        cons[TAU] *= ratio;
-      }
+      double ratio = 1.0;
+      if (arg>0) ratio -= 1.0/arg;
+      ratio = fmax(ratio,sinkPar2);
+      cons[URR] *= ratio;
+      cons[UZZ] *= ratio;
+      cons[UPP] *= ratio;
+      cons[RHO] *= ratio;
+      cons[TAU] *= ratio;
     }
 
     //sink a la Duffell et al. 2019
