@@ -233,9 +233,13 @@ struct planet{
    double RK_omega;
    double RK_vr;
 
+   double RK_dM;
+   double dM;
+
    double eps;
    double Fr;
    double Fp;
 
    int type;
 };
+

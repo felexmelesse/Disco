@@ -56,7 +56,7 @@ void setSinkParams(struct domain *theDomain)
 
 double get_om(double *x);
 
-void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
+void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, double dt)
 {
     if(nozzleType == 1)
     {
@@ -77,19 +77,19 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
         double rhodot = Mdot * 3.0/(4.0*M_PI*dR*dR*dR);
         if(twoD)
             rhodot *= 2*sqrt(dR*dR - (r-R0)*(r-R0) - r*r*phi*phi);
-        if(rhodot * dVdt > cons[RHO])
-            rhodot = cons[RHO] / dVdt;
+        if(rhodot * dV*dt > cons[RHO])
+            rhodot = cons[RHO] / dV*dt;
 
         double x[3] = {r, phi, z};
         double om = get_om(x);
         double cs2 = v*v / (mach*mach);
         double eps = cs2 / (gamma_law*(gamma_law-1));
 
-        cons[RHO] += rhodot * dVdt;
-        cons[LLL] += rhodot * r*v * dVdt;
-        cons[TAU] += (0.5* rhodot * (v-r*om)*(v-r*om) + rhodot*eps) * dVdt;
+        cons[RHO] += rhodot * dV*dt;
+        cons[LLL] += rhodot * r*v * dV*dt;
+        cons[TAU] += (0.5* rhodot * (v-r*om)*(v-r*om) + rhodot*eps) * dV*dt;
         if(NUM_Q > NUM_C)
-            cons[NUM_C] += rhodot*dVdt;
+            cons[NUM_C] += rhodot*dV*dt;
     }
 
     //sink a la Farris et al. 2014
@@ -106,6 +106,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
 
       double px, py, dx, dy, mag, eps;
       double arg = 0.0;
+      double argt = 0.0;
       double factor = Mach*Mach/(3.0*M_PI*visc*thePlanets[0].omega);		//assumes alpha viscosity for now
       int pi;
       for (pi=0; pi<Npl; pi++)
@@ -121,12 +122,22 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
 
           if (mag < 0.5)
           {
-            arg += factor*pow(mag, -1.5)*pow(thePlanets[pi].M, -0.5);
+            arg = factor*pow(mag, -1.5)*pow(thePlanets[pi].M, -0.5);
+
+            double ratio = 1.0;
+            if (arg>0)
+            {
+               ratio -= 1.0/arg;
+               argt += arg; 
+               thePlanets[pi].dM += cons[RHO]*arg*dV/dt;
+            }
+            //ratio = fmax(ratio,sinkPar2);
+            //arg = 1.0 - ratio;            
+
           }          
       }
       double ratio = 1.0;
-      if (arg>0) ratio -= 1.0/arg;
-      ratio = fmax(ratio,sinkPar2);
+      if (arg>0) ratio -= 1.0/argt;
       cons[URR] *= ratio;
       cons[UZZ] *= ratio;
       cons[UPP] *= ratio;
@@ -147,8 +158,9 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
         double gy = r*sinp;
 
         double px, py, dx, dy, mag, eps;
-        double argTot = 0.0;
+        double argTot, rate, surfdiff, ratio;
         int pi;
+        argTot = 1.0;
         for (pi=0; pi<Npl; pi++){
             cosp = cos(thePlanets[pi].phi);
             sinp = sin(thePlanets[pi].phi);
@@ -162,15 +174,22 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
             eps = thePlanets[pi].eps;
             eps = eps*eps*eps*eps;
 
-            argTot += exp(-mag*mag/eps);
+            double arg = exp(-mag*mag/eps);
+
+            rate = sinkPar1*thePlanets[pi].omega;
+            surfdiff = rate*arg;
+            ratio = 1.0-surfdiff;
+            ratio = fmax(sinkPar2, ratio);
+            surfdiff = 1.0 - ratio;
+            argTot += arg/rate;
+            thePlanets[pi].dM += cons[RHO]*surfdiff*dV/dt;
+
         }
+        rate = sinkPar1*thePlanets[0].omega;
         //sinkPar1 is the sink rate, should be > 1/100 (Duffell+ 2019)
         //sinkPar2 is the ratio floor
-
-        double rate = sinkPar1*fmax(thePlanets[0].omega,thePlanets[1].omega);
-        double surfdiff = rate*argTot;
-        double ratio = 1.0-surfdiff;
-        ratio = fmax(ratio,sinkPar2);
+        surfdiff = rate*argTot;
+        ratio = 1.0-surfdiff;
         cons[URR] *= ratio;
         cons[UZZ] *= ratio;
         cons[UPP] *= ratio;
@@ -193,7 +212,7 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dt )
     }
     if(coolType == 2)
     {
-        double tfact = coolPar1;	//sigma_sb/kappa?
+        double tfact = coolPar1;	//sigma_sb*mh/kappa
         double press, T, gm1;
         press = prim[PPP];
         gm1 = gamma_law-1.0;

@@ -41,7 +41,7 @@ void initial(double *prim, double *x)
 
     fact = exp(-pow((R),-xi));
     rho = sig0*pow(R,-delta)*fact+rho0;
-    double dsdr = sig0*pos(r, -delta-1)*fact*(-delta)
+    double dsdr = sig0*pow(r, -delta-1)*fact*(-delta);
     double om = 1.0;
     double rdodr = 1.0;
     double ddro = 0.0;

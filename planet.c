@@ -172,6 +172,7 @@ void planet_RK_copy( struct planet * pl ){
    pl->RK_M     = pl->M;
    pl->RK_omega = pl->omega;
    pl->RK_vr    = pl->vr;
+   pl->RK_dM    = pl->dM;
 }
 
 void planet_RK_adjust( struct planet * pl , double RK ){

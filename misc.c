@@ -549,7 +549,7 @@ void setup_faces( struct domain * theDomain , int dim ){
 void source( double * , double * , double * , double * , double );
 void planet_src( struct planet * , double * , double * , double * , double * , double );
 void omega_src( double * , double * , double * , double * , double );
-void sink_src( double * , double * , double * , double * , double );
+void sink_src( double * , double * , double * , double * , double, double );
 void cooling( double * , double * , double * , double * , double);
 
 void add_source( struct domain * theDomain , double dt ){
@@ -579,12 +579,12 @@ void add_source( struct domain * theDomain , double dt ){
             double xp[3] = {r_jph[j]  ,phip,z_kph[k]  };
             double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
             double dV = get_dV(xp,xm);
-            source( c->prim , c->cons , xp , xm , dV*dt );
+            source( c->prim , c->cons , xp , xm , dV*dt  );
             for( p=0 ; p<Npl ; ++p ){
                planet_src( thePlanets+p , c->prim , c->cons , xp , xm , dV*dt );
             }
             omega_src( c->prim , c->cons , xp , xm , dV*dt );
-            sink_src( c->prim , c->cons , xp , xm , dV*dt );
+            sink_src( c->prim , c->cons , xp , xm , dV, dt );
             cooling( c->prim , c->cons , xp , xm , dt );
          }    
       }    
