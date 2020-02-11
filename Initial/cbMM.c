@@ -10,6 +10,7 @@ static double delta = 0.0;
 static double rho0 = 0.0;
 static struct planet *thePlanets = NULL;
 static double Mach = 0.0;
+static int Npl = 0;
 
 double get_cs2(double *);
 
@@ -25,13 +26,14 @@ void setICparams( struct domain * theDomain )
     rho0 = theDomain->theParList.initPar3;
     Mach = theDomain->theParList.Disk_Mach;
     thePlanets = theDomain->thePlanets;
+    Npl = theDomain-> Npl;
 }
 
 void initial(double *prim, double *x)
 {
     double r = x[0];
     double R = r/R0;
-    //double phi = x[1];
+    double phi = x[1];
 
     double cs2 = get_cs2(x);
 
@@ -55,11 +57,31 @@ void initial(double *prim, double *x)
       ddro = 0.75*pow(r, -2.5) + (15.*7./64.)*pow(r, -4.5)*R0*R0;
     }
     double nu;
-    nu = visc*cs2/om;
+    if (Npl < 2){
+        nu = visc*cs2/(om);
+    }
+    else{
+       double omtot = 0;
+       double cosp, sinp, px, py, dx, dy, gx, gy, mag;
+       gx = r*sin(phi);
+       gy = r*cos(phi);
+       int np;
+       for(np = 0; np<Npl; np++){
+          cosp = cos(thePlanets[np].phi);
+          sinp = sin(thePlanets[np].phi);
+          px = thePlanets[np].r*cosp;
+          py = thePlanets[np].r*sinp;
+          dx = gx-px;
+          dy = gy-py;
+          mag = dx*dx + dy*dy + thePlanets[np].eps;
+          omtot +=  thePlanets[np].M*pow(mag, -1.5);
+       }
+       nu = visc*cs2/sqrt(omtot);
+    }
+
     double dnudr = -1.5*nu/r;
     double dvisc = r*r*rho*rdodr*dnudr + nu*r*r*rdodr*dsdr + rho*r*r*nu*ddro + 2*r*nu*rho*rdodr;
 
-    //double v = -1.5*nu/(r+0.0001);
     double v = 2.0*dvisc/(r*r*om*rho);
     double P = rho*cs2/gam;
  

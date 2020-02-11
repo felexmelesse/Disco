@@ -13,6 +13,8 @@ static int include_viscosity = 0;
 static int isothermal = 0;
 static int alpha_flag = 0;
 static int polar_sources = 0;
+static int Npl = 0;
+static struct planet *thePlanets = NULL;
 
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
@@ -24,6 +26,8 @@ void setHydroParams( struct domain * theDomain ){
    alpha_flag = theDomain->theParList.alpha_flag;
    if(theDomain->NgRa == 0)
        polar_sources = 1;
+   Npl = theDomain->Npl;
+   thePlanets = theDomain->thePlanets;
 }
 
 int set_B_flag(void){
@@ -208,7 +212,7 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    //TODO: These used to be evaluated at r_1, not r.  Check that r is ok.
    double om  = get_om( x );
    double om1 = get_om1( x );
-
+   int np;
    cons[TAU] += dVdt*rho*vr*( om*om*r2_3/r_1 - om1*(omega-om)*r2_3 );
  
    if( include_viscosity ){
@@ -216,8 +220,27 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
       if( alpha_flag ){
          double alpha = explicit_viscosity;
          double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
-         double h = c*pow( r_1 , 1.5 );
-         nu = alpha*c*h;
+         if (Npl < 2){
+            double h = c*pow( r_1 , 1.5 );
+            nu = alpha*c*h;
+         }
+         else{
+            double omtot = 0;
+            double cosp, sinp, px, py, dx, dy, gx, gy, mag;
+            gx = r*sin(x[1]);
+            gy = r*cos(x[1]);
+            for(np = 0; np<Npl; np++){
+               cosp = cos(thePlanets[np].phi);
+               sinp = sin(thePlanets[np].phi);
+               px = thePlanets[np].r*cosp;
+               py = thePlanets[np].r*sinp;
+               dx = gx-px;
+               dy = gy-py;
+               mag = dx*dx + dy*dy + thePlanets[np].eps;
+               omtot += thePlanets[np].M*pow(mag, -1.5);
+            }
+            nu = alpha*c*c/sqrt(omtot);              
+         }
       }
       cons[SRR] += -dVdt*nu*rho*vr/(r_1*r_1);
    }
@@ -315,7 +338,6 @@ double mindt(double * prim , double w , double * xp , double * xm ){
    if( dx>dL1 ) dx = dL1;
    if( dx>dL2 ) dx = dL2;
 
-   
    double nu = explicit_viscosity;
    /*
    if( alpha_flag ){

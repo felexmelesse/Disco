@@ -14,6 +14,8 @@ static int isothermal = 0;
 static int alpha_flag = 0;
 static int polar_sources_r = 0;
 static int polar_sources_th = 0;
+static int Npl = 0;
+
 
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
@@ -28,6 +30,7 @@ void setHydroParams( struct domain * theDomain ){
    if(theDomain->theParList.NoBC_Zmin == 1
         || theDomain->theParList.NoBC_Zmax == 1)
        polar_sources_th = 1;
+   Npl = theDomain->Npl;
 }
 
 int set_B_flag(void){
@@ -265,8 +268,27 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
       if( alpha_flag ){
          double alpha = explicit_viscosity;
          double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
-         double h = c*pow( r_1 , 1.5 );
-         nu = alpha*c*h;
+         if (Npl < 2){
+            double h = c*pow( r_1 , 1.5 );
+            nu = alpha*c*h;
+         }
+         else{
+            double omtot = 0;
+            double cosp, sinp, px, py, dx, dy, gx, gy, mag;
+            gx = r*sin(x[1]);
+            gy = r*cos(x[1]);
+            for(np = 0; np<Npl; np++){
+               cosp = cos(thePlanets[np].phi);
+               sinp = sin(thePlanets[np].phi);
+               px = thePlanets[np].r*cosp;
+               py = thePlanets[np].r*sinp;
+               dx = gx-px;
+               dy = gy-py;
+       	       mag = dx*dx + dy*dy + thePlanets[np].eps;
+       	       omtot +=	thePlanets[np].M*pow(mag, -1.5);
+       	    }  	
+       	    nu = alpha*c*c/sqrt(omtot);
+         }
       }
       cons[SRR] += -dVdt*nu*rho*vr/(r_1*r_1);
    }
@@ -349,8 +371,27 @@ double mindt(double * prim , double w , double * xp , double * xm ){
    if( alpha_flag ){
       double alpha = explicit_viscosity;
       double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
-      double h = c*pow( r , 1.5 );
-      nu = alpha*c*h;
+      if (Npl < 2){
+         double h = c*pow( r_1 , 1.5 );
+         nu = alpha*c*h;
+      }
+      else{
+         double omtot = 0;
+         double cosp, sinp, px, py, dx, dy, gx, gy, mag;
+         gx = r*sin(0.5*(xm[1]+xp[1]);
+         gy = r*cos(0.5*(xm[1]+xp[1]);
+         for(np = 0; np<Npl; np++){
+            cosp = cos(thePlanets[np].phi);
+            sinp = sin(thePlanets[np].phi);
+            px = thePlanets[np].r*cosp;
+            py = thePlanets[np].r*sinp;
+            dx = gx-px;
+            dy = gy-py;
+    	    mag = dx*dx + dy*dy + thePlanets[np].eps;
+       	    omtot +=	thePlanets[np].M*pow(mag, -1.5);
+       	 }  	
+       	 nu = alpha*c*c/sqrt(omtot);
+      }
    }
 
    double dt_visc = .03*dx*dx/nu;
