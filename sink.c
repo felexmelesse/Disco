@@ -137,7 +137,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
           }          
       }
       double ratio = 1.0;
-      if (arg>0) ratio -= 1.0/argt;
+      if (argt>0) ratio -= 1.0/argt;
       cons[URR] *= ratio;
       cons[UZZ] *= ratio;
       cons[UPP] *= ratio;
@@ -179,9 +179,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             rate = sinkPar1*thePlanets[pi].omega;
             surfdiff = rate*arg;
             ratio = 1.0-surfdiff;
-            ratio = fmax(sinkPar2, ratio);
-            surfdiff = 1.0 - ratio;
-            argTot += arg/rate;
+            argTot += arg;
             thePlanets[pi].dM += cons[RHO]*surfdiff*dV/dt;
 
         }

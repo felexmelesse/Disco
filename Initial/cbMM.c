@@ -57,6 +57,7 @@ void initial(double *prim, double *x)
       ddro = 0.75*pow(r, -2.5) + (15.*7./64.)*pow(r, -4.5)*R0*R0;
     }
     double nu;
+    /*
     if (Npl < 2){
         nu = visc*cs2/(om);
     }
@@ -78,7 +79,7 @@ void initial(double *prim, double *x)
        }
        nu = visc*cs2/sqrt(omtot);
     }
-
+    */
     double dnudr = -1.5*nu/r;
     double dvisc = r*r*rho*rdodr*dnudr + nu*r*r*rdodr*dsdr + rho*r*r*nu*ddro + 2*r*nu*rho*rdodr;
 
