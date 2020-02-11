@@ -54,27 +54,6 @@ void initial(double *prim, double *x)
     
     double nu;
     nu = visc*cs2/sqrt(om);
-    int np;
-    if (Npl < 2){
-        nu = visc*cs2/sqrt(om);
-    }
-    else{
-       double omtot = 0;
-       double cosp, sinp, px, py, dx, dy, gx, gy, mag;
-       gx = r*sin(phi);
-       gy = r*cos(phi);
-       for(np = 0; np<Npl; np++){
-          cosp = cos(thePlanets[np].phi);
-          sinp = sin(thePlanets[np].phi);
-          px = thePlanets[np].r*cosp;
-          py = thePlanets[np].r*sinp;
-          dx = gx-px;
-          dy = gy-py;
-          mag = dx*dx + dy*dy + thePlanets[np].eps;
-          omtot +=  thePlanets[np].M*pow(mag, -1.5);
-       }
-       nu = visc*cs2/sqrt(omtot);
-    }
 
     double v = -1.5*nu/(r+0.0001);
     double P = rho*cs2/gam;

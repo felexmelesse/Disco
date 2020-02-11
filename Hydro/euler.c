@@ -236,7 +236,7 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
                py = thePlanets[np].r*sinp;
                dx = gx-px;
                dy = gy-py;
-               mag = dx*dx + dy*dy + thePlanets[np].eps;
+               mag = dx*dx + dy*dy + thePlanets[np].eps*thePlanets[np].eps;
                omtot += thePlanets[np].M*pow(mag, -1.5);
             }
             nu = alpha*c*c/sqrt(omtot);              
