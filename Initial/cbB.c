@@ -49,11 +49,11 @@ void initial(double *prim, double *x)
       om = om*(1.0 + 3.0/(r*r*16));
       double dpdr = sig0*fact*pow(R, -delta)*(xi*pow(R, -xi - 1.0) - delta/R);
       dpdr = dpdr*cs2 + rho/(r*r*Mach);
-      om = sqrt(om + dpdr/(r*rho));
+      //om = sqrt(om*om + dpdr/(r*rho));
     }
     
     double nu;
-    nu = visc*cs2/sqrt(om);
+    nu = visc*cs2/om;
 
     double v = -1.5*nu/(r+0.0001);
     double P = rho*cs2/gam;

@@ -122,22 +122,17 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
 
           if (mag < 0.5)
           {
-            arg = factor*pow(mag, -1.5)*pow(thePlanets[pi].M, -0.5);
+            arg = factor*pow(mag, 1.5)*pow(thePlanets[pi].M, -0.5);
 
-            double ratio = 1.0;
             if (arg>0)
             {
-               ratio -= 1.0/arg;
                argt += arg; 
-               thePlanets[pi].dM += cons[RHO]*arg*dV/dt;
+               thePlanets[pi].dM += cons[RHO]*dV/(dt*arg);
             }
-            //ratio = fmax(ratio,sinkPar2);
-            //arg = 1.0 - ratio;            
-
           }          
       }
       double ratio = 1.0;
-      if (argt>0) ratio -= 1.0/argt;
+      if (argt>0) ratio = 1.0 - 1.0/argt;
       cons[URR] *= ratio;
       cons[UZZ] *= ratio;
       cons[UPP] *= ratio;
