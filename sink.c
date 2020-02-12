@@ -155,7 +155,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
         double px, py, dx, dy, mag, eps;
         double argTot, rate, surfdiff, ratio;
         int pi;
-        argTot = 1.0;
+        argTot = 0.0;
         for (pi=0; pi<Npl; pi++){
             cosp = cos(thePlanets[pi].phi);
             sinp = sin(thePlanets[pi].phi);
@@ -173,7 +173,6 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
 
             rate = sinkPar1*thePlanets[pi].omega;
             surfdiff = rate*arg;
-            ratio = 1.0-surfdiff;
             argTot += arg;
             thePlanets[pi].dM += cons[RHO]*surfdiff*dV/dt;
 
