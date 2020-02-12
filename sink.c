@@ -126,13 +126,13 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
 
             if (arg>0)
             {
-               argt += arg; 
+               argt += dV/(dt*arg); 
                thePlanets[pi].dM += cons[RHO]*dV/(dt*arg);
             }
           }          
       }
       double ratio = 1.0;
-      if (argt>0) ratio = 1.0 - 1.0/argt;
+      ratio = fmax(1.0 - argt, 1.e-5);
       cons[URR] *= ratio;
       cons[UZZ] *= ratio;
       cons[UPP] *= ratio;
@@ -191,7 +191,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
     }
 }
 
-void cooling(double *prim, double *cons, double *xp, double *xm, double dt )
+void cooling(double *prim, double *cons, double *xp, double *xm, double dV, double dt )
 {
     if(coolType == 1)
     {
@@ -200,16 +200,20 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dt )
         double gm1 = gamma_law-1.0;
         double beta = coolPar1;
         double om = 1.0;
-        if (r > 1.0) om = pow(r,-1.5);
-        cons[TAU] = cons[TAU] - (press/gm1)*beta*om;
+        //if (r > 1.0) om = pow(r,-1.5);
+        cons[TAU] -= (press/gm1)*beta*om*dt*dV;
+        //cons[TAU] -= (press/gm1)*dt*dV;
+        
     }
     if(coolType == 2)
     {
-        double tfact = coolPar1;	//sigma_sb*mh/kappa
+        double beta = coolPar1;	
         double press, T, gm1;
+        double sigma = prim[RHO];
         press = prim[PPP];
         gm1 = gamma_law-1.0;
-        T = press/prim[RHO];
-        cons[TAU] -= (press/gm1)*(pow(1.0 + 8.0*gm1*tfact*T*T*T*dt/(prim[RHO]*prim[RHO]), -1.0/3.0) - 1.0);
+        //T = press/sigma;
+        double arg = 1.0 + 8*gm1*beta*press*press*press*dt/(sigma*sigma*sigma*sigma*sigma);
+        cons[TAU] += (press/gm1)*dV*(pow(arg, -1./3.) - 1.0);
     }
 }
