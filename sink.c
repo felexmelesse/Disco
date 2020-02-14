@@ -133,11 +133,12 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
       }
       double ratio = 1.0;
       ratio = fmax(1.0 - argt, 1.e-5);
+
+      cons[RHO] *= ratio;
       cons[URR] *= ratio;
       cons[UZZ] *= ratio;
-      cons[UPP] *= ratio;
-      cons[RHO] *= ratio;
-      cons[TAU] *= ratio;
+      cons[UPP] *= (ratio + sinkPark5*(1-ratio));
+      cons[TAU] = (cons[UPP]*cons[UPP] + cons[URR]*cons[URR] + cons[UZZ]*cons[UZZ])/cons[RHO] + cons[rho]*prim[ppp]/(gamma_law - 1.0);
     }
 
     //sink a la Duffell et al. 2019
@@ -182,11 +183,16 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
         //sinkPar2 is the ratio floor
         surfdiff = rate*argTot;
         ratio = 1.0-surfdiff;
+        #cons[URR] *= ratio;
+        #cons[UZZ] *= ratio;
+        #cons[UPP] *= ratio;
+        #cons[RHO] *= ratio;
+        #cons[TAU] *= ratio;
+        cons[RHO] *= ratio;
         cons[URR] *= ratio;
         cons[UZZ] *= ratio;
-        cons[UPP] *= ratio;
-        cons[RHO] *= ratio;
-        cons[TAU] *= ratio;
+        cons[UPP] *= (ratio + sinkPark5*(1-ratio));
+        cons[TAU] = (cons[UPP]*cons[UPP] + cons[URR]*cons[URR] + cons[UZZ]*cons[UZZ])/cons[RHO] + cons[rho]*prim[ppp]/(gamma_law - 1.0);
     }
 }
 
@@ -213,6 +219,18 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dV, doub
         gm1 = gamma_law-1.0;
         //T = press/sigma;
         double arg = 1.0 + 8*gm1*beta*press*press*press*dt/(sigma*sigma*sigma*sigma*sigma);
+        cons[TAU] += (press/gm1)*dV*(pow(arg, -1./3.) - 1.0);
+    }
+    if(coolType == 3)
+    {
+        //constant H/r, assumes visc -> alpha
+     	double r = 0.5*(xp[0]+xm[0]);
+        double beta = coolPar1;	
+        double press, gm1;
+        double sigma = prim[RHO];
+        press = prim[PPP];
+        gm1 = gamma_law-1.0;
+        double arg = 1.0 + 8*gm1*dt*(sigma/press)*(27./32.)*visc*beta*beta*r*r*pow(omega, 3.0);
         cons[TAU] += (press/gm1)*dV*(pow(arg, -1./3.) - 1.0);
     }
 }

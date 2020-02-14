@@ -159,7 +159,7 @@ double get_cs2( double *x ){
         py = thePlanets[pi].r*sinp;
         pr = (px-gx)*(px-gx) + (py-gy)*(py-gy);
 
-        phip += M/pow( pr + pow(thePlanets[pi].eps,n) , 1./n );
+        phip += thePlanets[pi].M/pow( pr + pow(thePlanets[pi].eps,n) , 1./n );
       }
       cs2 = phip/(Mach*Mach);        
     }
