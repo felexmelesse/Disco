@@ -127,7 +127,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             if (arg>0)
             {
                argt += dV/(dt*arg); 
-               thePlanets[pi].dM += cons[RHO]*dV/(dt*arg);
+               thePlanets[pi].dM += prim[RHO]*dV/(dt*arg);
             }
           }          
       }
@@ -137,8 +137,8 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
       cons[RHO] *= ratio;
       cons[URR] *= ratio;
       cons[UZZ] *= ratio;
-      cons[UPP] *= (ratio + sinkPark4*(1-ratio));
-      cons[TAU] = (cons[UPP]*cons[UPP] + cons[URR]*cons[URR] + cons[UZZ]*cons[UZZ])/cons[RHO] + cons[rho]*prim[ppp]/(gamma_law - 1.0);
+      cons[UPP] *= ratio;
+      cons[TAU] *= ratio;
     }
 
     //sink a la Duffell et al. 2019
@@ -179,20 +179,44 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
 
         }
         rate = sinkPar1*thePlanets[0].omega;
-        //sinkPar1 is the sink rate, should be > 1/100 (Duffell+ 2019)
-        //sinkPar2 is the ratio floor
         surfdiff = rate*argTot;
         ratio = 1.0-surfdiff;
-        #cons[URR] *= ratio;
-        #cons[UZZ] *= ratio;
-        #cons[UPP] *= ratio;
-        #cons[RHO] *= ratio;
-        #cons[TAU] *= ratio;
         cons[RHO] *= ratio;
         cons[URR] *= ratio;
         cons[UZZ] *= ratio;
-        cons[UPP] *= (ratio + sinkPark4*(1-ratio));
-        cons[TAU] = (cons[UPP]*cons[UPP] + cons[URR]*cons[URR] + cons[UZZ]*cons[UZZ])/cons[RHO] + cons[rho]*prim[ppp]/(gamma_law - 1.0);
+        cons[UPP] *= ratio;
+        cons[TAU] *= ratio;
+        /*
+        surfdiff = prim[RHO]*rate*argtot;
+        cons[RHO] -= surfdiff*dV*dt;
+        cons[URR] -= surfdiff*prim[URR]*dV*dt;
+        cons[UZZ] -= surfdiff*prim[UXX]*dV*dt;
+        cons[UPP] -= surfdiff*r*prim[UPP]*(1.0 - sinkPar4)*dV*dt;
+        double om, om1, dvp;
+        om = get_om(xm);        
+        om1 = get_om(xp);        
+        om = 0.5*(om + om1);
+        ratio = 1.0 - rate*argtot;
+        dvp2 = prim[UPP]*prim[UPP]/ratio
+
+	    double rho = prim[RHO];
+		double Pp  = prim[PPP];
+		double vr  = prim[URR];
+		double vp  = prim[UPP]*r;
+		double vz  = prim[UZZ];
+		double om  = get_om( x );
+		double vp_off = vp - om*r;
+
+		double v2  = vr*vr + vp_off*vp_off + vz*vz;
+
+		double rhoe = Pp/(gamma_law - 1.);
+
+		cons[DDD] = rho*dV;
+		cons[TAU] = (.5*rho*v2 + rhoe )*dV;
+		cons[SRR] = rho*vr*dV;
+		cons[LLL] = r*rho*vp*dV;
+		cons[SZZ] = rho*vz*dV;
+        */
     }
 }
 
@@ -205,7 +229,7 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dV, doub
         double gm1 = gamma_law-1.0;
         double beta = coolPar1;
         double om = 1.0;
-        //if (r > 1.0) om = pow(r,-1.5);
+        if (r > 1.0) om = pow(r,-1.5);
         cons[TAU] -= (press/gm1)*beta*om*dt*dV;
         //cons[TAU] -= (press/gm1)*dt*dV;
         
@@ -230,6 +254,30 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dV, doub
         double sigma = prim[RHO];
         press = prim[PPP];
         gm1 = gamma_law-1.0;
+        double omega;
+        if (Npl < 2){
+           omega = pow(r, -1.5);
+        }
+        else{
+           double omtot = 0;
+           double cosp, sinp, px, py, dx, dy, gx, gy, mag;
+           double phi;
+           phi = 0.5*(xm[1] + xp[1]);
+           gx = r*sin(phi);
+           gy = r*cos(phi);
+           int np;
+           for(np = 0; np<Npl; np++){
+              cosp = cos(thePlanets[np].phi);
+              sinp = sin(thePlanets[np].phi);
+              px = thePlanets[np].r*cosp;
+              py = thePlanets[np].r*sinp;
+              dx = gx-px;
+              dy = gy-py;
+              mag = dx*dx + dy*dy + thePlanets[np].eps*thePlanets[np].eps;
+              omtot += thePlanets[np].M*pow(mag, -1.5);
+           }
+           omega = sqrt(omtot);
+        }
         double arg = 1.0 + 8*gm1*dt*(sigma/press)*(27./32.)*visc*beta*beta*r*r*pow(omega, 3.0);
         cons[TAU] += (press/gm1)*dV*(pow(arg, -1./3.) - 1.0);
     }
