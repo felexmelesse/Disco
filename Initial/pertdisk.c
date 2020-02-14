@@ -15,8 +15,8 @@ void initial( double * prim , double * x ){
    double r = x[0];
 
    double rho = 1.0 + 0.2*exp(-(r-10.0)*(r-10.0));
-   double Pp  = rho/(Mach*sqrt(r));
-   double omega = pow(r,-1/5);
+   double Pp  = rho/(Mach*r);
+   double omega = pow(r,-1.5);
 
    prim[RHO] = rho;
    prim[PPP] = Pp;
