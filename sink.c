@@ -137,7 +137,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
       cons[RHO] *= ratio;
       cons[URR] *= ratio;
       cons[UZZ] *= ratio;
-      cons[UPP] *= (ratio + sinkPark5*(1-ratio));
+      cons[UPP] *= (ratio + sinkPark4*(1-ratio));
       cons[TAU] = (cons[UPP]*cons[UPP] + cons[URR]*cons[URR] + cons[UZZ]*cons[UZZ])/cons[RHO] + cons[rho]*prim[ppp]/(gamma_law - 1.0);
     }
 
@@ -191,7 +191,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
         cons[RHO] *= ratio;
         cons[URR] *= ratio;
         cons[UZZ] *= ratio;
-        cons[UPP] *= (ratio + sinkPark5*(1-ratio));
+        cons[UPP] *= (ratio + sinkPark4*(1-ratio));
         cons[TAU] = (cons[UPP]*cons[UPP] + cons[URR]*cons[URR] + cons[UZZ]*cons[UZZ])/cons[RHO] + cons[rho]*prim[ppp]/(gamma_law - 1.0);
     }
 }
