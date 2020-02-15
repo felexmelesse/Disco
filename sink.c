@@ -186,6 +186,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
         cons[UZZ] *= ratio;
         cons[UPP] *= ratio;
         cons[TAU] *= ratio;
+
         /*
         surfdiff = prim[RHO]*rate*argtot;
         cons[RHO] -= surfdiff*dV*dt;

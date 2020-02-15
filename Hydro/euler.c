@@ -339,7 +339,7 @@ double mindt(double * prim , double w , double * xp , double * xm ){
    if( dx>dL2 ) dx = dL2;
 
    double nu = explicit_viscosity;
-   /*
+   
    if( alpha_flag ){
       double alpha = explicit_viscosity;
       double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
@@ -349,7 +349,7 @@ double mindt(double * prim , double w , double * xp , double * xm ){
 
    double dt_visc = .03*dx*dx/nu;
    if( dt > dt_visc ) dt = dt_visc;
-   */
+   
    return( dt );
 
 }
