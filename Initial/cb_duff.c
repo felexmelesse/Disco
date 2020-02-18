@@ -39,9 +39,11 @@ void initial(double *prim, double *x)
 
     double rho, fact;
 
+    //rho = 0.0001;
     rho = 1.0;
     double om = 1.0;
-    if (r > 1.0){
+    if (r > 2.0){
+      rho = 1.00;
       om = pow(r,-1.5);
     }
     

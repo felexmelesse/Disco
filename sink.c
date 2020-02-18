@@ -55,6 +55,7 @@ void setSinkParams(struct domain *theDomain)
 }
 
 double get_om(double *x);
+double get_cs2(double *);
 
 void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, double dt)
 {
@@ -148,6 +149,17 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
         double phi = 0.5*(xp[1]+xm[1]);
         double z = 0.5*(xp[2]+xm[2]);
 
+        double rho = prim[RHO];
+        double Pp  = prim[PPP];
+        double vr  = prim[URR];
+        double vp  = prim[UPP]*r;
+        double vz  = prim[UZZ];
+
+        //should really evaluate at center
+        double cs2m = get_cs2(xm);
+        double cs2p = get_cs2(xp);
+        double cs2 = 0.5*(cs2m + cs2p);
+
         double cosp = cos(phi);
         double sinp = sin(phi);
         double gx = r*cosp;
@@ -170,54 +182,16 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             eps = thePlanets[pi].eps;
             eps = eps*eps*eps*eps;
 
-            double arg = exp(-mag*mag/eps);
-
+            double arg = exp(-mag/eps);
             rate = sinkPar1*thePlanets[pi].omega;
-            surfdiff = rate*arg;
-            argTot += arg;
-            thePlanets[pi].dM += cons[RHO]*surfdiff*dV/dt;
-
+            surfdiff = rho*rate*arg;
+            thePlanets[pi].dM += surfdiff*dV;
+            cons[DDD] -= surfdiff*dV*dt;
+            cons[SRR] -= vr*surfdiff*dV*dt;
+            cons[SZZ] -= vz*surfdiff*dV*dt;
+            cons[LLL] -= r*vp*surfdiff*dV*dt;
+            cons[TAU] -= surfdiff*cs2*dV*dt;
         }
-        rate = sinkPar1*thePlanets[0].omega;
-        surfdiff = rate*argTot;
-        ratio = 1.0-surfdiff;
-        cons[RHO] *= ratio;
-        cons[URR] *= ratio;
-        cons[UZZ] *= ratio;
-        cons[UPP] *= ratio;
-        cons[TAU] *= ratio;
-
-        /*
-        surfdiff = prim[RHO]*rate*argtot;
-        cons[RHO] -= surfdiff*dV*dt;
-        cons[URR] -= surfdiff*prim[URR]*dV*dt;
-        cons[UZZ] -= surfdiff*prim[UXX]*dV*dt;
-        cons[UPP] -= surfdiff*r*prim[UPP]*(1.0 - sinkPar4)*dV*dt;
-        double om, om1, dvp;
-        om = get_om(xm);        
-        om1 = get_om(xp);        
-        om = 0.5*(om + om1);
-        ratio = 1.0 - rate*argtot;
-        dvp2 = prim[UPP]*prim[UPP]/ratio
-
-	    double rho = prim[RHO];
-		double Pp  = prim[PPP];
-		double vr  = prim[URR];
-		double vp  = prim[UPP]*r;
-		double vz  = prim[UZZ];
-		double om  = get_om( x );
-		double vp_off = vp - om*r;
-
-		double v2  = vr*vr + vp_off*vp_off + vz*vz;
-
-		double rhoe = Pp/(gamma_law - 1.);
-
-		cons[DDD] = rho*dV;
-		cons[TAU] = (.5*rho*v2 + rhoe )*dV;
-		cons[SRR] = rho*vr*dV;
-		cons[LLL] = r*rho*vp*dV;
-		cons[SZZ] = rho*vz*dV;
-        */
     }
 }
 

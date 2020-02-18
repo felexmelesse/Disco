@@ -346,7 +346,7 @@ double mindt(double * prim , double w , double * xp , double * xm ){
       double h = c*pow( r , 1.5 );
       nu = alpha*c*h;
    }
-
+   
    double dt_visc = .03*dx*dx/nu;
    if( dt > dt_visc ) dt = dt_visc;
    
