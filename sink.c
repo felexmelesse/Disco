@@ -187,10 +187,44 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             surfdiff = rho*rate*arg;
             thePlanets[pi].dM += surfdiff*dV;
             cons[DDD] -= surfdiff*dV*dt;
-            cons[SRR] -= vr*surfdiff*dV*dt;
-            cons[SZZ] -= vz*surfdiff*dV*dt;
-            cons[LLL] -= r*vp*surfdiff*dV*dt;
             cons[TAU] -= surfdiff*cs2*dV*dt;
+            cons[SZZ] -= vz*surfdiff*dV*dt;
+            if (sinkPar2 == 0.0){
+              cons[SRR] -= vr*surfdiff*dV*dt;
+              cons[LLL] -= r*vp*surfdiff*dV*dt;
+             }
+            else {
+              double delta = fmin(sinkPar2, 1.0);
+              double rp, omp, vxp, vyp, vxg, vyg, vxr, vyr, vp_p, vp_r, thetap, thetag, dphi, vxn, vyn, cphi, sphi, vg_r, vg_p;
+              rp = thePlanets[pi].r;
+              omp = thePlanets[pi].omega;
+
+              vp_p = rp*omp;
+              vp_r thePlanets[pi].vr;
+              thetap = 0.5*M_PI - thePlanets[pi].phi;
+              vxp = vp_p*cos(thetap) - vp_r*sin(thetap);
+              vyp = vp_p*sin(thetap) + vp_r*cos(thetap);
+              
+              thetag = 0.5*M_PI - phi;
+              vxg = vp*cos(thetag) - vr*sin(thegag);
+              vyg = vp*sin(thetag) + vr*cos(thetag);
+             
+              vxr = vxg - vxp;
+              vyr = vyg - vyp;
+              //dphi = atan2(dy, dx);
+              cphi = dx/pow(mag,0.25);
+              sphi = dy/pow(mag,0.25);
+              vxn = vxr*( (1-delta)*cphi*cphi + sphi*sphi) + delta*vyr*sphi*cphi;
+              vyn = vxr*( delta*cphi*sphi ) + vyr*(cphi*cphi + (1-delta)*sphi*sphi);
+
+              vxg = vxn + vxp;
+              vyg = vyn + vyp;
+              vg_r = vxg*cos(thetag) + vyg*sin(thetag);
+              vg_p = -vxg*sin(thetag) + vyg*cos(thetag);
+
+              cons[SRR] -= vg_r*surfdiff*dV*dt;
+              cons[LLL] -= vg_r*vp*surfdiff*dV*dt;
+            }
         }
     }
 }
