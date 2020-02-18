@@ -150,7 +150,6 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
         double z = 0.5*(xp[2]+xm[2]);
 
         double rho = prim[RHO];
-        double Pp  = prim[PPP];
         double vr  = prim[URR];
         double vp  = prim[UPP]*r;
         double vz  = prim[UZZ];
@@ -166,9 +165,8 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
         double gy = r*sinp;
 
         double px, py, dx, dy, mag, eps;
-        double argTot, rate, surfdiff, ratio;
+        double rate, surfdiff;
         int pi;
-        argTot = 0.0;
         for (pi=0; pi<Npl; pi++){
             cosp = cos(thePlanets[pi].phi);
             sinp = sin(thePlanets[pi].phi);
@@ -195,18 +193,18 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
              }
             else {
               double delta = fmin(sinkPar2, 1.0);
-              double rp, omp, vxp, vyp, vxg, vyg, vxr, vyr, vp_p, vp_r, thetap, thetag, dphi, vxn, vyn, cphi, sphi, vg_r, vg_p;
+              double rp, omp, vxp, vyp, vxg, vyg, vxr, vyr, vp_p, vp_r, thetap, thetag, vxn, vyn, cphi, sphi, vg_r, vg_p;
               rp = thePlanets[pi].r;
               omp = thePlanets[pi].omega;
 
               vp_p = rp*omp;
-              vp_r thePlanets[pi].vr;
+              vp_r = thePlanets[pi].vr;
               thetap = 0.5*M_PI - thePlanets[pi].phi;
               vxp = vp_p*cos(thetap) - vp_r*sin(thetap);
               vyp = vp_p*sin(thetap) + vp_r*cos(thetap);
               
               thetag = 0.5*M_PI - phi;
-              vxg = vp*cos(thetag) - vr*sin(thegag);
+              vxg = vp*cos(thetag) - vr*sin(thetag);
               vyg = vp*sin(thetag) + vr*cos(thetag);
              
               vxr = vxg - vxp;
@@ -223,7 +221,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
               vg_p = -vxg*sin(thetag) + vyg*cos(thetag);
 
               cons[SRR] -= vg_r*surfdiff*dV*dt;
-              cons[LLL] -= vg_r*vp*surfdiff*dV*dt;
+              cons[LLL] -= r*vg_p*surfdiff*dV*dt;
             }
         }
     }
@@ -246,7 +244,7 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dV, doub
     if(coolType == 2)
     {
         double beta = coolPar1;	
-        double press, T, gm1;
+        double press, gm1;
         double sigma = prim[RHO];
         press = prim[PPP];
         gm1 = gamma_law-1.0;
