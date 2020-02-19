@@ -8,6 +8,7 @@ static double enOmPar = 0.0;
 static int cs2Choice = 0;
 static double cs2Par = 0.0;
 static double Omega0 = 0.0;
+static int Npl = 0.0;
 
 static double Mach = 0.0;
 static double r0 = 0.0;
@@ -15,6 +16,7 @@ static double r1 = 0.0;
 static double r2 = 0.0;
 static double H0 = 0.0;
 static double M = 0.0;
+static double Hor = 0.0;
 
 static struct planet *thePlanets = NULL;
 
@@ -34,6 +36,8 @@ void setOmegaParams( struct domain * theDomain ){
    r2 = theDomain->theParList.initPar3; // Outer Edge
    H0 = theDomain->theParList.initPar4; // Scale Height
    M = theDomain->theParList.metricPar2;
+   Npl = theDomain->Npl;
+   Hor = theDomain->theParList.coolPar1;
 
    thePlanets = theDomain->thePlanets;
 
@@ -137,7 +141,7 @@ double get_cs2( double *x ){
         double v2 = M/r;
         cs2 = v2/(Mach*Mach);
     }
-    else if(cs2Choice == 5)
+    else if(cs2Choice == 5) 
     {
       double r = 0.5*x[0];
       double phi = 0.5*x[1];
@@ -151,7 +155,7 @@ double get_cs2( double *x ){
       double n = 2.0;
       double phip = 0.0;
  
-      for (pi = 0; pi<2; pi++)
+      for (pi = 0; pi<Npl; pi++)
       {
         cosp = cos(thePlanets[pi].phi);
         sinp = sin(thePlanets[pi].phi);
