@@ -256,36 +256,14 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dV, doub
     {
         //constant H/r, assumes visc -> alpha
      	double r = 0.5*(xp[0]+xm[0]);
-        double beta = coolPar1;	
         double press, gm1;
         double sigma = prim[RHO];
         press = prim[PPP];
         gm1 = gamma_law-1.0;
-        double omega;
-        if (Npl < 2){
-           omega = pow(r, -1.5);
-        }
-        else{
-           double omtot = 0;
-           double cosp, sinp, px, py, dx, dy, gx, gy, mag;
-           double phi;
-           phi = 0.5*(xm[1] + xp[1]);
-           gx = r*sin(phi);
-           gy = r*cos(phi);
-           int np;
-           for(np = 0; np<Npl; np++){
-              cosp = cos(thePlanets[np].phi);
-              sinp = sin(thePlanets[np].phi);
-              px = thePlanets[np].r*cosp;
-              py = thePlanets[np].r*sinp;
-              dx = gx-px;
-              dy = gy-py;
-              mag = dx*dx + dy*dy + thePlanets[np].eps*thePlanets[np].eps;
-              omtot += thePlanets[np].M*pow(mag, -1.5);
-           }
-           omega = sqrt(omtot);
-        }
-        double arg = 1.0 + 8*gm1*dt*(sigma/press)*(27./32.)*visc*beta*beta*r*r*pow(omega, 3.0);
+
+        //here visc = alpha
+        //double arg = 1.0 + 8*gm1*dt*(sigma/press)*(27./32.)*visc*beta*beta*r*r*pow(omega, 3.0);
+        double arg = 1.0 + (27./8.)*gm1*dt*visc*Mach*Mach*pow(press, 3.0)*pow(sigma, -4.0); //Farris et al. 2015
         cons[TAU] += (press/gm1)*dV*(pow(arg, -1./3.) - 1.0);
     }
 }
