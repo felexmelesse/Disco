@@ -117,7 +117,7 @@ double getval( double * thisZone , int q ){
    double Br = thisZone[5];
    double Bp = thisZone[6];
    double Bz = thisZone[7];
-   return( .5*(Br*Br+Bp*Bp+Bz*Bz) ); //fabs(P/pow(rho,5./3.)-1.) );// fabs(thisZone[1]/pow(thisZone[0],5./3.)-1.) );
+   return( sqrt(5*P/(3*rho)) ); //fabs(P/pow(rho,5./3.)-1.) );// fabs(thisZone[1]/pow(thisZone[0],5./3.)-1.) );
 //   return( rho*P );
 }
 
