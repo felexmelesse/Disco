@@ -1,10 +1,8 @@
 
 #include "../paul.h"
-
-double get_om( double *);
-double get_om1( double *);
-double get_cs2( double *);
-double bfield_scale_factor(double x, int dim);
+#include "../hydro.h"
+#include "../geometry.h"
+#include "../omega.h"
 
 static double gamma_law = 0.0; 
 static double RHO_FLOOR = 0.0; 
@@ -29,13 +27,12 @@ int set_B_flag(void){
    return(1);
 }
 
-double get_omega( double * prim , double * x ){
+double get_omega( const double * prim , const double * x ){
    return( prim[UPP] );
 }
 
-void planetaryForce( struct planet * , int , double , double , double * , double * );
 
-void prim2cons( double * prim , double * cons , double * x , double dV ){
+void prim2cons( const double * prim , double * cons , const double * x , double dV ){
 
    double r = x[0];
    double rho = prim[RHO];
@@ -71,7 +68,7 @@ void prim2cons( double * prim , double * cons , double * x , double dV ){
    }
 }
 
-void getUstar( double * prim , double * Ustar , double * x , double Sk , double Ss , double * n , double * Bpack ){
+void getUstar( const double * prim , double * Ustar , const double * x , double Sk , double Ss , const double * n , const double * Bpack ){
 
    double r = x[0];
 
@@ -138,7 +135,7 @@ void getUstar( double * prim , double * Ustar , double * x , double Sk , double 
    }
 }
 
-void cons2prim( double * cons , double * prim , double * x , double dV ){
+void cons2prim( const double * cons , double * prim , const double * x , double dV ){
 
    double r = x[0];
    
@@ -187,7 +184,7 @@ void cons2prim( double * cons , double * prim , double * x , double dV ){
 
 }
 
-void flux( double * prim , double * flux , double * x , double * n ){
+void flux( const double * prim , double * flux , const double * x , const double * n ){
 
    double r = x[0];
    double rho = prim[RHO];
@@ -225,10 +222,7 @@ void flux( double * prim , double * flux , double * x , double * n ){
    
 }
 
-double get_dp( double , double );
-double get_centroid( double , double , int);
-
-void source( double * prim , double * cons , double * xp , double * xm , double dVdt ){
+void source( const double * prim , double * cons , const double * xp , const double * xm , double dVdt ){
    
    double rp = xp[0];
    double rm = xm[0];
@@ -276,27 +270,9 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
 
 }
 
-void visc_flux( double * prim , double * gprim , double * flux , double * x , double * n ){
-
-   double r = x[0];
-   double nu = explicit_viscosity;
-
-   double rho = prim[RHO];
-   double vr  = prim[URR];
-   double om  = prim[UPP];
-   double om_off = om - get_om(x);
-   double vz  = prim[UZZ];
-
-   double dnvr = gprim[URR];
-   double dnom = gprim[UPP];
-   double dnvz = gprim[UZZ];
-
-   flux[SRR] = -nu*rho*( dnvr - n[1]*2.*om );
-   flux[LLL] = -nu*rho*( r*r*dnom + n[1]*2.*vr );
-   flux[SZZ] = -nu*rho*dnvz;
-   flux[TAU] = -nu*rho*( vr*dnvr+r*r*om_off*dnom+vz*dnvz );//- 2.*r*om_off*om );
-
-}
+void visc_flux(const double * prim, const double * gradr, const double * gradp,
+               const double * gradz, double * flux,
+               const double * x, const double * n){}
 
 void prim_to_E(const double *prim, double *E, const double *x)
 {
@@ -314,7 +290,7 @@ void prim_to_E(const double *prim, double *E, const double *x)
     E[2] = -vr*Bp+vp*Br;
 }
 
-void flux_to_E( double * Flux , double * Ustr , double * x , double * E1_riemann , double * B1_riemann , double * E2_riemann , double * B2_riemann , int dim ){
+void flux_to_E( const double * Flux , const double * Ustr , const double * x , double * E1_riemann , double * B1_riemann , double * E2_riemann , double * B2_riemann , int dim ){
 
    double r = x[0];
    double irfac = 1.0/bfield_scale_factor(x[0], 0);
@@ -339,7 +315,7 @@ void flux_to_E( double * Flux , double * Ustr , double * x , double * E1_riemann
 
 }
 
-void vel( double * prim1 , double * prim2 , double * Sl , double * Sr , double * Ss , double * n , double * x , double * Bpack ){
+void vel( const double * prim1 , const double * prim2 , double * Sl , double * Sr , double * Ss , const double * n , const double * x , const double * Bpack ){
 /*
    double P1   = prim1[PPP];
    double rho1 = prim1[RHO];
@@ -472,9 +448,8 @@ void vel( double * prim1 , double * prim2 , double * Sl , double * Sr , double *
 
 }
 
-double get_dL( double * , double * , int );
 
-double mindt(double * prim , double w , double * xp , double * xm ){
+double mindt(const double * prim , double w , const double * xp , const double * xm ){
 
    double r = get_centroid(xp[0], xm[0], 1);
    double Pp  = prim[PPP];
@@ -507,7 +482,7 @@ double mindt(double * prim , double w , double * xp , double * xm ){
 
 }
 
-double getReynolds( double * prim , double w , double * x , double dx ){
+double getReynolds( const double * prim , double w , const double * x , double dx ){
 
    double r = x[0];
    double nu = explicit_viscosity;
@@ -529,7 +504,7 @@ double getReynolds( double * prim , double w , double * x , double dx ){
 
 }
 
-void reflect_prims(double * prim, double * x, int dim)
+void reflect_prims(double * prim, const double * x, int dim)
 {
     //dim == 0: r, dim == 1: p, dim == 2: z
     if(dim == 0)

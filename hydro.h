@@ -6,7 +6,7 @@
 void setHydroParams( struct domain * theDomain );
 int set_B_flag();
 
-double get_omega(double *prim, double *x);
+double get_omega(const double *prim, const double *x);
 
 void prim2cons(const double *prim, double *cons, const double *x,
                double dV);
