@@ -1,5 +1,6 @@
 
 #include "paul.h"
+#include "hydro.h"
 
 void AMR( struct domain * ); 
 void move_BCs( struct domain * , double );
@@ -34,7 +35,6 @@ void boundary_trans( struct domain * , int );
 void exchangeData( struct domain * , int );
 
 //int get_num_rzFaces( int , int , int );
-int set_B_flag( void );
 
 void checkNaNs(struct domain *theDomain, char label[])
 {

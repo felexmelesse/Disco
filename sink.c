@@ -1,4 +1,5 @@
 #include "paul.h"
+#include "omega.h"
 
 static int sinkType = 0;
 static double sinkPar1 = 0.0;
@@ -30,8 +31,6 @@ void setSinkParams(struct domain *theDomain)
     if(theDomain->Nz == 1)
         twoD = 1;
 }
-
-double get_om(double *x);
 
 void sink_src(double *prim, double *cons, double *xp, double *xm, double dVdt)
 {

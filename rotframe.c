@@ -1,24 +1,15 @@
 #include "paul.h"
+#include "geometry.h"
 
 static int om_flag = 0;
 static double Omega0 = 0.0;
 static double d = 0.0;
-
-void get_centroid_arr(double *xp, double *xm, double *x);
-void get_rpz(double *x, double *rpz);
-void get_vec_covariant(double *x, double *v, double *vc);
-void get_vec_contravariant(double *x, double *v, double *vc);
-void get_vec_rpz(double *x, double *v, double *vrpz);
-void get_vec_from_rpz(double *x, double *vrpz, double *v);
 
 void setRotFrameParams( struct domain * theDomain ){
    om_flag = theDomain->theParList.RotFrame;
    Omega0  = theDomain->theParList.RotOmega;
    d       = theDomain->theParList.RotD;
 }
-
-double get_dp( double , double );
-double get_centroid( double , double , int);
 
 void subtract_omega( double * prim ){
    if( om_flag ) prim[UPP] -= Omega0;

@@ -3,18 +3,14 @@
 #include <stdlib.h>
 #include <math.h>
 #include "paul.h"
+#include "geometry.h"
 
-void get_centroid_arr(double *, double *, double *);
-double get_dL(double *, double *, int);
-double get_scale_factor(double *, int);
 
 int getN0( int drank , int dsize , int dnum ){
    int N0 = (dnum*drank)/dsize;
    return(N0);
 }
 
-
-void setGeometryParams( struct domain * );
 
 void setupGrid( struct domain * theDomain ){
 
