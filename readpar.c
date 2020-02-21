@@ -153,6 +153,11 @@ int read_par_file( struct domain * theDomain ){
          err += readvar(pfile, "Nozzle_Par2", VAR_DOUB, &(theList->nozzlePar2));
          err += readvar(pfile, "Nozzle_Par3", VAR_DOUB, &(theList->nozzlePar3));
          err += readvar(pfile, "Nozzle_Par4", VAR_DOUB, &(theList->nozzlePar4));
+         err += readvar(pfile, "Cool_Type", VAR_INT , &(theList->coolType));
+         err += readvar(pfile, "Cool_Par1", VAR_DOUB, &(theList->coolPar1));
+         err += readvar(pfile, "Cool_Par2", VAR_DOUB, &(theList->coolPar2));
+         err += readvar(pfile, "Cool_Par3", VAR_DOUB, &(theList->coolPar3));
+         err += readvar(pfile, "Cool_Par4", VAR_DOUB, &(theList->coolPar4));
       }
 #if USE_MPI
       MPI_Barrier(MPI_COMM_WORLD);

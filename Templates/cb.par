@@ -14,7 +14,7 @@ Num_Checkpoints		100
 Use_Logtime		0
 
 //Grid Dimensions//
-Num_R			128
+Num_R			512
 Num_Z			1
 aspect			1.0	//Cell Aspect Ratio, for calculating N_phi
 Max_Aspect_Short	1000.0	
@@ -25,11 +25,19 @@ R_Min			0.0
 R_Max			10.0
 Z_Min			-1.0 //-0.0625
 Z_Max			1.0  //0.0625
+R_periodic      0
 Z_Periodic		0
+Z_Times_pi      0
 Phi_Max			1.0
 P_Times_2pi		1
-Log_Zoning		0	//0=Uniform, 1=Log, 2=Hybrid
+Log_Zoning		1	//0=Uniform, 1=Log, 2=Hybrid
 Log_Radius		0.25	//Only for option 2 of Log_Zoning
+
+NoBC_Rmin       1   //0 = Regular boundary. Ghost zones added and
+NoBC_Rmax       0   //    boundary condition applied.
+NoBC_Zmin       0   //1 = Coordinate boundary (like r=0 origin).
+NoBC_Zmax       0   //    No ghost zones or explicit BC applied.
+
 
 //Numerical Parameters
 CFL			0.1
@@ -85,6 +93,28 @@ Init_Par8       0.0    // doub
 Noise_Type      0       // 0: No Noise, 1: URR and UPP 
 Noise_Abs       0.0     // Amplitude of Absolute Noise
 Noise_Rel       0.0     // Amplitude of Relative Noise
+
+
+//Sink & Nozzle Parameters
+Sink_Type       2       //0: No Sink
+Sink_Par1       0.1     //(double)
+Sink_Par2       0.1     //(double)
+Sink_Par3       0.0     //(double)
+Sink_Par4       0.0     //(double)
+
+Nozzle_Type     0       //0: No Nozzle, 1: Circular Nozzle
+Nozzle_Par1     0.0     //(double)
+Nozzle_Par2     0.0     //(double)
+Nozzle_Par3     0.0     //(double)
+Nozzle_Par4     0.0     //(double)
+
+
+
+
+
+
+
+
 //Metric Parameters
 Metric_Par0     0    //(int)
 Metric_Par1     0.0  //Om_rot (double)

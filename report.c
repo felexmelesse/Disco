@@ -1,4 +1,3 @@
-
 #include "paul.h"
 
 void planetaryForce( struct planet * , double , double , double , double * , double * , double * , int );
@@ -60,6 +59,9 @@ void report( struct domain * theDomain ){
    double BrBp = 0.0;
    double PdV  = 0.0;
 
+   double * M_acc;
+   M_acc = calloc(Npl, sizeof(double) );
+
    double S_R = 0.0;
    double S_0 = 0.0;
 
@@ -67,6 +69,11 @@ void report( struct domain * theDomain ){
    //double P_cut[10];
    //for( j=0 ; j<10 ; ++j ){ T_cut[j]=0.;  P_cut[j]=0.; }
 
+   for( j=0; j<Npl; ++j){
+      M_acc[j] = 0.5*thePlanets[j].dM + 0.5*thePlanets[j].RK_dM;
+      thePlanets[j].dM = 0.0;
+      thePlanets[j].RK_dM = 0.0;
+   }
    for( j=jmin ; j<jmax ; ++j ){
       double rho0 = 1.0;//pow( r , -1.5 );
       double rho_avg = 0.0;
@@ -175,6 +182,10 @@ void report( struct domain * theDomain ){
    MPI_Allreduce( MPI_IN_PLACE , &S_R     , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    MPI_Allreduce( MPI_IN_PLACE , &S_0     , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    MPI_Allreduce( MPI_IN_PLACE , &Mdot    , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   //MPI_Allreduce( MPI_IN_PLACE , &M_acc   , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   for( j=0; j<Npl; ++j){
+      MPI_Allreduce( MPI_IN_PLACE , &M_acc[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   }
 
 //   MPI_Allreduce( MPI_IN_PLACE , T_cut  , 10 , MPI_DOUBLE , MPI_SUM , grid_comm );
 //   MPI_Allreduce( MPI_IN_PLACE , P_cut  , 10 , MPI_DOUBLE , MPI_SUM , grid_comm );
@@ -192,13 +203,21 @@ void report( struct domain * theDomain ){
 
    if( rank==0 ){
       FILE * rFile = fopen("report.dat","a");
-      fprintf(rFile,"%le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le\n",
+      //fprintf(rFile,"%le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le\n",
+      //          t,Torque,Power,Fr,rho_min,rhoavg_min,PsiR,PsiI,Mass,Mdot,S_R,
+      //          L1_rho,L1_isen,L1_B,Br2,aM,bM,M_acc);
+      fprintf(rFile,"%le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le ",
                 t,Torque,Power,Fr,rho_min,rhoavg_min,PsiR,PsiI,Mass,Mdot,S_R,
                 L1_rho,L1_isen,L1_B,Br2,aM,bM);
+      for( j=0; j<Npl; ++j){
+         fprintf(rFile,"%le ", M_acc[j]);
+      }
+      fprintf(rFile,"\n");
+
       //fprintf(rFile,"%e %e %e ",t,Torque,Power);
       //for( j=0 ; j<10 ; ++j ) fprintf(rFile,"%e %e ",T_cut[j],P_cut[j]);
       //fprintf(rFile,"\n");
       fclose(rFile);
    }
-
+   free(M_acc);
 }

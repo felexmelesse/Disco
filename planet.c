@@ -28,7 +28,6 @@ double phigrav( double M , double r , double eps , int type)
         return M*r; // M is gravitational acceleration
                     // only makes sense if grav2D is on
     }
-
     return 0.0;
 }
 
@@ -65,6 +64,7 @@ void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
    double dy = r*sinp-rp*sin(pp);
    double script_r = sqrt(dx*dx+dy*dy);
 
+   //double z = M_PI*0.5; //x[2];
    double pot = phigrav( pl->M , script_r , pl->eps , pl->type);
 
    double c2 = gam*prim[PPP]/prim[RHO];
@@ -75,7 +75,7 @@ void adjust_gas( struct planet * pl , double * x , double * prim , double gam ){
 
 }
 
-void planetaryForce( struct planet * pl , double r , double phi , double z , double * fr , double * fp , double * fz , int mode ){
+void planetaryForce( struct planet * pl , double r , double phi , double z , double * fr , double * fp , double * fz , int mode){
 
    double rp = pl->r;
    double pp = pl->phi;
@@ -113,11 +113,11 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
        cosap = 0.0;
        sinap = 0.0;
    }
-/*
+   /*
    double rH = rp*pow( pl->M/3.,1./3.);
    double pd = 0.8; 
    double fd = 1./(1.+exp(-( script_r/rH-pd)/(pd/10.)));
-*/
+   */
 
    double sint = script_r_perp/script_r;
    double cost = z/script_r;
@@ -125,7 +125,6 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
    *fr = cosap*f1*sint; //*fd;
    *fp = sinap*f1*sint; //*fd;
    *fz = f1*cost;
-
 }
 
 double get_centroid( double , double , int);
@@ -173,6 +172,7 @@ void planet_RK_copy( struct planet * pl ){
    pl->RK_M     = pl->M;
    pl->RK_omega = pl->omega;
    pl->RK_vr    = pl->vr;
+   pl->RK_dM    = pl->dM;
 }
 
 void planet_RK_adjust( struct planet * pl , double RK ){

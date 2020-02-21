@@ -13,6 +13,8 @@ static int include_viscosity = 0;
 static int isothermal = 0;
 static int alpha_flag = 0;
 static int polar_sources = 0;
+static int Npl = 0;
+static struct planet *thePlanets = NULL;
 
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
@@ -24,6 +26,8 @@ void setHydroParams( struct domain * theDomain ){
    alpha_flag = theDomain->theParList.alpha_flag;
    if(theDomain->NgRa == 0)
        polar_sources = 1;
+   Npl = theDomain->Npl;
+   thePlanets = theDomain->thePlanets;
 }
 
 int set_B_flag(void){
@@ -208,7 +212,7 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    //TODO: These used to be evaluated at r_1, not r.  Check that r is ok.
    double om  = get_om( x );
    double om1 = get_om1( x );
-
+   int np;
    cons[TAU] += dVdt*rho*vr*( om*om*r2_3/r_1 - om1*(omega-om)*r2_3 );
  
    if( include_viscosity ){
@@ -216,15 +220,35 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
       if( alpha_flag ){
          double alpha = explicit_viscosity;
          double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
-         double h = c*pow( r_1 , 1.5 );
-         nu = alpha*c*h;
+         if (Npl < 2){
+            double h = c*pow( r_1 , 1.5 );
+            nu = alpha*c*h;
+         }
+         else{
+            double omtot = 0;
+            double cosp, sinp, px, py, dx, dy, gx, gy, mag;
+            gx = r*sin(x[1]);
+            gy = r*cos(x[1]);
+            for(np = 0; np<Npl; np++){
+               cosp = cos(thePlanets[np].phi);
+               sinp = sin(thePlanets[np].phi);
+               px = thePlanets[np].r*cosp;
+               py = thePlanets[np].r*sinp;
+               dx = gx-px;
+               dy = gy-py;
+               mag = dx*dx + dy*dy + thePlanets[np].eps*thePlanets[np].eps;
+               omtot += thePlanets[np].M*pow(mag, -1.5);
+            }
+            nu = alpha*c*c/sqrt(omtot);              
+         }
       }
       cons[SRR] += -dVdt*nu*rho*vr/(r_1*r_1);
    }
 
 }
 
-void visc_flux( double * prim , double * gprim , double * flux , double * x , double * n ){
+void 
+visc_flux( double * prim , double * gprim , double * flux , double * x , double * n ){
 
    double r = x[0];
    double nu = explicit_viscosity;
@@ -307,7 +331,7 @@ double mindt(double * prim , double w , double * xp , double * xm ){
    double dt = dtr;
    if( dt > dtp ) dt = dtp;
    if( dt > dtz ) dt = dtz;
-/*
+
    double dL0 = get_dL(xp,xm,0);
    double dL1 = get_dL(xp,xm,1);
    double dL2 = get_dL(xp,xm,2);
@@ -316,17 +340,17 @@ double mindt(double * prim , double w , double * xp , double * xm ){
    if( dx>dL2 ) dx = dL2;
 
    double nu = explicit_viscosity;
-
+   
    if( alpha_flag ){
       double alpha = explicit_viscosity;
       double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
       double h = c*pow( r , 1.5 );
       nu = alpha*c*h;
    }
-
-   double dt_visc = .03*dx*dx/nu;
+   
+   double dt_visc = .3*dx*dx/nu;
    if( dt > dt_visc ) dt = dt_visc;
-*/
+   
    return( dt );
 
 }

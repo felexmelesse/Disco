@@ -112,6 +112,11 @@ struct param_list{
    double nozzlePar2;
    double nozzlePar3;
    double nozzlePar4;
+   int coolType;
+   double coolPar1;
+   double coolPar2;
+   double coolPar3;
+   double coolPar4;
 };
 
 struct diagnostic_avg{
@@ -228,9 +233,13 @@ struct planet{
    double RK_omega;
    double RK_vr;
 
+   double RK_dM;
+   double dM;
+
    double eps;
    double Fr;
    double Fp;
 
    int type;
 };
+
