@@ -247,7 +247,8 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
 
 }
 
-void visc_flux( double * prim , double * gprim , double * flux , double * x , double * n ){
+void 
+visc_flux( double * prim , double * gprim , double * flux , double * x , double * n ){
 
    double r = x[0];
    double nu = explicit_viscosity;
@@ -347,7 +348,7 @@ double mindt(double * prim , double w , double * xp , double * xm ){
       nu = alpha*c*h;
    }
    
-   double dt_visc = .03*dx*dx/nu;
+   double dt_visc = .3*dx*dx/nu;
    if( dt > dt_visc ) dt = dt_visc;
    
    return( dt );

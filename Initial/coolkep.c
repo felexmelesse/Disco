@@ -26,6 +26,7 @@ void initial( double * prim , double * x ){
    double nu = visc*beta*beta*omega*r*r;
    double rho = mdot/(pi3*nu);
    double Pp = rho*beta*beta*r*r*omega*omega;
+   //double Pp = rho/(r*Mach*Mach);
 
    prim[RHO] = rho;
    prim[PPP] = Pp;
