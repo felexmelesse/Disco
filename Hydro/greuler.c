@@ -351,7 +351,7 @@ void flux_to_E(const double *Flux, const double *Ustr, const double *x,
 
 void vel(const double *prim1, const double *prim2,
             double *Sl, double *Sr, double *Ss, 
-            const double *n, const double *x, const double *Bpack)
+            const double *n, const double *x, double *Bpack)
 {
     double rho1 = prim1[RHO];
     double P1   = prim1[PPP];
@@ -609,6 +609,17 @@ void reflect_prims(double *prim, const double *x, int dim)
     prim[UPP] = l[1];
     prim[UZZ] = l[2];
 }
+
+double bfield_scale_factor(double x, int dim)
+{
+    // Returns the factor used to scale B_cons.
+    // x is coordinate location in direction dim.
+    // dim == 0: r, dim == 1: p, dim == 2: z
+    
+    return 1.0;
+}
+
+
 
 void cons2prim_prep(double *cons, const double *x)
 {

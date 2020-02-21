@@ -25,7 +25,7 @@ void flux_to_E( const double * Flux , const double * Ustr , const double * x,
                 double * E2_riemann , double * B2_riemann , int dim );
 void vel( const double * prim1 , const double * prim2 , 
          double * Sl , double * Sr , double * Ss , 
-         const double * n , const double * x , const double * Bpack );
+         const double * n , const double * x , double * Bpack );
 double mindt(const double * prim , double w ,
              const double * xp , const double * xm );
 void reflect_prims(double * prim, const double * x, int dim);

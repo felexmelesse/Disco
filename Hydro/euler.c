@@ -1,5 +1,5 @@
 
-#include "paul.h"
+#include "../paul.h"
 #include "../hydro.h"
 #include "../geometry.h"
 #include "../omega.h"
@@ -29,14 +29,12 @@ int set_B_flag(void){
    return(0);
 }
 
-double get_omega( double * prim , double * x ){
+double get_omega( const double * prim , const double * x ){
    return( prim[UPP] );
 }
 
-void planetaryForce( struct planet * , int , double , double , double * , double * );
-
-void prim2cons( const double * prim , double * cons , const double * x ,
-               double dV ){
+void prim2cons(const double * prim, double * cons, const double * x,
+               double dV){
 
    double r = x[0];
    double rho = prim[RHO];
@@ -226,7 +224,7 @@ void visc_flux(const double * prim, const double * gradr, const double * gradp,
                const double * gradz, double * flux,
                const double * x, const double * n)
 {
-
+/*
    double r = x[0];
    double nu = explicit_viscosity;
 
@@ -251,6 +249,7 @@ void visc_flux(const double * prim, const double * gradr, const double * gradp,
    flux[LLL] = -nu*rho*( r*r*dnom + n[1]*2.*vr );
    flux[SZZ] = -nu*rho*dnvz;
    flux[TAU] = -nu*rho*( vr*dnvr+r*r*om_off*dnom+vz*dnvz );//- 2.*r*om_off*om );
+*/
 
 }
 
@@ -264,7 +263,7 @@ void flux_to_E( const double * Flux , const double * Ustr , const double * x,
 
 void vel( const double * prim1 , const double * prim2 , 
          double * Sl , double * Sr , double * Ss , 
-         const double * n , const double * x , const double * Bpack ){
+         const double * n , const double * x , double * Bpack ){
 
    double r = x[0];
    double P1   = prim1[PPP];

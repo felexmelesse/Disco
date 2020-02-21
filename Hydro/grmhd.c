@@ -484,7 +484,7 @@ void flux_to_E(const double *Flux, const double *Ustr, const double *x, double *
    }
 }
 void vel(const double *prim1, const double *prim2, double *Sl, double *Sr, double *Ss, 
-            const double *n, const double *x, const double *Bpack)
+            const double *n, const double *x, double *Bpack)
 {
     double r = x[0];
     double al, be[3], gam[9], igam[9], sqrtgam;
@@ -715,6 +715,78 @@ double mindt(const double *prim, double wc, const double *xp, const double *xm)
     dt = dt < dtz ? dt : dtz;
 
     return dt;
+}
+
+void reflect_prims(double *prim, const double *x, int dim)
+{
+    double r = x[0];
+    double lapse;
+    double shift[3];
+    double igam[9];
+    double gam[9];
+    double jac;
+    double U[4];
+
+    double l[3] = {prim[URR], prim[UPP], prim[UZZ]};
+
+    lapse = metric_lapse(x);
+    metric_shift(x, shift);
+    metric_igam(x, igam);
+    metric_gam(x, gam);
+    double w, u0, u2;
+    double u[3];
+    double uS[3];
+    int i,j;
+    for(i=0; i<3; i++)
+    {
+        uS[i] = 0.0;
+        for(j=0; j<3; j++)
+            uS[i] += igam[3*i+j]*l[j];
+    }
+    u2 = l[0]*uS[0] + l[1]*uS[1] + l[2]*uS[2];
+    w = sqrt(1.0 + u2);
+    u0 = w/lapse;
+    for(i=0; i<3; i++)
+        u[i] = uS[i] - shift[i]*u0;
+
+    double v[3] = {u[0]/u0, u[1]/u0, u[2]/u0};
+    v[dim] = -v[dim];
+
+    double b2 = 0;
+    double vb = 0;
+    double v2 = 0;
+    for(i=0; i<3; i++)
+        for(j=0; j<3; j++)
+        {
+            b2 += gam[3*i+j]*shift[i]*shift[j];
+            vb += gam[3*i+j]*shift[i]*v[j];
+            v2 += gam[3*i+j]*v[i]*v[j];
+        }
+
+    u0 = 1.0 / sqrt(lapse*lapse - b2 - 2*vb - v2);
+
+    for(i=0; i<3; i++)
+    {
+        l[i] = 0.0;
+        for(j=0; j<3; j++)
+            l[i] += gam[3*i+j]*(shift[j] + v[j]) * u0;
+    }
+
+    prim[URR] = l[0];
+    prim[UPP] = l[1];
+    prim[UZZ] = l[2];
+}
+
+double bfield_scale_factor(double x, int dim)
+{
+    // Returns the factor used to scale B_cons.
+    // x is coordinate location in direction dim.
+    // dim == 0: r, dim == 1: p, dim == 2: z
+
+    if(dim == 0)
+        return 1.0/x;
+    else
+        return 1.0;
 }
 
 double getReynolds(const double *prim, double w, const double *x, double dx)

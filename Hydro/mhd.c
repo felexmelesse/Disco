@@ -315,7 +315,7 @@ void flux_to_E( const double * Flux , const double * Ustr , const double * x , d
 
 }
 
-void vel( const double * prim1 , const double * prim2 , double * Sl , double * Sr , double * Ss , const double * n , const double * x , const double * Bpack ){
+void vel( const double * prim1 , const double * prim2 , double * Sl , double * Sr , double * Ss , const double * n , const double * x , double * Bpack ){
 /*
    double P1   = prim1[PPP];
    double rho1 = prim1[RHO];

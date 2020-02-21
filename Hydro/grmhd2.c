@@ -499,8 +499,9 @@ void source(const double *prim, double *cons, const double *xp, const double *xm
     }
 }
 
-void visc_flux(const double *prim, const double *gprim, const double *flux, const double *x, 
-                const double *n){}
+void visc_flux(const double * prim, const double * gradr, const double * gradp,
+               const double * gradz, double * flux,
+               const double * x, const double * n){}
 
 void flux_to_E(const double *Flux, const double *Ustr, const double *x, double *E1_riemann, 
                 double *B1_riemann, double *E2_riemann, double *B2_riemann, 
@@ -536,7 +537,7 @@ void flux_to_E(const double *Flux, const double *Ustr, const double *x, double *
    }
 }
 void vel(const double *prim1, const double *prim2, double *Sl, double *Sr, double *Ss, 
-            const double *n, const double *x, const double *Bpack)
+            const double *n, const double *x, double *Bpack)
 {
     double r = x[0];
     double al, be[3], gam[9], igam[9], sqrtgam;
@@ -892,6 +893,18 @@ void reflect_prims(double *prim, const double *x, int dim)
     prim[UZZ] = l[2];
 }
 
+double bfield_scale_factor(double x, int dim)
+{
+    // Returns the factor used to scale B_cons.
+    // x is coordinate location in direction dim.
+    // dim == 0: r, dim == 1: p, dim == 2: z
+
+    if(dim == 0)
+        return 1.0/x;
+    else
+        return 1.0;
+}
+
 void cons2prim_prep(double *cons, const double *x)
 {
     //TODO: complete this.
@@ -927,7 +940,7 @@ void cons2prim_solve_isothermal(const double *cons, double *prim, const double *
     double BS = 0.0;
     double B2 = 0.0;
 
-    double cs2N = get_cs2(r);
+    double cs2N = get_cs2(x);
     //double P_o_rho = cs2N / gamma_law;
     //double h = 1.0 + gamma_law * P_o_rho / (gamma_law-1.0);
     double P_o_rhoh = cs2N / gamma_law;
