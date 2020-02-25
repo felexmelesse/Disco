@@ -158,6 +158,7 @@ int read_par_file( struct domain * theDomain ){
          err += readvar(pfile, "Cool_Par2", VAR_DOUB, &(theList->coolPar2));
          err += readvar(pfile, "Cool_Par3", VAR_DOUB, &(theList->coolPar3));
          err += readvar(pfile, "Cool_Par4", VAR_DOUB, &(theList->coolPar4));
+         err += readvar(pfile, "Softening", VAR_DOUB, &(theList->grav_eps));
       }
 #if USE_MPI
       MPI_Barrier(MPI_COMM_WORLD);

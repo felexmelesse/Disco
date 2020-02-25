@@ -78,6 +78,7 @@ struct param_list{
    double Drift_Rate,Drift_Exp;
    int grav2D;
    int alpha_flag;
+   double grav_eps;
 
    int restart_flag;
    int CT;
