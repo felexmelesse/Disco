@@ -177,7 +177,8 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             dy = gy-py;
             mag = dx*dx + dy*dy + z*z;
             mag = mag*mag;
-            eps = thePlanets[pi].eps;
+            //eps = thePlanets[pi].eps;
+            eps = sinkPar3;
             eps = eps*eps*eps*eps;
 
             double arg = exp(-mag/eps);
