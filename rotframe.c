@@ -1,4 +1,5 @@
 #include "paul.h"
+#include "omega.h"
 #include "geometry.h"
 
 static int om_flag = 0;
@@ -63,6 +64,9 @@ void omega_src( double * prim , double * cons , double * xp , double * xm , doub
       double frpz[3], f[3];
       omegaForce(rpz[0], rpz[1], vrpz[0], vrpz[1], frpz);  //frpz is orthonormal
       get_vec_from_rpz(x, frpz, f);  //f is orthonormal
+
+      //adjust v for energy-subtraction scheme.
+      v[1] -= get_scale_factor(x, 0) * get_om(x);  //still orthonormal
 
       double vf = v[0]*f[0] + v[1]*f[1] + v[2]*f[2];  //both in same basis,
                                                       // easy dot product
