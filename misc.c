@@ -363,7 +363,6 @@ void calc_cons( struct domain * theDomain ){
    }
 }
 
-void plm_phi( struct domain * );
 void riemann_phi( struct cell * , struct cell * , double * , double );
 
 void phi_flux( struct domain * theDomain , double dt ){
@@ -399,7 +398,6 @@ void phi_flux( struct domain * theDomain , double dt ){
 
 
    int i,j,k;
-   plm_phi( theDomain );
    for( k=kmin ; k<kmax ; ++k ){
       double zp = z_kph[k];
       double zm = z_kph[k-1];
@@ -428,7 +426,6 @@ void phi_flux( struct domain * theDomain , double dt ){
 }
 
 void buildfaces( struct domain * , int , int );
-void plm_trans( struct domain * , struct face * , int , int );
 void riemann_trans( struct face * , double , int );
 
 void trans_flux( struct domain * theDomain , double dt , int dim ){
@@ -452,12 +449,10 @@ void trans_flux( struct domain * theDomain , double dt , int dim ){
     int jmin, jmax, kmin, kmax, Nfr;
 
     int *fI;
-    int Nf;
     struct face * theFaces;
 
     if( dim==1 )
     {
-        Nf = theDomain->fIndex_r[theDomain->N_ftracks_r];
         fI = theDomain->fIndex_r;
         theFaces = theDomain->theFaces_1;
         Nfr = Nr-1;
@@ -477,7 +472,6 @@ void trans_flux( struct domain * theDomain , double dt , int dim ){
     }
     else
     {
-        Nf = theDomain->fIndex_z[theDomain->N_ftracks_z];
         fI = theDomain->fIndex_z;
         theFaces = theDomain->theFaces_2;
         Nfr = Nr;
@@ -495,7 +489,6 @@ void trans_flux( struct domain * theDomain , double dt , int dim ){
         kmax = NgZb==0 ? Nz-1 : Nz-NgZb;
     }
 
-    plm_trans(theDomain, theFaces, Nf, dim);
 
     int j, k;
     for(k=kmin; k<kmax; k++)

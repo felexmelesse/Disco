@@ -270,7 +270,6 @@ void solve_riemann(const double *primL, const double *primR,
    }
 
    if( visc_flag ){
-      double hn = get_scale_factor(x, dim);
       double vFlux[NUM_Q];
       double prim[NUM_Q];
       double gradr[NUM_Q];
@@ -278,9 +277,9 @@ void solve_riemann(const double *primL, const double *primR,
       double gradz[NUM_Q];
       for( q=0 ; q<NUM_Q ; ++q ){
          prim[q] = .5*(primL[q]+primR[q]);
-         gradr[q] = .5*(gradLr[q]+gradRr[q])/hn;
-         gradp[q] = .5*(gradLp[q]+gradRp[q])/hn;
-         gradz[q] = .5*(gradLz[q]+gradRz[q])/hn;
+         gradr[q] = .5*(gradLr[q]+gradRr[q]);
+         gradp[q] = .5*(gradLp[q]+gradRp[q]);
+         gradz[q] = .5*(gradLz[q]+gradRz[q]);
          vFlux[q] = 0.0;
       }
       visc_flux(prim, gradr, gradp, gradz, vFlux, x, n);
