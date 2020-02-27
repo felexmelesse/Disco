@@ -271,12 +271,85 @@ void source( const double * prim , double * cons , const double * xp , const dou
 }
 
 void visc_flux(const double * prim, const double * gradr, const double * gradp,
-               const double * gradz, double * flux,
+               const double * gradt, double * flux,
                const double * x, const double * n)
 {
+   double r = x[0];
+   double th = x[2];
+   double sinth = sin(th);
+   double costh = cos(th);
+   double nu = explicit_viscosity;
 
-    //Silence is Golden
+   if( alpha_flag ){
+      double alpha = explicit_viscosity;
+      double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
+      double h = c*pow( r , 1.5 );
+      nu = alpha*c*h;
+   }
 
+   double rho = prim[RHO];
+   double vr  = prim[URR];
+   double om  = prim[UPP];
+   double om_off = om - get_om(x);
+   double vt  = prim[UZZ];
+
+   //Divergence of v divided by number of spatial dimensions (3)
+   double divV_o_d = (gradr[URR] + gradp[UPP] + gradt[UZZ] + 2*vr/r
+                      + costh*vt/sinth) / 3.0;
+
+   // Covariant components of shear tensor.
+   double srr = gradr[URR] - divV_o_d;
+   double spp = r*r*sinth*sinth*(gradp[UPP] + vr/r + costh*vt/sinth - divV_o_d);
+   double stt = r*(r*gradt[UZZ] + vr - r*divV_o_d);
+   double srp = 0.5*(r*r*sinth*sinth*gradr[UPP] + gradp[URR]);
+   double srt = 0.5*(r*r*gradr[UZZ] + gradt[URR]);
+   double spt = 0.5*r*r*(gradp[UZZ] + sinth*sinth*gradt[UPP]);
+
+   // Covariant components of shear normal to face, shear_{ij} * n^{j}.
+   // Given n is in orthonormal basis, 1/r factor corrects to coordinate basis
+   double nc[3] = {n[0], n[1]/(r*sinth), n[2]/r};
+   double srn = srr*nc[0] + srp*nc[1] + srt*nc[2];
+   double spn = srp*nc[0] + spp*nc[1] + spt*nc[2];
+   double stn = srt*nc[0] + spt*nc[1] + stt*nc[2];
+
+   flux[SRR] = -2 * nu * rho * srn;
+   flux[LLL] = -2 * nu * rho * spn;
+   flux[SZZ] = -2 * nu * rho * stn;
+   flux[TAU] = -2 * nu * rho * ( vr*srn + om_off*spn + vt*stn);
+}
+
+void visc_source(const double * prim, const double * gradr, const double *gradp,
+                 const double * gradt, double * cons, const double *xp,
+                 const double *xm, double dVdt)
+{
+   double r = get_centroid(xp[0], xm[0], 1);
+   double th = get_centroid(xp[2], xm[2], 2);
+   double sinth = sin(th);
+   double costh = cos(th);
+   double nu = explicit_viscosity;
+
+   if( alpha_flag ){
+      double alpha = explicit_viscosity;
+      double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
+      double h = c*pow( r , 1.5 );
+      nu = alpha*c*h;
+   }
+
+   double rho = prim[RHO];
+   double vr  = prim[URR];
+   double vt  = prim[UZZ];
+
+   //Divergence of v divided by number of spatial dimensions (3)
+   double divV_o_d = (gradr[URR] + gradp[UPP] + gradt[UZZ] + 2*vr/r
+                      + costh*vt/sinth) / 3.0;
+
+   // Relevant contravariant components of shear tensor.
+   double spp = (r*gradp[UPP] + vr + r*costh*vt/sinth - divV_o_d)
+                    / (r*r*r*sinth*sinth);
+   double stt = (r*gradp[UPP] + vr - r*divV_o_d) / (r*r*r);
+
+   cons[SRR] += (-2 * rho * nu * (r * stt + r*sinth*sinth * spp)) * dVdt;
+   cons[SZZ] += (-2 * rho * nu * (r*r*sinth*costh * spp)) * dVdt;
 }
 
 void flux_to_E( const double * Flux , const double * Ustr , const double * x , double * E1_riemann , double * B1_riemann , double * E2_riemann , double * B2_riemann , int dim ){

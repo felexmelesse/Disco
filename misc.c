@@ -548,6 +548,8 @@ void add_source( struct domain * theDomain , double dt ){
    int * Np = theDomain->Np;
    int Npl = theDomain->Npl;
 
+   int visc_flag = theDomain->theParList.visc_flag;
+
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
 
@@ -566,6 +568,9 @@ void add_source( struct domain * theDomain , double dt ){
             for( p=0 ; p<Npl ; ++p ){
                planet_src( thePlanets+p , c->prim , c->cons , xp , xm , dV*dt );
             }
+            if(visc_flag)
+                visc_source( c->prim, c->gradr, c->gradp, c->gradz, c->cons,
+                            xp, xm, dV*dt);
             omega_src( c->prim , c->cons , xp , xm , dV*dt );
             sink_src( c->prim , c->cons , xp , xm , dV*dt );
          }    
