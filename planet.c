@@ -183,5 +183,7 @@ void planet_RK_adjust( struct planet * pl , double RK ){
    pl->M     = (1.-RK)*pl->M     + RK*pl->RK_M;
    pl->omega = (1.-RK)*pl->omega + RK*pl->RK_omega;
    pl->vr    = (1.-RK)*pl->vr    + RK*pl->RK_vr;
-   //add dM, L, Ls adjust?
+   pl->dM     = (1.-RK)*pl->dM     + RK*pl->RK_dM;
+   pl->L     = (1.-RK)*pl->L     + RK*pl->RK_L;
+   pl->Ls     = (1.-RK)*pl->Ls     + RK*pl->RK_Ls;
 }
