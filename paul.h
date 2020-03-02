@@ -234,8 +234,13 @@ struct planet{
    double RK_omega;
    double RK_vr;
 
-   double RK_dM;
    double dM;
+   double RK_dM;
+
+   double Ls;
+   double RK_Ls;
+   double L;
+   double RK_L;
 
    double eps;
    double Fr;
