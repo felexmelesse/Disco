@@ -59,10 +59,12 @@ void report( struct domain * theDomain ){
    double BrBp = 0.0;
    double PdV  = 0.0;
 
-   double * M_acc, * L_pls, * Ls_pls;
+   double * M_acc, * L_pls, * Ls_pls, *kin_pls, *therm_pls;
    M_acc = calloc(Npl, sizeof(double) );
    L_pls = calloc(Npl, sizeof(double) );
    Ls_pls = calloc(Npl, sizeof(double) );
+   kin_pls = calloc(Npl, sizeof(double) );
+   therm_pls = calloc(Npl, sizeof(double) );
 
    double S_R = 0.0;
    double S_0 = 0.0;
@@ -75,12 +77,18 @@ void report( struct domain * theDomain ){
       M_acc[j] = 0.5*thePlanets[j].dM + 0.5*thePlanets[j].RK_dM;
       L_pls[j] = 0.5*thePlanets[j].L + 0.5*thePlanets[j].RK_L;
       Ls_pls[j] = 0.5*thePlanets[j].Ls + 0.5*thePlanets[j].RK_Ls;
+      therm_pls[j] = 0.5*thePlanets[j].therm + 0.5*thePlanets[j].RK_therm;
+      kin_pls[j] = 0.5*thePlanets[j].kin + 0.5*thePlanets[j].RK_kin;
       thePlanets[j].dM = 0.0;
       thePlanets[j].RK_dM = 0.0;
       thePlanets[j].L = 0.0;
       thePlanets[j].RK_L = 0.0;
       thePlanets[j].Ls = 0.0;
       thePlanets[j].RK_Ls = 0.0;
+      thePlanets[j].therm = 0.0;
+      thePlanets[j].RK_therm = 0.0;
+      thePlanets[j].kin = 0.0;
+      thePlanets[j].RK_kin = 0.0;
   }
    for( j=jmin ; j<jmax ; ++j ){
       double rho0 = 1.0;//pow( r , -1.5 );
@@ -195,6 +203,8 @@ void report( struct domain * theDomain ){
       MPI_Allreduce( MPI_IN_PLACE , &M_acc[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
       MPI_Allreduce( MPI_IN_PLACE , &L_pls[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
       MPI_Allreduce( MPI_IN_PLACE , &Ls_pls[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+      MPI_Allreduce( MPI_IN_PLACE , &kin_pls[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+      MPI_Allreduce( MPI_IN_PLACE , &therm_pls[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    }
 
 //   MPI_Allreduce( MPI_IN_PLACE , T_cut  , 10 , MPI_DOUBLE , MPI_SUM , grid_comm );
@@ -227,6 +237,12 @@ void report( struct domain * theDomain ){
       }
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", Ls_pls[j]);
+      }
+      for( j=0; j<Npl; ++j){
+         fprintf(rFile,"%le ", kin_pls[j]);
+      }
+      for( j=0; j<Npl; ++j){
+         fprintf(rFile,"%le ", therm_pls[j]);
       }
       fprintf(rFile,"\n");
 

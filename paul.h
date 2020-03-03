@@ -242,6 +242,13 @@ struct planet{
    double L;
    double RK_L;
 
+   double kin;
+   double RK_kin;
+   double therm;
+   double RK_therm;
+
+
+
    double eps;
    double Fr;
    double Fp;
