@@ -221,7 +221,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             cons[SRR] -= vg_r*acc_factor;
             cons[LLL] -= r*vg_p*acc_factor;
             cons[SZZ] -= vz*acc_factor;
-            double v2 = sqrt(vg_p*vg_p + vg_r*vg_r + vz*vz);
+            double v2 = vg_p*vg_p + vg_r*vg_r + vz*vz;
             cons[TAU] -= acc_factor*(0.5*v2 + prim[PPP]/(gamma_law-1.0));
             thePlanets[pi].kin += 0.5*v2*acc_factor;
             thePlanets[pi].therm += prim[PPP]*acc_factor/(gamma_law-1.0);
