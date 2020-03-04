@@ -65,7 +65,7 @@ def analyzeSingle(filename):
 
     x, y, z = geom.getXYZ(x1, x2, x3, opts, pars)
     vx, vy, vz = geom.getVXYZ(x1, x2, x3, v1, v2, v3, opts)
-    Z = z.mean()
+    Z = x3.mean()
 
     r = np.sqrt(x*x + y*y)
     vr = (x*vx + y*vy)/r
@@ -77,7 +77,7 @@ def analyzeSingle(filename):
 
     dV = geom.getDV(dat, opts, pars)
 
-    maskDistance_out = 0.3
+    maskDistance_out = 0.2
     maskDistance_in = 0.2
 
     dVmask = dV.copy()

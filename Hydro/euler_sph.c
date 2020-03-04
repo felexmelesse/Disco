@@ -188,14 +188,18 @@ void flux( const double * prim , double * flux , const double * x , const double
    
 }
 
-void source( const double * prim , double * cons , const double * xp , const double * xm , double dVdt ){
+void source( const double * prim , double * cons , const double * xp , const double * xm , double dVdt )
+{
    
-   double rho = prim[RHO];
-   double Pp  = prim[PPP];
-   double r = get_centroid(xp[0], xm[0], 1);
-   double th = get_centroid(xp[2], xm[2], 2);
+   double x[3];
+   get_centroid_arr(xp, xm, x);
+   double r = x[0];
+   double th = x[2];
    double sinth = sin(th);
    double costh = cos(th);
+
+   double rho = prim[RHO];
+   double Pp  = prim[PPP];
    double ur = prim[URR];
    double up = prim[UPP];
    double ut = prim[UZZ];
@@ -241,7 +245,7 @@ void source( const double * prim , double * cons , const double * xp , const dou
    double om_t = get_om2( x );
 
    cons[TAU] += dVdt*rho*( r*sinth*(sinth*ur+r*costh*ut) * om*om
-                            - r*r*sinth*(up-om) * (ur*om_r + ut*om_t));
+                            - r*r*sinth*sinth*(up-om) * (ur*om_r + ut*om_t));
 }
 
 void visc_flux(const double * prim, const double * gradr, const double * gradp,
@@ -296,8 +300,10 @@ void visc_source(const double * prim, const double * gradr, const double *gradp,
                  const double * gradt, double * cons, const double *xp,
                  const double *xm, double dVdt)
 {
-   double r = get_centroid(xp[0], xm[0], 1);
-   double th = get_centroid(xp[2], xm[2], 2);
+   double x[3];
+   get_centroid_arr(xp, xm, x);
+   double r = x[0];
+   double th = x[2];
    double sinth = sin(th);
    double costh = cos(th);
    double nu = explicit_viscosity;
@@ -329,7 +335,7 @@ void visc_source(const double * prim, const double * gradr, const double *gradp,
    double srp = 0.5*(r*r*sinth*sinth*gradr[UPP] + gradp[URR]);
    double spt = 0.5*(gradp[UZZ] + sinth*sinth*gradt[UPP]);
    double om_r = get_om1( x );
-   double om_z = get_om2( x );
+   double om_t = get_om2( x );
 
    cons[TAU] += (2 * rho * nu * (srp * om_r + spt * om_t)) * dVdt;
 }
@@ -389,26 +395,31 @@ double mindt(const double * prim , double w , const double * xp , const double *
    double dt = dtr;
    if( dt > dtp ) dt = dtp;
    if( dt > dtth ) dt = dtth;
-/*
-   double dL0 = get_dL(xp,xm,0);
-   double dL1 = get_dL(xp,xm,1);
-   double dL2 = get_dL(xp,xm,2);
-   double dx = dL0;
-   if( dx>dL1 ) dx = dL1;
-   if( dx>dL2 ) dx = dL2;
 
-   double nu = explicit_viscosity;
+   if(include_viscosity)
+   {
+       double dL0 = get_dL(xp,xm,0);
+       double dL1 = get_dL(xp,xm,1);
+       double dL2 = get_dL(xp,xm,2);
+       
+       double dx = dL0;
+       if( dx>dL1 ) dx = dL1;
+       if( dx>dL2 ) dx = dL2;
 
-   if( alpha_flag ){
-      double alpha = explicit_viscosity;
-      double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
-      double h = c*pow( r , 1.5 );
-      nu = alpha*c*h;
+       double nu = explicit_viscosity;
+
+       if( alpha_flag ){
+          double alpha = explicit_viscosity;
+          double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
+          double h = c*pow( r*sinth , 1.5 );
+          nu = alpha*c*h;
+       }
+
+       double dt_visc = 0.5*dx*dx/nu;
+       if( dt > dt_visc )
+           dt = dt_visc;
    }
 
-   double dt_visc = .03*dx*dx/nu;
-   if( dt > dt_visc ) dt = dt_visc;
-*/
    return( dt );
 
 }

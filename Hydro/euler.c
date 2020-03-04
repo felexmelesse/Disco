@@ -259,7 +259,9 @@ void visc_source(const double * prim, const double * gradr, const double *gradp,
                  const double * gradz, double * cons, const double *xp,
                  const double *xm, double dVdt)
 {
-   double r = get_centroid(xp[0], xm[0], 1);
+   double x[3];
+   get_centroid_arr(xp, xm, x);
+   double r = x[0];
    double nu = explicit_viscosity;
 
    if( alpha_flag ){
@@ -280,7 +282,7 @@ void visc_source(const double * prim, const double * gradr, const double *gradp,
    
    cons[SRR] += (-2 * r * rho * nu * spp) * dVdt;
 
-   // Covariant r-phi and z-phi components of shear tensor
+   // Mixed ^r_phi and ^z_phi components of shear tensor
    double srp = 0.5*(r*r*gradr[UPP] + gradp[URR]);
    double spz = 0.5*(gradp[UZZ] + r*r*gradz[UPP]);
    double om_r = get_om1( x );
