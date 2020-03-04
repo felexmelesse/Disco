@@ -8,7 +8,7 @@ static double q_planet	= 0.0;
 static double a		= 1.0;
 static double rot_om	= 0.0;
 static double mach_csd	= 0.0;
-static double alpha_visc= 0.0;
+static double alpha_csd= 0.0;
 
 void setICparams( struct domain * theDomain ){
    gam  = theDomain->theParList.Adiabatic_Index;
