@@ -4,17 +4,17 @@ Restart			0	//Restart from input.h5
 
 //Time Range//
 T_Start			0.0 //1.0
-T_End		    0.1
+T_End		    0.015
 T_Times_2pi		0
 
 //Output Frequency//
 Num_Reports		    4e4
 Num_Snapshots		0
-Num_Checkpoints		10
+Num_Checkpoints     10
 Use_Logtime		    0
 
 //Grid Dimensions//
-Num_R			    64
+Num_R               64
 Num_Z			    1
 aspect			    1.0	//Cell Aspect Ratio, for calculating N_phi
 Max_Aspect_Short	1.5	
@@ -39,10 +39,10 @@ NoBC_Zmin       0   //1 = Coordinate boundary (like r=0 origin).
 NoBC_Zmax       0   //    No ghost zones or explicit BC applied.
 
 //Numerical Parameters
-CFL			            0.2
+CFL			            0.4
 PLM			            2.0
 Max_DT                  0.0 //If > 0.0, the maximum allowed time step.
-Timestep                0   // 0=RK2, 1=FE
+Timestep                1   // 0=RK2, 1=FE
 Riemann_Solver		    0	//0=HLL, 1=HLLC, 2=HLLD
 Mesh_Motion		        0	//0=Fixed, 1=By Cell, 2=Riemann, 3=Avg, 4=Exact
 Exact_Mesh_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep
@@ -61,7 +61,7 @@ Cs2_Par             0.0 //unused so far
 Energy_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep, 4=Gaussian
 Energy_Omega_Par    0.0 //unused so far
 Use_Viscosity		1
-Viscosity		    0.1
+Viscosity		    1.0
 Use_As_Alpha		0      
 
 //Planet Parameters	
@@ -77,17 +77,17 @@ RotOmega            0.0     //Angular speed of frame
 RotD                0.0     //Distance from rotational axis to grid axis.
 
 //Disk Parameters
-Mach_Number		20.0
+Mach_Number		10.0
 Include_Atmos	0
 
 //Initial Condition Parameters
 Init_Par0       0     // int
-Init_Par1       0.4   // doub
-Init_Par2       0.0   // doub
-Init_Par3       0.1   // doub
-Init_Par4       1.0   // doub
-Init_Par5       0.0   // doub
-Init_Par6       0.0   // doub
+Init_Par1       0.5   // x0: location of bump
+Init_Par2       0.0   // cs0: ambient sound speed (if adiabatic)
+Init_Par3       0.1   // sig0: initial bump width
+Init_Par4       0.001   // v0: initial bump amplitude
+Init_Par5       0.0   // vx0: ambient velocity in x-direction
+Init_Par6       0.0   // vy0: ambient velocity in y-direction
 Init_Par7       0.0   // doub
 Init_Par8       0.0   // doub
 

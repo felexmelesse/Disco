@@ -206,18 +206,6 @@ void source( const double * prim , double * cons , const double * xp , const dou
    double om1 = get_om1( x );
 
    cons[TAU] += dVdt*rho*vr*( om*om*r2_3/r_1 - om1*(omega-om)*r2_3 );
- 
-   if( include_viscosity ){
-      double nu = explicit_viscosity;
-      if( alpha_flag ){
-         double alpha = explicit_viscosity;
-         double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
-         double h = c*pow( r_1 , 1.5 );
-         nu = alpha*c*h;
-      }
-      cons[SRR] += -dVdt*nu*rho*vr/(r_1*r_1);
-   }
-
 }
 
 void visc_flux(const double * prim, const double * gradr, const double * gradp,
@@ -245,7 +233,7 @@ void visc_flux(const double * prim, const double * gradr, const double * gradp,
 
    // Covariant components of shear tensor.
    double srr = gradr[URR] - divV_o_d;
-   double spp = r*r*gradp[UPP] + r*vr - r*r*divV_o_d;
+   double spp = r*(r*gradp[UPP] + vr - r*divV_o_d);
    double szz = gradz[UZZ] - divV_o_d;
    double srp = 0.5*(r*r*gradr[UPP] + gradp[URR]);
    double srz = 0.5*(gradr[UZZ] + gradz[URR]);
@@ -286,6 +274,9 @@ void visc_source(const double * prim, const double * gradr, const double *gradp,
 
    // Contravariant -phi-phi component of shear tensor.
    double spp = (r*gradp[UPP] + vr - r*divV_o_d) / (r*r*r);
+
+   //printf("r: %.12lg dpvp=%.12lg divV_o_d=%.12lg spp=%.12lg\n",
+   //        r, gradp[UPP], divV_o_d, spp);
 
    cons[SRR] += (-2 * r * rho * nu * spp) * dVdt;
 }
@@ -348,24 +339,28 @@ double mindt(const double * prim , double w ,
    if( dt > dtp ) dt = dtp;
    if( dt > dtz ) dt = dtz;
 
-   double dL0 = get_dL(xp,xm,0);
-   double dL1 = get_dL(xp,xm,1);
-   double dL2 = get_dL(xp,xm,2);
-   double dx = dL0;
-   if( dx>dL1 ) dx = dL1;
-   if( dx>dL2 ) dx = dL2;
+   if(include_viscosity)
+   {
+       double dL0 = get_dL(xp,xm,0);
+       double dL1 = get_dL(xp,xm,1);
+       double dL2 = get_dL(xp,xm,2);
+       
+       double dx = dL0;
+       if( dx>dL1 ) dx = dL1;
+       if( dx>dL2 ) dx = dL2;
 
-   double nu = explicit_viscosity;
+       double nu = explicit_viscosity;
+       if( alpha_flag ){
+          double alpha = explicit_viscosity;
+          double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
+          double h = c*pow( r , 1.5 );
+          nu = alpha*c*h;
+       }
 
-   if( alpha_flag ){
-      double alpha = explicit_viscosity;
-      double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
-      double h = c*pow( r , 1.5 );
-      nu = alpha*c*h;
+       double dt_visc = 0.5*dx*dx/nu;
+       if( dt > dt_visc )
+           dt = dt_visc;
    }
-
-   double dt_visc = .3*dx*dx/nu;
-   if( dt > dt_visc ) dt = dt_visc;
 
    return( dt );
 

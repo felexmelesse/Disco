@@ -40,11 +40,13 @@ void riemann_phi( struct cell * cL , struct cell * cR, double * x , double dAdt 
 
    double primL[NUM_Q];
    double primR[NUM_Q];
+   double gradp[NUM_Q];
 
    int q;
    for( q=0 ; q<NUM_Q ; ++q ){
       primL[q] = cL->prim[q] + .5*cL->gradp[q]*cL->dphi;
       primR[q] = cR->prim[q] - .5*cR->gradp[q]*cR->dphi;
+      gradp[q] = (cR->prim[q] - cL->prim[q]) / (0.5*(cR->dphi + cL->dphi));
    }
 
    double n[3] = {0.0,1.0,0.0};
@@ -58,9 +60,15 @@ void riemann_phi( struct cell * cL , struct cell * cR, double * x , double dAdt 
 
    double Er,Ez,Br,Bz;
    solve_riemann(primL , primR , cL->cons , cR->cons ,
+                 cL->gradr, gradp, cL->gradz,
+                 cR->gradr, gradp, cR->gradz,
+                 x , n , hn*cL->wiph , dAdt , 0 , &Ez , &Br , &Er , &Bz );
+   /*
+   solve_riemann(primL , primR , cL->cons , cR->cons ,
                  cL->gradr, cL->gradp, cL->gradz,
                  cR->gradr, cR->gradp, cR->gradz,
                  x , n , hn*cL->wiph , dAdt , 0 , &Ez , &Br , &Er , &Bz );
+    */
 
    if( NUM_EDGES == 4 ){
       cL->E[0] = .5*Ez;
@@ -114,6 +122,7 @@ void riemann_trans( struct face * F , double dt , int dim ){
 
    double primL[NUM_Q];
    double primR[NUM_Q];
+   double grad[NUM_Q];
 
    double phiL = cL->piph - .5*cL->dphi;
    double phiR = cR->piph - .5*cR->dphi;
@@ -127,6 +136,8 @@ void riemann_trans( struct face * F , double dt , int dim ){
    for( q=0 ; q<NUM_Q ; ++q ){
       primL[q] = cL->prim[q] + gradL[q]*dxL + cL->gradp[q]*dpL;
       primR[q] = cR->prim[q] - gradR[q]*dxR - cR->gradp[q]*dpR;
+      grad[q] = ((cR->prim[q] - cR->gradp[q]*dpR)
+                  - (cL->prim[q] + cL->gradp[q]*dpL)) / (dxL+dxR);
    }
    
    double n[3] = {0.0,0.0,0.0};
@@ -141,10 +152,22 @@ void riemann_trans( struct face * F , double dt , int dim ){
    }
 
    double Erz,Brz,Ephi;
+    /*
    solve_riemann(primL , primR , cL->cons , cR->cons ,
                  cL->gradr, cL->gradp, cL->gradz,
                  cR->gradr, cR->gradp, cR->gradz,
                  F->cm , n , 0.0 , dAdt , dim , &Erz , &Brz , &Ephi , NULL );
+    */
+   if(dim == 1)
+      solve_riemann(primL , primR , cL->cons , cR->cons ,
+                    grad, cL->gradp, cL->gradz,
+                    grad, cR->gradp, cR->gradz,
+                    F->cm , n , 0.0 , dAdt , dim , &Erz , &Brz , &Ephi, NULL );
+   else
+      solve_riemann(primL , primR , cL->cons , cR->cons ,
+                    cL->gradr, cL->gradp, grad,
+                    cR->gradr, cR->gradp, grad,
+                    F->cm , n , 0.0 , dAdt , dim , &Erz , &Brz , &Ephi, NULL );
  
    double fracL = F->dphi / cL->dphi;
    double fracR = F->dphi / cR->dphi;

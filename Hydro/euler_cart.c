@@ -162,9 +162,41 @@ void flux( const double * prim , double * flux , const double * x , const double
 
 void source( const double * prim , double * cons , const double * xp , const double * xm , double dVdt ){}
 
-void visc_flux(const double * prim, const double * gradr, const double * gradp,
+void visc_flux(const double * prim, const double * gradx, const double * grady,
                const double * gradz, double * flux,
-               const double * x, const double * n){}
+               const double * x, const double * n)
+{
+   double nu = explicit_viscosity;
+
+   double rho = prim[RHO];
+   double vx  = prim[URR];
+   double vy  = prim[UPP];
+   double vy_off = vy - get_om(x);
+   double vz  = prim[UZZ];
+
+   //Divergence of v divided by number of spatial dimensions (3)
+   double divV_o_d = (gradx[URR] + grady[UPP] + gradz[UZZ]) / 3.0;
+
+   // Covariant components of shear tensor.
+   double sxx = gradx[URR] - divV_o_d;
+   double syy = grady[UPP] - divV_o_d;
+   double szz = gradz[UZZ] - divV_o_d;
+   double sxy = 0.5*(gradx[UPP] + grady[URR]);
+   double sxz = 0.5*(gradx[UZZ] + gradz[URR]);
+   double syz = 0.5*(grady[UZZ] + gradz[UPP]);
+
+   // Covariant components of shear normal to face, shear_{ij} * n^{j}.
+   // Given n is in orthonormal basis, 1/r factor corrects to coordinate basis
+   double sxn = sxx*n[0] + sxy*n[1] + sxz*n[2];
+   double syn = sxy*n[0] + syy*n[1] + syz*n[2];
+   double szn = sxz*n[0] + syz*n[1] + szz*n[2];
+
+   flux[SRR] = -2 * nu * rho * sxn;
+   flux[LLL] = -2 * nu * rho * syn;
+   flux[SZZ] = -2 * nu * rho * szn;
+   flux[TAU] = -2 * nu * rho * ( vx*sxn + vy_off*syn + vz*szn);
+}
+
 void visc_source(const double * prim, const double * gradr, const double *gradp,
                  const double * gradt, double * cons, const double *xp,
                  const double *xm, double dVdt){}
@@ -220,6 +252,23 @@ double mindt(const double * prim , double w , const double * xp , const double *
    double dt = dtr;
    if( dt > dtp ) dt = dtp;
    if( dt > dtz ) dt = dtz;
+
+   if(include_viscosity)
+   {
+       double dL0 = get_dL(xp,xm,0);
+       double dL1 = get_dL(xp,xm,1);
+       double dL2 = get_dL(xp,xm,2);
+       
+       double dx = dL0;
+       if( dx>dL1 ) dx = dL1;
+       if( dx>dL2 ) dx = dL2;
+
+       double nu = explicit_viscosity;
+
+       double dt_visc = 0.5*dx*dx/nu;
+       if( dt > dt_visc )
+           dt = dt_visc;
+   }
 
    return( dt );
 }

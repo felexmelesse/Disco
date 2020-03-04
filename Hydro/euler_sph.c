@@ -253,21 +253,6 @@ void source( const double * prim , double * cons , const double * xp , const dou
    //double om1 = get_om1( x );
 
    //cons[TAU] += dVdt*rho*vr*( om*om*r2_3/r_1 - om1*(omega-om)*r2_3 );
- 
-   //TODO: IMPLEMENT THIS
-   /*
-   if( include_viscosity ){
-      double nu = explicit_viscosity;
-      if( alpha_flag ){
-         double alpha = explicit_viscosity;
-         double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
-         double h = c*pow( r_1 , 1.5 );
-         nu = alpha*c*h;
-      }
-      cons[SRR] += -dVdt*nu*rho*vr/(r_1*r_1);
-   }
-   */
-
 }
 
 void visc_flux(const double * prim, const double * gradr, const double * gradp,
