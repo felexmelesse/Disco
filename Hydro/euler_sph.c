@@ -196,6 +196,7 @@ void source( const double * prim , double * cons , const double * xp , const dou
    double th = get_centroid(xp[2], xm[2], 2);
    double sinth = sin(th);
    double costh = cos(th);
+   double ur = prim[URR];
    double up = prim[UPP];
    double ut = prim[UZZ];
 
@@ -233,26 +234,14 @@ void source( const double * prim , double * cons , const double * xp , const dou
    cons[SRR] += dVdt*( centrifugal_r + press_bal_r );
    cons[SZZ] += dVdt*( centrifugal_th + press_bal_th );
 
-   /*
-   if(centrifugal_r != centrifugal_r)
-       printf("WHOA! c_r is NaN @ r=%.6lg th=%.6lg ph=%.6lg\n", 
-                r, th, 0.5*(xp[1]*xm[1]));
-   if(centrifugal_th != centrifugal_th)
-       printf("WHOA! c_th is NaN @ r=%.6lg th=%.6lg ph=%.6lg\n", 
-                r, th, 0.5*(xp[1]*xm[1]));
-   if(press_bal_r != press_bal_r)
-       printf("WHOA! p_r is NaN @ r=%.6lg th=%.6lg ph=%.6lg\n", 
-                r, th, 0.5*(xp[1]*xm[1]));
-   if(press_bal_th != press_bal_th)
-       printf("WHOA! p_th is NaN @ r=%.6lg th=%.6lg ph=%.6lg\n", 
-                r, th, 0.5*(xp[1]*xm[1]));
-    */
 
-   //TODO: IMPLEMENT THIS
-   //double om  = get_om( x );
-   //double om1 = get_om1( x );
+   // Om for energy frame
+   double om  = get_om( x );
+   double om_r = get_om1( x );
+   double om_t = get_om2( x );
 
-   //cons[TAU] += dVdt*rho*vr*( om*om*r2_3/r_1 - om1*(omega-om)*r2_3 );
+   cons[TAU] += dVdt*rho*( r*sinth*(sinth*ur+r*costh*ut) * om*om
+                            - r*r*sinth*(up-om) * (ur*om_r + ut*om_t));
 }
 
 void visc_flux(const double * prim, const double * gradr, const double * gradp,
@@ -335,6 +324,14 @@ void visc_source(const double * prim, const double * gradr, const double *gradp,
 
    cons[SRR] += (-2 * rho * nu * (r * stt + r*sinth*sinth * spp)) * dVdt;
    cons[SZZ] += (-2 * rho * nu * (r*r*sinth*costh * spp)) * dVdt;
+
+   // Mixed ^r_phi and ^theta_phi components of shear tensor
+   double srp = 0.5*(r*r*sinth*sinth*gradr[UPP] + gradp[URR]);
+   double spt = 0.5*(gradp[UZZ] + sinth*sinth*gradt[UPP]);
+   double om_r = get_om1( x );
+   double om_z = get_om2( x );
+
+   cons[TAU] += (2 * rho * nu * (srp * om_r + spt * om_t)) * dVdt;
 }
 
 void flux_to_E( const double * Flux , const double * Ustr , const double * x , double * E1_riemann , double * B1_riemann , double * E2_riemann , double * B2_riemann , int dim ){

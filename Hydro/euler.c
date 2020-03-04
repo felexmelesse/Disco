@@ -178,9 +178,9 @@ void source( const double * prim , double * cons , const double * xp , const dou
    double r = get_centroid(rp, rm, 1);
    double z = get_centroid(xp[2], xm[2], 2);
    double r_1  = .5*(rp+rm);
-   double r2_3 = (rp*rp + rp*rm + rm*rm)/3.;
    double vr  = prim[URR];
    double omega = prim[UPP];
+   double vz  = prim[UZZ];
 
    double x[3] = {r, 0.5*(xm[1]+xp[1]), z};
 
@@ -193,19 +193,22 @@ void source( const double * prim , double * cons , const double * xp , const dou
    //
    double centrifugal;
    if(polar_sources)
-      centrifugal = rho*omega*omega*r2_3/r_1*sin(.5*dphi)/(.5*dphi);
+      centrifugal = rho*omega*omega*r*sin(.5*dphi)/(.5*dphi);
    else
       centrifugal = rho*omega*omega*r;
 
    double press_bal   = Pp/r_1;
 
+   // Geometric source term
    cons[SRR] += dVdt*( centrifugal + press_bal );
 
-   //TODO: These used to be evaluated at r_1, not r.  Check that r is ok.
+   // Om for energy frame
    double om  = get_om( x );
-   double om1 = get_om1( x );
-
-   cons[TAU] += dVdt*rho*vr*( om*om*r2_3/r_1 - om1*(omega-om)*r2_3 );
+   double om_r = get_om1( x );
+   double om_z = get_om2( x );
+   
+   // energy-adjustment source
+   cons[TAU] += dVdt*rho*( r*vr*om*om - r*r*(omega-om)*(vr*om_r + vz*om_z));
 }
 
 void visc_flux(const double * prim, const double * gradr, const double * gradp,
@@ -274,11 +277,16 @@ void visc_source(const double * prim, const double * gradr, const double *gradp,
 
    // Contravariant -phi-phi component of shear tensor.
    double spp = (r*gradp[UPP] + vr - r*divV_o_d) / (r*r*r);
-
-   //printf("r: %.12lg dpvp=%.12lg divV_o_d=%.12lg spp=%.12lg\n",
-   //        r, gradp[UPP], divV_o_d, spp);
-
+   
    cons[SRR] += (-2 * r * rho * nu * spp) * dVdt;
+
+   // Covariant r-phi and z-phi components of shear tensor
+   double srp = 0.5*(r*r*gradr[UPP] + gradp[URR]);
+   double spz = 0.5*(gradp[UZZ] + r*r*gradz[UPP]);
+   double om_r = get_om1( x );
+   double om_z = get_om2( x );
+
+   cons[TAU] += (2 * rho * nu * (srp * om_r + spz * om_z)) * dVdt;
 }
 
 void flux_to_E( const double * Flux , const double * Ustr , const double * x, 
