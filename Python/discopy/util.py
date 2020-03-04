@@ -33,7 +33,10 @@ def loadOpts(filename):
 
     opts = {}
     for key in f['Opts']:
-        opts[key] = str(f['Opts'][key][0], encoding='utf-8')
+        try:
+            opts[key] = int(f['Opts'][key][0])
+        except ValueError:
+            opts[key] = str(f['Opts'][key][0], encoding='utf-8')
 
     if 'GEOMETRY' not in opts:
         opts['GEOMETRY'] = 'cylindrical'

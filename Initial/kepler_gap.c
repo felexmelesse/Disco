@@ -20,6 +20,8 @@ void setICparams( struct domain * theDomain ){
    alpha_csd	= theDomain->theParList.initPar2; 
 }
 
+double get_cs2(double *);
+
 void initial( double * prim , double * x ){
 
    double r		= x[0];
@@ -53,8 +55,9 @@ void initial( double * prim , double * x ){
    double rho		= rho_0 * (1.0 - (nom/denom)*sqrt(a/R));
    if(q_planet <= 0.0)
        rho = rho_0;
-   double Pp		= rho/(gam*Mach*Mach);
+   //double Pp		= rho/(gam*Mach*Mach);
    //double Pp		= rho/(gam*mach_csd*mach_csd);
+   double  Pp = rho * get_cs2(x) / gam;
 
    double X = 0.0; 
    if( r*cos(x[1]) > 0.0 ) X = 1.0; 

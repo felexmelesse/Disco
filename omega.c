@@ -1,5 +1,6 @@
 
 #include "paul.h"
+#include "omega.h"
 
 static int meshOmChoice = 0;
 static double meshOmPar = 0.0;
@@ -39,7 +40,7 @@ void setOmegaParams( struct domain * theDomain ){
    }
 }
 
-double mesh_om( double *x)
+double mesh_om( const double *x)
 {
     double r = x[0];
     double omega;
@@ -58,7 +59,7 @@ double mesh_om( double *x)
    return( omega );
 }
 
-double get_om( double *x ){
+double get_om( const double *x ){
     double r = x[0];
     double om;
 
@@ -83,7 +84,7 @@ double get_om( double *x ){
     return om;
 }
   
-double get_om1( double *x){
+double get_om1( const double *x){
     double r = x[0];
     double om1;
 
@@ -108,11 +109,11 @@ double get_om1( double *x){
     return om1;
 }
   
-double get_om2( double *x){
+double get_om2( const double *x){
     return 0.0;
 }
 
-double get_cs2( double *x ){
+double get_cs2( const double *x ){
     double r = x[0];
     double cs2;
 
