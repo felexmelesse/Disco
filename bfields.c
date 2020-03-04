@@ -1,16 +1,13 @@
 
 #include "paul.h"
+#include "geometry.h"
+#include "hydro.h"
 
 void initial( double * , double * ); 
-double get_centroid( double , double , int);
-double get_dA( double * , double * , int );
-double get_dV( double * , double * );
 void setup_faces( struct domain * , int );
 int get_num_rzFaces( int , int , int );
 void B_faces_to_cells( struct domain * , int );
 double bfield_scale_factor(double x, int dim);
-void get_centroid_arr(double *, double *, double *);
-double get_scale_factor(double *, int);
 void calc_prim(struct domain *);
  
 void set_B_fields( struct domain * theDomain ){
@@ -391,7 +388,6 @@ void add_E_phi( double * phiL , double * phiR , double * phiD , double * phiU , 
    *phiD += Edldt;
 }
 
-double get_dp( double , double );
 
 void avg_Efields( struct domain * theDomain ){
 
@@ -693,7 +689,6 @@ void subtract_advective_B_fluxes( struct domain * theDomain ){
 
 }
 
-double get_signed_dp( double , double );
 
 void check_flipped( struct domain * theDomain , int dim ){
 
@@ -818,7 +813,6 @@ void flip_fluxes( struct domain * theDomain , int dim ){
 
 }
 
-double get_dL( double * , double * , int );
 void add_E_phi( double * , double * , double * , double * , double );
 
 int phi_switch( double dphi , double Pmax , int mode ){
@@ -890,7 +884,6 @@ int get_which4( double phi , double phiR , double phiU , double phiUR , int * LR
    return( which4 );
 }
 
-void prim_to_E(double *prim, double *E, double *x);
 
 void make_edge_adjust( struct domain * theDomain , double dt ){
 

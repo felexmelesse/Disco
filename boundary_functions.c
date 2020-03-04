@@ -1,21 +1,15 @@
 
 #include "paul.h"
 #include <string.h>
+#include "geometry.h"
+#include "hydro.h"
 
 #define R_HOR 1.0
 
 static double phi_max = 0.0;
 
 void initial( double * , double * );
-double get_dV( double * , double * );
-double get_dA( double *, double *, int);
-void cons2prim( double * , double * , double * , double );
-void prim2cons( double * , double * , double * , double );
-double get_signed_dp(double, double);
-double get_centroid(double , double , int);
-double get_centroid_arr(double *, double *, double *);
 void subtract_omega( double * );
-void reflect_prims(double *, double *, int);
 
 void setBCParams(struct domain *theDomain)
 {

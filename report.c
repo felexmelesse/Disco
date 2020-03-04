@@ -1,10 +1,8 @@
 
 #include "paul.h"
+#include "geometry.h"
 
 void planetaryForce( struct planet * , double , double , double , double * , double * , double * , int );
-
-double get_dV( double * , double * );
-double get_centroid( double , double , int);
 
 void report( struct domain * theDomain ){
 
@@ -27,8 +25,8 @@ void report( struct domain * theDomain ){
    struct planet * thePlanets = theDomain->thePlanets;
    int Npl = theDomain->Npl;
 
-   double r_p = 0.0;
-   if( Npl > 1 ) r_p = thePlanets[1].r;
+   //double r_p = 0.0;
+   //if( Npl > 1 ) r_p = thePlanets[1].r;
 
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;

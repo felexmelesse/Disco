@@ -13,8 +13,6 @@ void calc_prim( struct domain * );
 
 void read_par_file( struct domain * );
  
-int  set_B_flag( void );
-void set_B_fields( struct domain * );
 
 void setupDomain( struct domain * );
 void freeDomain( struct domain * );
