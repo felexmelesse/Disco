@@ -81,7 +81,6 @@ struct param_list{
    double Drift_Rate,Drift_Exp;
    int grav2D;
    int alpha_flag;
-   double grav_eps;
 
    int restart_flag;
    int CT;
@@ -121,6 +120,8 @@ struct param_list{
    double coolPar2;
    double coolPar3;
    double coolPar4;
+
+   double grav_eps;
 };
 
 struct diagnostic_avg{
@@ -251,8 +252,6 @@ struct planet{
    double therm;
    double RK_therm;
 
-
-
    double eps;
    double Fr;
    double Fp;
@@ -260,3 +259,4 @@ struct planet{
    int type;
 };
 
+#endif
