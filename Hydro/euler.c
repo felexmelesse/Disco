@@ -1,9 +1,9 @@
 
-#include "../paul.h"
 
-double get_om( double *);
-double get_om1( double *);
-double get_cs2( double *);
+#include "../paul.h"
+#include "../hydro.h"
+#include "../geometry.h"
+#include "../omega.h"
 
 static double gamma_law = 0.0; 
 static double RHO_FLOOR = 0.0; 
@@ -13,8 +13,6 @@ static int include_viscosity = 0;
 static int isothermal = 0;
 static int alpha_flag = 0;
 static int polar_sources = 0;
-static int Npl = 0;
-static struct planet *thePlanets = NULL;
 
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
@@ -26,21 +24,18 @@ void setHydroParams( struct domain * theDomain ){
    alpha_flag = theDomain->theParList.alpha_flag;
    if(theDomain->NgRa == 0)
        polar_sources = 1;
-   Npl = theDomain->Npl;
-   thePlanets = theDomain->thePlanets;
 }
 
 int set_B_flag(void){
    return(0);
 }
 
-double get_omega( double * prim , double * x ){
+double get_omega( const double * prim , const double * x ){
    return( prim[UPP] );
 }
 
-void planetaryForce( struct planet * , int , double , double , double * , double * );
-
-void prim2cons( double * prim , double * cons , double * x , double dV ){
+void prim2cons(const double * prim, double * cons, const double * x,
+               double dV){
 
    double r = x[0];
    double rho = prim[RHO];
@@ -67,7 +62,8 @@ void prim2cons( double * prim , double * cons , double * x , double dV ){
    }
 }
 
-void getUstar( double * prim , double * Ustar , double * x , double Sk , double Ss , double * n , double * Bpack ){
+void getUstar( const double * prim , double * Ustar , const double * x ,
+              double Sk , double Ss , const double * n , const double * Bpack ){
 
    double r = x[0];
    double rho = prim[RHO];
@@ -104,7 +100,7 @@ void getUstar( double * prim , double * Ustar , double * x , double Sk , double 
 
 }
 
-void cons2prim( double * cons , double * prim , double * x , double dV ){
+void cons2prim( const double * cons , double * prim , const double * x , double dV ){
    
    double r = x[0];
    double rho = cons[DDD]/dV;
@@ -143,7 +139,7 @@ void cons2prim( double * cons , double * prim , double * x , double dV ){
 
 }
 
-void flux( double * prim , double * flux , double * x , double * n ){
+void flux( const double * prim , double * flux , const double * x , const double * n ){
   
    double r = x[0];
    double rho = prim[RHO];
@@ -173,10 +169,7 @@ void flux( double * prim , double * flux , double * x , double * n ){
    
 }
 
-double get_dp( double , double );
-double get_centroid( double , double , int);
-
-void source( double * prim , double * cons , double * xp , double * xm , double dVdt ){
+void source( const double * prim , double * cons , const double * xp , const double * xm , double dVdt ){
    
    double rp = xp[0];
    double rm = xm[0];
@@ -186,9 +179,9 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    double r = get_centroid(rp, rm, 1);
    double z = get_centroid(xp[2], xm[2], 2);
    double r_1  = .5*(rp+rm);
-   double r2_3 = (rp*rp + rp*rm + rm*rm)/3.;
    double vr  = prim[URR];
    double omega = prim[UPP];
+   double vz  = prim[UZZ];
 
    double x[3] = {r, 0.5*(xm[1]+xp[1]), z};
 
@@ -201,55 +194,28 @@ void source( double * prim , double * cons , double * xp , double * xm , double 
    //
    double centrifugal;
    if(polar_sources)
-      centrifugal = rho*omega*omega*r2_3/r_1*sin(.5*dphi)/(.5*dphi);
+      centrifugal = rho*omega*omega*r*sin(.5*dphi)/(.5*dphi);
    else
       centrifugal = rho*omega*omega*r;
 
    double press_bal   = Pp/r_1;
 
+   // Geometric source term
    cons[SRR] += dVdt*( centrifugal + press_bal );
 
-   //TODO: These used to be evaluated at r_1, not r.  Check that r is ok.
+   // Om for energy frame
    double om  = get_om( x );
-   double om1 = get_om1( x );
-   int np;
-   cons[TAU] += dVdt*rho*vr*( om*om*r2_3/r_1 - om1*(omega-om)*r2_3 );
- 
-   if( include_viscosity ){
-      double nu = explicit_viscosity;
-      if( alpha_flag ){
-         double alpha = explicit_viscosity;
-         double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
-         if (Npl < 2){
-            double h = c*pow( r_1 , 1.5 );
-            nu = alpha*c*h;
-         }
-         else{
-            double omtot = 0;
-            double cosp, sinp, px, py, dx, dy, gx, gy, mag;
-            gx = r*sin(x[1]);
-            gy = r*cos(x[1]);
-            for(np = 0; np<Npl; np++){
-               cosp = cos(thePlanets[np].phi);
-               sinp = sin(thePlanets[np].phi);
-               px = thePlanets[np].r*cosp;
-               py = thePlanets[np].r*sinp;
-               dx = gx-px;
-               dy = gy-py;
-               mag = dx*dx + dy*dy + thePlanets[np].eps*thePlanets[np].eps;
-               omtot += thePlanets[np].M*pow(mag, -1.5);
-            }
-            nu = alpha*c*c/sqrt(omtot);              
-         }
-      }
-      cons[SRR] += -dVdt*nu*rho*vr/(r_1*r_1);
-   }
-
+   double om_r = get_om1( x );
+   double om_z = get_om2( x );
+   
+   // energy-adjustment source
+   cons[TAU] += dVdt*rho*( r*vr*om*om - r*r*(omega-om)*(vr*om_r + vz*om_z));
 }
 
-void 
-visc_flux( double * prim , double * gprim , double * flux , double * x , double * n ){
-
+void visc_flux(const double * prim, const double * gradr, const double * gradp,
+               const double * gradz, double * flux,
+               const double * x, const double * n)
+{
    double r = x[0];
    double nu = explicit_viscosity;
 
@@ -266,24 +232,77 @@ visc_flux( double * prim , double * gprim , double * flux , double * x , double 
    double om_off = om - get_om(x);
    double vz  = prim[UZZ];
 
-   double dnvr = gprim[URR];
-   double dnom = gprim[UPP];
-   double dnvz = gprim[UZZ];
+   //Divergence of v divided by number of spatial dimensions (3)
+   double divV_o_d = (gradr[URR] + gradp[UPP] + gradz[UZZ] + vr/r) / 3.0;
 
-   flux[SRR] = -nu*rho*( dnvr - n[1]*2.*om );
-   flux[LLL] = -nu*rho*( r*r*dnom + n[1]*2.*vr );
-   flux[SZZ] = -nu*rho*dnvz;
-   flux[TAU] = -nu*rho*( vr*dnvr+r*r*om_off*dnom+vz*dnvz );//- 2.*r*om_off*om );
+   // Covariant components of shear tensor.
+   double srr = gradr[URR] - divV_o_d;
+   double spp = r*(r*gradp[UPP] + vr - r*divV_o_d);
+   double szz = gradz[UZZ] - divV_o_d;
+   double srp = 0.5*(r*r*gradr[UPP] + gradp[URR]);
+   double srz = 0.5*(gradr[UZZ] + gradz[URR]);
+   double spz = 0.5*(gradp[UZZ] + r*r*gradz[UPP]);
 
+   // Covariant components of shear normal to face, shear_{ij} * n^{j}.
+   // Given n is in orthonormal basis, 1/r factor corrects to coordinate basis
+   double nc[3] = {n[0], n[1]/r, n[2]};
+   double srn = srr*nc[0] + srp*nc[1] + srz*nc[2];
+   double spn = srp*nc[0] + spp*nc[1] + spz*nc[2];
+   double szn = srz*nc[0] + spz*nc[1] + szz*nc[2];
+
+   flux[SRR] = -2 * nu * rho * srn;
+   flux[LLL] = -2 * nu * rho * spn;
+   flux[SZZ] = -2 * nu * rho * szn;
+   flux[TAU] = -2 * nu * rho * ( vr*srn + om_off*spn + vz*szn);
 }
 
-void flux_to_E( double * Flux , double * Ustr , double * x , double * E1_riemann , double * B1_riemann , double * E2_riemann , double * B2_riemann , int dim ){
+void visc_source(const double * prim, const double * gradr, const double *gradp,
+                 const double * gradz, double * cons, const double *xp,
+                 const double *xm, double dVdt)
+{
+   double x[3];
+   get_centroid_arr(xp, xm, x);
+   double r = x[0];
+   double nu = explicit_viscosity;
+
+   if( alpha_flag ){
+      double alpha = explicit_viscosity;
+      double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
+      double h = c*pow( r , 1.5 );
+      nu = alpha*c*h;
+   }
+
+   double rho = prim[RHO];
+   double vr  = prim[URR];
+
+   //Divergence of v divided by number of spatial dimensions (3)
+   double divV_o_d = (gradr[URR] + gradp[UPP] + gradz[UZZ] + vr/r) / 3.0;
+
+   // Contravariant -phi-phi component of shear tensor.
+   double spp = (r*gradp[UPP] + vr - r*divV_o_d) / (r*r*r);
+   
+   cons[SRR] += (-2 * r * rho * nu * spp) * dVdt;
+
+   // Mixed ^r_phi and ^z_phi components of shear tensor
+   double srp = 0.5*(r*r*gradr[UPP] + gradp[URR]);
+   double spz = 0.5*(gradp[UZZ] + r*r*gradz[UPP]);
+   double om_r = get_om1( x );
+   double om_z = get_om2( x );
+
+   cons[TAU] += (2 * rho * nu * (srp * om_r + spz * om_z)) * dVdt;
+}
+
+void flux_to_E( const double * Flux , const double * Ustr , const double * x, 
+                double * E1_riemann , double * B1_riemann , 
+                double * E2_riemann , double * B2_riemann , int dim ){
 
    //Silence is Golden.
 
 }
 
-void vel( double * prim1 , double * prim2 , double * Sl , double * Sr , double * Ss , double * n , double * x , double * Bpack ){
+void vel( const double * prim1 , const double * prim2 , 
+         double * Sl , double * Sr , double * Ss , 
+         const double * n , const double * x , double * Bpack ){
 
    double r = x[0];
    double P1   = prim1[PPP];
@@ -308,9 +327,8 @@ void vel( double * prim1 , double * prim2 , double * Sl , double * Sr , double *
 
 }
 
-double get_dL( double * , double * , int );
-
-double mindt(double * prim , double w , double * xp , double * xm ){
+double mindt(const double * prim , double w ,
+             const double * xp , const double * xm ){
 
    double r = get_centroid(xp[0], xm[0], 1);
    double Pp  = prim[PPP];
@@ -332,53 +350,52 @@ double mindt(double * prim , double w , double * xp , double * xm ){
    if( dt > dtp ) dt = dtp;
    if( dt > dtz ) dt = dtz;
 
-   double dL0 = get_dL(xp,xm,0);
-   double dL1 = get_dL(xp,xm,1);
-   double dL2 = get_dL(xp,xm,2);
-   double dx = dL0;
-   if( dx>dL1 ) dx = dL1;
-   if( dx>dL2 ) dx = dL2;
+   if(include_viscosity)
+   {
+       double dL0 = get_dL(xp,xm,0);
+       double dL1 = get_dL(xp,xm,1);
+       double dL2 = get_dL(xp,xm,2);
+       
+       double dx = dL0;
+       if( dx>dL1 ) dx = dL1;
+       if( dx>dL2 ) dx = dL2;
 
-   double nu = explicit_viscosity;
-   
-   if( alpha_flag ){
-      double alpha = explicit_viscosity;
-      double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
-      double h = c*pow( r , 1.5 );
-      nu = alpha*c*h;
+       double nu = explicit_viscosity;
+       if( alpha_flag ){
+          double alpha = explicit_viscosity;
+          double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
+          double h = c*pow( r , 1.5 );
+          nu = alpha*c*h;
+       }
+
+       double dt_visc = 0.5*dx*dx/nu;
+       if( dt > dt_visc )
+           dt = dt_visc;
    }
-   
-   double dt_visc = .3*dx*dx/nu;
-   if( dt > dt_visc ) dt = dt_visc;
-   
+
    return( dt );
 
 }
 /*
 double getReynolds( double * prim , double w , double * x , double dx ){
-
    double r = x[0];
    double nu = explicit_viscosity;
-
    double vr = prim[URR];
    double omega = prim[UPP];
    double vp = omega*r-w;
    double vz = prim[UZZ];
-
    double rho = prim[RHO];
    double Pp  = prim[PPP];
    double cs = sqrt(gamma_law*Pp/rho);
    
    double v = sqrt(vr*vr + vp*vp + vz*vz);
-
    double Re = (v+cs)*dx/nu;
    
    return(Re);
-
 }
 */
 
-void reflect_prims(double * prim, double * x, int dim)
+void reflect_prims(double * prim, const double * x, int dim)
 {
     //dim == 0: r, dim == 1: p, dim == 2: z
     if(dim == 0)
