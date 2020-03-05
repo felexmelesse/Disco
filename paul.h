@@ -1,3 +1,6 @@
+#ifndef PAUL
+#define PAUL
+
 enum{RHO,PPP,URR,UPP,UZZ,BRR,BPP,BZZ};
 enum{DDD,TAU,SRR,LLL,SZZ};
 enum{PLPOINTMASS, PLPW, PLSURFACEGRAV};
@@ -178,8 +181,9 @@ struct cell{
    double prim[NUM_Q];
    double cons[NUM_Q];
    double RKcons[NUM_Q];
-   double grad[NUM_Q];
+   double gradr[NUM_Q];
    double gradp[NUM_Q];
+   double gradz[NUM_Q];
    double piph;
    double dphi;
    double wiph;
