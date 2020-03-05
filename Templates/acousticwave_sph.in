@@ -3,10 +3,10 @@
 # This file contains user-specified build options
 
 # Build options
-INITIAL  = shear
-HYDRO    = euler
-GEOMETRY = cylindrical
-BOUNDARY = fixed3d
+INITIAL  = acousticwave
+HYDRO    = euler_sph
+GEOMETRY = spherical
+BOUNDARY = fixed
 OUTPUT   = h5out
 RESTART  = h5in
 PLANETS  = none
@@ -17,6 +17,6 @@ METRIC   = flat_rpz
 FRAME    = normal
 
 NUM_C	 = 5	# Number of conserved variables (Hydro: 5, MHD: 8)
-NUM_N	 = 1	# Number of passive variables   (>=0)
+NUM_N	 = 0	# Number of passive variables   (>=0)
 CT_MODE	 = 0	# Constained Transport mode. None: 0, 2D: 1, 3D: 2.
 

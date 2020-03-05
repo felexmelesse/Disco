@@ -75,6 +75,9 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
     if opts['GEOMETRY'] == 'cylindrical':
         ax.set_xlim(-rmax, rmax)
         ax.set_ylim(-rmax, rmax)
+    elif opts['GEOMETRY'] == 'spherical':
+        ax.set_xlim(-rmax, rmax)
+        ax.set_ylim(-rmax, rmax)
     else:
         ax.set_xlim(rjph.min(), rjph.max())
         ax.set_ylim(pimh_min, piph.max())

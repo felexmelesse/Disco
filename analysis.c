@@ -1,5 +1,6 @@
 
 #include "paul.h"
+#include "geometry.h"
 
 int num_diagnostics(void);
 void get_diagnostics( double * x , double * prim , double * Qrz, 
@@ -47,7 +48,6 @@ void avg_diagnostics( struct domain * theDomain ){
 
 }
 
-double get_dV( double * , double * );
 
 void add_diagnostics( struct domain * theDomain , double dt ){
 

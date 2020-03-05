@@ -84,10 +84,10 @@ def readParfile(filename):
                     val = None
             pars[key] = val
 
-        if words[0] is "T_Times_2pi":
+        if words[0] == "T_Times_2pi":
             if int(words[1]) != 0:
                 t2pi = True
-        if words[0] is "P_Times_2pi":
+        if words[0] == "P_Times_2pi":
             if int(words[1]) != 0:
                 p2pi = True
 

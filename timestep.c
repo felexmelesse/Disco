@@ -29,15 +29,17 @@ void timestep( struct domain * theDomain , double dt ){
    if(stepper == 1)
    {
       onestep( theDomain , 0.0 ,     dt , 1 , 1 , dt );
+      theDomain->t += dt;   
    }
    else
    {
       onestep( theDomain , 0.0 ,     dt , 1 , 0 , dt );
+      // Second RK2 timestep occurs at t^n+1
+      theDomain->t += dt;   
       onestep( theDomain , 0.5 , 0.5*dt , 0 , 1 , dt );
    }
 
    add_diagnostics( theDomain , dt );
-   theDomain->t += dt;   
    theDomain->count_steps += 1;
 
 }

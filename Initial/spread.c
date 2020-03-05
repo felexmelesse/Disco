@@ -12,10 +12,15 @@ void initial( double * prim , double * x ){
    double r = x[0];
    double phi = x[1];
 
-   double rho = 1. + 1./sqrt(r) + exp(-200.*pow(r-.5,2.));
-   double Pp  = 0.003;
+   double c = 0.0;
+
+   double rho = 1. + 1./sqrt(r) + c*exp(-200.*pow(r-.5,2.));
+   double Pp  = 0.0001;
    double omega = 1.0/pow(r,1.5);
-   double vr = -1.5*nu/rho/r;
+
+   double drhodr = -0.5*pow(r, -1.5) - c*400*(r-0.5)*exp(-200*pow(r-.5,2));
+
+   double vr = -1.5*nu/r * (1 + 2*r*drhodr/rho);
 
    double X = 0.0; 
    if( cos(phi) > 0.0 ) X = 1.0; 

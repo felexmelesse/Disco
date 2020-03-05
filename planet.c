@@ -1,10 +1,8 @@
 #include "paul.h"
+#include "geometry.h"
 
 double PHI_ORDER = 2.0;
 static int grav2D = 0;
-
-double get_scale_factor( double * , int );
-double get_dp( double , double );
 
 void setGravParams( struct domain * theDomain ){
 
@@ -126,10 +124,6 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
    *fp = sinap*f1*sint; //*fd;
    *fz = f1*cost;
 }
-
-double get_centroid( double , double , int);
-double get_rpz( double *, double *);
-double get_vec_from_rpz( double *, double *, double *);
 
 void planet_src( struct planet * pl , double * prim , double * cons , double * xp , double * xm , double dVdt ){
 
