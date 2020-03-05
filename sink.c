@@ -1,4 +1,5 @@
 #include "paul.h"
+#include "omega.h"
 
 static int sinkType = 0;
 static double sinkPar1 = 0.0;
@@ -54,8 +55,6 @@ void setSinkParams(struct domain *theDomain)
     Npl = theDomain->Npl;
 }
 
-double get_om(double *x);
-double get_cs2(double *);
 double get_centroid( double , double , int);
 
 void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, double dt)
