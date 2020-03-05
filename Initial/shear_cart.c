@@ -9,6 +9,7 @@ static double sig0 = 0.0;
 static double v0 = 0.0;
 static double vx0 = 0.0;
 static double vy0 = 0.0;
+static double phi0_o_pi = 0.0;
 static int prof_choice = 0;
 static int isothermal_flag = 0;
 static int visc_flag = 0;
@@ -33,6 +34,7 @@ void setICparams( struct domain * theDomain )
     v0 = theDomain->theParList.initPar4;
     vx0 = theDomain->theParList.initPar5;
     vy0 = theDomain->theParList.initPar6;
+    phi0_o_pi = theDomain->theParList.initPar7;
     t = &(theDomain->t);
 }
 
@@ -40,7 +42,11 @@ void initial(double *prim, double *x)
 {
     double xyz[3];
     get_xyz(x, xyz);
-    double X = xyz[0];
+
+    double cosp = cos(phi0_o_pi*M_PI);
+    double sinp = sin(phi0_o_pi*M_PI);
+    
+    double X = cosp*xyz[0] + sinp*xyz[1];
 
     double rho, vx, vy, P;
 
@@ -61,7 +67,7 @@ void initial(double *prim, double *x)
     vx = vx0;
     vy = v0 * exp(-0.5*(X-xc)*(X-xc) / sig2) * sig0/sqrt(sig2) + vy0;
 
-    double Vxyz[3] = {vx, vy, 0};
+    double Vxyz[3] = {cosp*vx - sinp*vy, sinp*vx + cosp*vy, 0};
     double V[3];
     get_vec_from_xyz(x, Vxyz, V);
     get_vec_contravariant(x, V, V);
