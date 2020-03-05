@@ -348,6 +348,8 @@ void writePars(struct domain *theDomain, char filename[])
                     H5T_NATIVE_DOUBLE);
     dumpVal(filename, "Pars", "Cool_Par4", &(pars->coolPar4),
                     H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Softening", &(pars->grav_eps),
+                    H5T_NATIVE_DOUBLE);
 
 
 }

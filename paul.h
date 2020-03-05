@@ -78,6 +78,7 @@ struct param_list{
    double Drift_Rate,Drift_Exp;
    int grav2D;
    int alpha_flag;
+   double grav_eps;
 
    int restart_flag;
    int CT;
@@ -233,8 +234,20 @@ struct planet{
    double RK_omega;
    double RK_vr;
 
-   double RK_dM;
    double dM;
+   double RK_dM;
+
+   double Ls;
+   double RK_Ls;
+   double L;
+   double RK_L;
+
+   double kin;
+   double RK_kin;
+   double therm;
+   double RK_therm;
+
+
 
    double eps;
    double Fr;

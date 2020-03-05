@@ -173,6 +173,11 @@ void planet_RK_copy( struct planet * pl ){
    pl->RK_omega = pl->omega;
    pl->RK_vr    = pl->vr;
    pl->RK_dM    = pl->dM;
+   pl->RK_L     = pl->L;
+   pl->RK_Ls    = pl->Ls;
+   pl->RK_therm = pl->therm;
+   pl->RK_kin   = pl->kin;
+
 }
 
 void planet_RK_adjust( struct planet * pl , double RK ){
@@ -181,4 +186,9 @@ void planet_RK_adjust( struct planet * pl , double RK ){
    pl->M     = (1.-RK)*pl->M     + RK*pl->RK_M;
    pl->omega = (1.-RK)*pl->omega + RK*pl->RK_omega;
    pl->vr    = (1.-RK)*pl->vr    + RK*pl->RK_vr;
+   pl->dM    = (1.-RK)*pl->dM    + RK*pl->RK_dM;
+   pl->L     = (1.-RK)*pl->L     + RK*pl->RK_L;
+   pl->Ls    = (1.-RK)*pl->Ls    + RK*pl->RK_Ls;
+   pl->kin   = (1.-RK)*pl->kin   + RK*pl->RK_kin;
+   pl->therm = (1.-RK)*pl->therm + RK*pl->RK_therm;
 }
