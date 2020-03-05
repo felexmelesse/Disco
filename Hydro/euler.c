@@ -1,5 +1,3 @@
-
-
 #include "../paul.h"
 #include "../hydro.h"
 #include "../geometry.h"
