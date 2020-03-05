@@ -324,9 +324,9 @@ void visc_source(const double * prim, const double * gradr, const double *gradp,
                       + costh*vt/sinth) / 3.0;
 
    // Relevant contravariant components of shear tensor.
-   double spp = (r*gradp[UPP] + vr + r*costh*vt/sinth - divV_o_d)
+   double spp = (r*gradp[UPP] + vr + r*costh*vt/sinth - r*divV_o_d)
                     / (r*r*r*sinth*sinth);
-   double stt = (r*gradp[UPP] + vr - r*divV_o_d) / (r*r*r);
+   double stt = (r*gradt[UZZ] + vr - r*divV_o_d) / (r*r*r);
 
    cons[SRR] += (-2 * rho * nu * (r * stt + r*sinth*sinth * spp)) * dVdt;
    cons[SZZ] += (-2 * rho * nu * (r*r*sinth*costh * spp)) * dVdt;

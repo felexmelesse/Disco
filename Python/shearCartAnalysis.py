@@ -61,24 +61,32 @@ def analyzeSingle(filename):
     v3 = prim[:, 4]
 
     rjph = dat[0]
+    zkph = dat[1]
     piph = dat[3]
 
     x, y, z = geom.getXYZ(x1, x2, x3, opts, pars)
     vx, vy, vz = geom.getVXYZ(x1, x2, x3, v1, v2, v3, opts)
-    Z = x3.mean()
+
+    k2 = len(zkph)//2
+    k1 = k2-1
+    eq = (x3 > zkph[k1]) & (x3 < zkph[k2])
+    Z = 0.5*(zkph[k1]+zkph[k2])
 
     r = np.sqrt(x*x + y*y)
     vr = (x*vx + y*vy)/r
     vphi = (-y*vx + x*vy)/(r*r)
+    vt = (x*vx + y*vy) / np.sqrt(r*r + z*z)
 
     rhoS, PS, vxS, vyS = calcShearCart(t, x, pars)
     vrS = (x*vxS + y*vyS)/r
     vphiS = (-y*vxS + x*vyS)/(r*r)
+    vtS = (x*vxS + y*vyS) / np.sqrt(r*r + z*z)
+    vzS = np.zeros(x.shape)
 
     dV = geom.getDV(dat, opts, pars)
 
-    maskDistance_out = 0.2
-    maskDistance_in = 0.2
+    maskDistance_out = 0.1
+    maskDistance_in = 0.1
 
     dVmask = dV.copy()
     dVmask[(x1 < pars['R_Min']+maskDistance_in)] = 0.0
@@ -88,8 +96,10 @@ def analyzeSingle(filename):
     errP = geom.integrate(np.fabs(P-PS), dat, opts, pars, dVmask)
     errVx = geom.integrate(np.fabs(vx-vxS), dat, opts, pars, dVmask)
     errVy = geom.integrate(np.fabs(vy-vyS), dat, opts, pars, dVmask)
+    errVz = geom.integrate(np.fabs(vz-vzS), dat, opts, pars, dVmask)
     errVr = geom.integrate(np.fabs(vr-vrS), dat, opts, pars, dVmask)
     errVp = geom.integrate(np.fabs(vphi-vphiS), dat, opts, pars, dVmask)
+    errVt = geom.integrate(np.fabs(vt-vtS), dat, opts, pars, dVmask)
 
     X = np.linspace(pars['R_Min'], pars['R_Max'], 500)
     _, _, _, VY = calcShearCart(t, X, pars)
@@ -111,7 +121,7 @@ def analyzeSingle(filename):
 
     figname = 'shearCart_errRho_{0:s}.png'.format(name)
     fig, ax = plt.subplots(1, 1)
-    plot.plotZSlice(fig, ax, rjph, piph, x1, rho-rhoS, Z,
+    plot.plotZSlice(fig, ax, rjph, piph[eq], x1[eq], (rho-rhoS)[eq], Z,
                     r"$L_1(\rho)$", pars, opts)
     print("Saving " + figname)
     fig.savefig(figname)
@@ -119,7 +129,7 @@ def analyzeSingle(filename):
 
     figname = 'shearCart_errP_{0:s}.png'.format(name)
     fig, ax = plt.subplots(1, 1)
-    plot.plotZSlice(fig, ax, rjph, piph, x1, P-PS, Z,
+    plot.plotZSlice(fig, ax, rjph, piph[eq], x1[eq], (P-PS)[eq], Z,
                     r"$L_1(P)$", pars, opts)
     print("Saving " + figname)
     fig.savefig(figname)
@@ -127,7 +137,7 @@ def analyzeSingle(filename):
 
     figname = 'shearCart_errVx_{0:s}.png'.format(name)
     fig, ax = plt.subplots(1, 1)
-    plot.plotZSlice(fig, ax, rjph, piph, x1, vx-vxS, Z,
+    plot.plotZSlice(fig, ax, rjph, piph[eq], x1[eq], (vx-vxS)[eq], Z,
                     r"$L_1(v_x)$", pars, opts)
     print("Saving " + figname)
     fig.savefig(figname)
@@ -135,23 +145,39 @@ def analyzeSingle(filename):
 
     figname = 'shearCart_errVy_{0:s}.png'.format(name)
     fig, ax = plt.subplots(1, 1)
-    plot.plotZSlice(fig, ax, rjph, piph, x1, vy-vyS, Z,
+    plot.plotZSlice(fig, ax, rjph, piph[eq], x1[eq], (vy-vyS)[eq], Z,
                     r"$L_1(v_y)$", pars, opts)
+    print("Saving " + figname)
+    fig.savefig(figname)
+    plt.close(fig)
+
+    figname = 'shearCart_errVz_{0:s}.png'.format(name)
+    fig, ax = plt.subplots(1, 1)
+    plot.plotZSlice(fig, ax, rjph, piph[eq], x1[eq], (vz-vzS)[eq], Z,
+                    r"$L_1(v_z)$", pars, opts)
     print("Saving " + figname)
     fig.savefig(figname)
     plt.close(fig)
 
     figname = 'shearCart_errVr_{0:s}.png'.format(name)
     fig, ax = plt.subplots(1, 1)
-    plot.plotZSlice(fig, ax, rjph, piph, x1, vr-vrS, Z,
+    plot.plotZSlice(fig, ax, rjph, piph[eq], x1[eq], (vr-vrS)[eq], Z,
                     r"$L_1(v^r)$", pars, opts)
+    print("Saving " + figname)
+    fig.savefig(figname)
+    plt.close(fig)
+
+    figname = 'shearCart_errVt_{0:s}.png'.format(name)
+    fig, ax = plt.subplots(1, 1)
+    plot.plotZSlice(fig, ax, rjph, piph[eq], x1[eq], (vt-vtS)[eq], Z,
+                    r"$L_1(v^\theta)$", pars, opts)
     print("Saving " + figname)
     fig.savefig(figname)
     plt.close(fig)
 
     figname = 'shearCart_errVp_{0:s}.png'.format(name)
     fig, ax = plt.subplots(1, 1)
-    plot.plotZSlice(fig, ax, rjph, piph, x1, vphi-vphiS, Z,
+    plot.plotZSlice(fig, ax, rjph, piph[eq], x1[eq], (vphi-vphiS)[eq], Z,
                     r"$L_1(v^\phi)$", pars, opts)
     print("Saving " + figname)
     fig.savefig(figname)
@@ -159,13 +185,13 @@ def analyzeSingle(filename):
 
     figname = 'shearCart_Vy_2d_{0:s}.png'.format(name)
     fig, ax = plt.subplots(1, 1)
-    plot.plotZSlice(fig, ax, rjph, piph, x1, vy, Z,
+    plot.plotZSlice(fig, ax, rjph, piph[eq], x1[eq], vy[eq], Z,
                     r"$v_y$", pars, opts)
     print("Saving " + figname)
     fig.savefig(figname)
     plt.close(fig)
 
-    return t, nx, errRho, errP, errVx, errVy, errVr, errVp
+    return t, nx, errRho, errP, errVx, errVy, errVz, errVr, errVp, errVt
 
 
 def analyze(filenames):
@@ -177,9 +203,11 @@ def analyze(filenames):
     errRho = np.empty(N)
     errVx = np.empty(N)
     errVy = np.empty(N)
+    errVz = np.empty(N)
     errP = np.empty(N)
     errVr = np.empty(N)
     errVp = np.empty(N)
+    errVt = np.empty(N)
 
     for i, f in enumerate(filenames):
         dat = analyzeSingle(f)
@@ -189,15 +217,19 @@ def analyze(filenames):
         errP[i] = dat[3]
         errVx[i] = dat[4]
         errVy[i] = dat[5]
+        errVz[i] = dat[5]
         errVr[i] = dat[6]
         errVp[i] = dat[7]
+        errVt[i] = dat[7]
 
     makeErrPlot(t, nx, errRho, "shearCart_errRho", r"$L_1(\rho)$")
     makeErrPlot(t, nx, errP, "shearCart_errP", r"$L_1(P)$")
     makeErrPlot(t, nx, errVx, "shearCart_errVx", r"$L_1(v_x)$")
     makeErrPlot(t, nx, errVy, "shearCart_errVy", r"$L_1(v_y)$")
+    makeErrPlot(t, nx, errVz, "shearCart_errVz", r"$L_1(v_z)$")
     makeErrPlot(t, nx, errVr, "shearCart_errVr", r"$L_1(v_r)$")
     makeErrPlot(t, nx, errVp, "shearCart_errVp", r"$L_1(v^\phi)$")
+    makeErrPlot(t, nx, errVt, "shearCart_errVt", r"$L_1(v^\theta)$")
 
 
 def makeErrPlot(t, nx, err, name, label):
