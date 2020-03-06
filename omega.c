@@ -17,7 +17,7 @@ static double r1 = 0.0;
 static double r2 = 0.0;
 static double H0 = 0.0;
 static double M = 0.0;
-static double Hor = 0.0;
+static double eps = 0.0;
 
 static struct planet *thePlanets = NULL;
 
@@ -38,7 +38,7 @@ void setOmegaParams( struct domain * theDomain ){
    H0 = theDomain->theParList.initPar4; // Scale Height
    M = theDomain->theParList.metricPar2;
    Npl = theDomain->Npl;
-   Hor = theDomain->theParList.coolPar1;
+   eps = theDomain->theParList.grav_eps;
 
    thePlanets = theDomain->thePlanets;
 
@@ -52,6 +52,7 @@ void setOmegaParams( struct domain * theDomain ){
 double mesh_om( const double *x)
 {
     double r = x[0];
+    r = sqrt(r*r + eps*eps);
     double omega;
     if(meshOmChoice == 1)
         omega = 1.0;
@@ -70,6 +71,7 @@ double mesh_om( const double *x)
 
 double get_om( const double *x ){
     double r = x[0];
+    r = sqrt(r*r + eps*eps);
     double om;
 
     if(enOmChoice == 1)
@@ -95,6 +97,7 @@ double get_om( const double *x ){
   
 double get_om1( const double *x){
     double r = x[0];
+    r = sqrt(r*r + eps*eps);
     double om1;
 
     if(enOmChoice == 1)
@@ -139,6 +142,7 @@ double get_cs2( const double *x ){
     }
     else if(cs2Choice == 4)
     {
+        r = sqrt(r*r + eps*eps);
         double v2 = M/r;
         cs2 = v2/(Mach*Mach);
     }
