@@ -4,16 +4,19 @@
 static double gam  = 0.0;
 static double nu   = 0.0;
 static double Mach = 0.0;
+static double eps = 0.0;
 
 void setICparams( struct domain * theDomain ){
    gam  = theDomain->theParList.Adiabatic_Index;
    nu   = theDomain->theParList.viscosity;
    Mach = theDomain->theParList.Disk_Mach;
+   eps = theDomain->theParList.grav_eps;
 }
 
 void initial( double * prim , double * x ){
 
    double r = x[0];
+   r = sqrt(r*r + eps*eps);
 
    double omega02 = 1.0/pow(r,3.);
    double omegaP2 = 1.5/(Mach*Mach*pow(r,3.)) - (9./8.)*nu*nu/(pow(Mach, 4.0)*pow(r,3.0));
