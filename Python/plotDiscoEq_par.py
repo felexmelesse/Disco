@@ -166,8 +166,9 @@ if __name__ == "__main__":
     planets = args.planets
     noghost = args.noghost
     ncpu = args.ncpu
+  
     
-    if ncpu < 1:
+    if os.cpu_count() == 1:
         raise SystemExit("CPU only has one core! Turn off parallel processing flag.")
     
     files = args.checkpoints
