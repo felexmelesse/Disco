@@ -1,4 +1,3 @@
-
 #include "../paul.h"
 
 static double gam = 0.0;
@@ -6,7 +5,6 @@ static double visc = 0.0;
 static int alpha_flag = 0;
 static double Mdot = 0.0;
 static double R0 = 0.0;
-static double rho0 = 0.0;
 static struct planet *thePlanets = NULL;
 static double Mach = 0.0;
 static int Npl = 0;
@@ -20,7 +18,6 @@ void setICparams( struct domain * theDomain )
     alpha_flag = theDomain->theParList.alpha_flag;
     Mdot = theDomain->theParList.initPar1;
     R0 = theDomain->theParList.initPar2;
-    rho0 = theDomain->theParList.initPar3;
     Mach = theDomain->theParList.Disk_Mach;
     thePlanets = theDomain->thePlanets;
     Npl = theDomain->Npl;
@@ -47,9 +44,9 @@ void initial(double *prim, double *x)
     int np;
     double nu;
     double alpha = visc;
-    double c = sqrt( gam*prim[PPP]/prim[RHO] );
+    //double c = sqrt( gam*prim[PPP]/prim[RHO] );
     if (Npl < 2){
-        nu = alpha*c*c/sqrt(om);
+        nu = alpha*cs2/sqrt(om);
     }
     else{
        double omtot = 0;
@@ -63,14 +60,14 @@ void initial(double *prim, double *x)
           py = thePlanets[np].r*sinp;
           dx = gx-px;
           dy = gy-py;
-          mag = dx*dx + dy*dy + thePlanets[np].eps;
+          mag = dx*dx + dy*dy + thePlanets[np].eps*thePlanets[np].eps;
           omtot +=	thePlanets[np].M*pow(mag, -1.5);
        }  	
-       nu = alpha*c*c/sqrt(omtot);
+       nu = alpha*cs2/sqrt(omtot);
        om = sqrt(omtot);
     }
 
-    double v = -1.5*nu/(r+0.0001);
+    double v = -1.5*nu/r;
     double P = rho*cs2/gam;
  
     prim[RHO] = rho;

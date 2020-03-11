@@ -3,12 +3,14 @@
 
 static double q_planet = 1.0;
 static double Mach = 1.0;
+static double eps = 0.0;
 
 void setPlanetParams( struct domain * theDomain ){
 
    theDomain->Npl = 2; 
    q_planet = theDomain->theParList.Mass_Ratio;
    Mach = theDomain->theParList.Disk_Mach;
+   eps = theDomain->theParList.grav_eps;
 }
 
 int planet_motion_analytic( void ){
@@ -29,10 +31,19 @@ void initializePlanets( struct planet * thePlanets ){
    thePlanets[0].omega = om; 
    thePlanets[0].r     = a*mu; 
    thePlanets[0].phi   = M_PI; 
-   thePlanets[0].eps   = 0.5*a/Mach;
+   thePlanets[0].eps   = eps;
    thePlanets[0].type  = PLPOINTMASS;
    thePlanets[0].RK_dM = 0.0;
    thePlanets[0].dM = 0.0;
+
+   thePlanets[0].L = 0.0;
+   thePlanets[0].RK_L = 0.0;
+   thePlanets[0].Ls = 0.0;
+   thePlanets[0].RK_Ls = 0.0;
+   thePlanets[0].kin = 0.0;
+   thePlanets[0].RK_kin = 0.0;
+   thePlanets[0].therm = 0.0;
+   thePlanets[0].RK_therm = 0.0;
 
 
    thePlanets[1].M     = mu;  
@@ -40,11 +51,19 @@ void initializePlanets( struct planet * thePlanets ){
    thePlanets[1].omega = om;  
    thePlanets[1].r     = a*(1.-mu); 
    thePlanets[1].phi   = 0.0; 
-   thePlanets[1].eps   = 0.5*a/Mach;
+   thePlanets[1].eps   = eps;
    thePlanets[1].type  = PLPOINTMASS;
    thePlanets[1].RK_dM = 0.0;
    thePlanets[1].dM = 0.0;
 
+   thePlanets[0].L = 0.0;
+   thePlanets[0].RK_L = 0.0;
+   thePlanets[0].Ls = 0.0;
+   thePlanets[0].RK_Ls = 0.0;
+   thePlanets[0].kin = 0.0;
+   thePlanets[0].RK_kin = 0.0;
+   thePlanets[0].therm = 0.0;
+   thePlanets[0].RK_therm = 0.0;
 }
 
 void movePlanets( struct planet * thePlanets , double t , double dt ){
