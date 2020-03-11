@@ -16,14 +16,14 @@ void setICparams( struct domain * theDomain ){
 void initial( double * prim , double * x ){
 
    double r = x[0];
-   r = sqrt(r*r + eps*eps);
+   double R = sqrt(r*r + eps*eps);
 
-   double omega02 = 1.0/pow(r,3.);
-   double omegaP2 = 1.5/(Mach*Mach*pow(r,3.)) - (9./8.)*nu*nu/(pow(Mach, 4.0)*pow(r,3.0));
+   double omega02 = 1.0/pow(R,3.);
+   double omegaP2 = (1.5/(Mach*Mach*R*R*R)) - (2.25*nu*nu/(Mach*Mach*Mach*Mach*r*r))*(0.5/R - R/(r*r));
 
    double omega = sqrt( omega02 - omegaP2 );
-   double cs2 = 1.0/(r*Mach*Mach);
-   double visc = nu*sqrt(cs2)*r/Mach;
+   double cs2 = 1.0/(R*Mach*Mach);
+   double visc = nu*sqrt(R)/(Mach*Mach);
    double rho = 1.0/visc;
    double Pp = rho*cs2;
 
