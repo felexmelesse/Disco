@@ -35,7 +35,7 @@ void initial(double *prim, double *x)
     double p = 0.5;
     double rho, fact;
 
-    double sig0 = Mdot*Mach*Mach/(3.0*3.14159265*visc);
+    double sig0 = 1.0;
 
     fact = exp(-pow((R),-xi));
     rho = sig0*pow(R,-p)*fact+0.01;
