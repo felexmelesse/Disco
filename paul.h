@@ -5,6 +5,15 @@ enum{RHO,PPP,URR,UPP,UZZ,BRR,BPP,BZZ};
 enum{DDD,TAU,SRR,LLL,SZZ};
 enum{PLPOINTMASS, PLPW, PLSURFACEGRAV};
 
+enum{PROF_TOT, PROF_DT, PROF_TIMESTEP, PROF_OUTPUT, PROF_RECON, PROF_FLUX,
+     PROF_CT, PROF_SOURCE, PROF_C2P, PROF_BOUND, PROF_EXCHANGE,
+     PROF_RECON_R, PROF_RECON_P, PROF_RECON_Z, 
+     PROF_FLUX_R, PROF_FLUX_P, PROF_FLUX_Z,
+     PROF_EXCH_NP_COUNT1, PROF_EXCH_NP_COMM1, PROF_EXCH_NP_COUNT2,
+     PROF_EXCH_NP_COMM2, PROF_EXCH_NP_FIN,
+     PROF_EXCH_PREP, PROF_EXCH_COMM, PROF_EXCH_FIN,
+     NUM_PROF}; // NUM_PROF must be at end
+
 #if USE_MPI
 #include <mpi.h>
 #endif
@@ -128,6 +137,7 @@ struct domain{
    struct face * theFaces_1;
    struct face * theFaces_2;
    struct planet * thePlanets;
+   struct profiler *prof;
    int * Np;
    int Nr,Nz,Ng;
    int NgRa, NgRb, NgZa, NgZb;
@@ -237,6 +247,11 @@ struct planet{
    double Fp;
 
    int type;
+};
+
+struct profiler{
+    clock_t ticks[NUM_PROF];
+    clock_t elapsed_ticks[NUM_PROF];
 };
 
 #endif

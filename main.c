@@ -1,5 +1,6 @@
 
 #include "paul.h"
+#include "profiler.h"
 
 int mpiSetup( struct domain * , int , char *[] );
 void setupGrid( struct domain * );
@@ -19,8 +20,6 @@ void freeDomain( struct domain * );
 void check_dt( struct domain * , double * );
 void possiblyOutput( struct domain * , int );
 
-void start_clock( struct domain * );
-void generate_log( struct domain * );
 
 void print_welcome();
 
@@ -30,6 +29,8 @@ int main( int argc , char * argv[] ){
    MPI_Init(&argc,&argv);
 #endif
    struct domain theDomain = {0};
+   struct profiler prof;
+   theDomain.prof = &prof;
    start_clock( &theDomain ); 
    read_par_file( &theDomain );
   
@@ -66,12 +67,19 @@ int main( int argc , char * argv[] ){
    }
 
    while( !(theDomain.final_step) ){
-
+      
+      prof_tick(&prof, PROF_DT);
       double dt = getmindt( &theDomain );
       check_dt( &theDomain , &dt );
+      prof_tock(&prof, PROF_DT);
+      
+      prof_tick(&prof, PROF_OUTPUT);
       possiblyOutput( &theDomain , 0 );
+      prof_tock(&prof, PROF_OUTPUT);
+      
+      prof_tick(&prof, PROF_TIMESTEP);
       timestep( &theDomain , dt );
-
+      prof_tock(&prof, PROF_TIMESTEP);
    }
 
    possiblyOutput( &theDomain , 1 );
