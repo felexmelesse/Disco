@@ -768,3 +768,143 @@ void boundary_fixed_q_ztop( struct domain *theDomain, int *q, int nq)
             }  
     }
 }
+
+void boundary_fixed_phi_rinn( struct domain *theDomain, double phia,
+                              double phib)
+{
+    struct cell **theCells = theDomain->theCells;
+
+    int Nr = theDomain->Nr;
+    int Nz = theDomain->Nz;
+    int *Np = theDomain->Np;
+    int NgRa = theDomain->NgRa;
+    double *r_jph = theDomain->r_jph;
+    double *z_kph = theDomain->z_kph;
+
+    int *dim_rank = theDomain->dim_rank;
+
+    int i,j,k;
+
+    if(dim_rank[0] == 0 )
+    {
+        for(k=0; k<Nz; k++)
+            for(j=0; j<NgRa; j++)
+            {
+                int jk = j+Nr*k;
+                for(i=0; i<Np[jk]; i++)
+                {
+                    double phi = theCells[jk][i].piph
+                                    - 0.5*theCells[jk][i].dphi;
+                    while(phi < phia)
+                        phi += phi_max;
+                    if(phi < phib)
+                        set_cell_init(&(theCells[jk][i]), r_jph, z_kph, j, k);
+                }
+            }  
+    }
+}
+
+void boundary_fixed_phi_rout( struct domain *theDomain, double phia,
+                            double phib)
+{
+    struct cell **theCells = theDomain->theCells;
+
+    int Nr = theDomain->Nr;
+    int Nz = theDomain->Nz;
+    int *Np = theDomain->Np;
+    int NgRb = theDomain->NgRb;
+    double *r_jph = theDomain->r_jph;
+    double *z_kph = theDomain->z_kph;
+
+    int *dim_rank = theDomain->dim_rank;
+    int *dim_size = theDomain->dim_size;
+
+    int i,j,k;
+
+    if(dim_rank[0] == dim_size[0]-1)
+    {
+        for(k=0; k<Nz; k++)
+            for(j=Nr-NgRb; j<Nr; j++)
+            {
+                int jk = j+Nr*k;
+                for(i=0; i<Np[jk]; i++)
+                {
+                    double phi = theCells[jk][i].piph
+                                    - 0.5*theCells[jk][i].dphi;
+                    while(phi < phia)
+                        phi += phi_max;
+                    if(phi < phib)
+                        set_cell_init(&(theCells[jk][i]), r_jph, z_kph, j, k);
+                }
+            }  
+    }
+}
+
+void boundary_fixed_phi_zbot( struct domain *theDomain, double phia,
+                              double phib)
+{
+    struct cell **theCells = theDomain->theCells;
+
+    int Nr = theDomain->Nr;
+    int *Np = theDomain->Np;
+    int NgZa = theDomain->NgZa;
+    double *r_jph = theDomain->r_jph;
+    double *z_kph = theDomain->z_kph;
+
+    int *dim_rank = theDomain->dim_rank;
+
+    int i,j,k;
+
+    if(dim_rank[1] == 0)
+    {
+        for(k=0; k<NgZa; k++)
+            for(j=0; j<Nr; j++)
+            {
+                int jk = j+Nr*k;
+                for(i=0; i<Np[jk]; i++)
+                {
+                    double phi = theCells[jk][i].piph
+                                    - 0.5*theCells[jk][i].dphi;
+                    while(phi < phia)
+                        phi += phi_max;
+                    if(phi < phib)
+                        set_cell_init(&(theCells[jk][i]), r_jph, z_kph, j, k);
+                }
+            }  
+    }
+}
+void boundary_fixed_phi_ztop( struct domain *theDomain, double phia,
+                              double phib)
+{
+    struct cell **theCells = theDomain->theCells;
+
+    int Nr = theDomain->Nr;
+    int Nz = theDomain->Nz;
+    int *Np = theDomain->Np;
+    int NgZb = theDomain->NgZb;
+    double *r_jph = theDomain->r_jph;
+    double *z_kph = theDomain->z_kph;
+
+    int *dim_rank = theDomain->dim_rank;
+    int *dim_size = theDomain->dim_size;
+
+    int i,j,k;
+
+    if(dim_rank[1] == dim_size[1]-1)
+    {
+        for(k=Nz-NgZb; k<Nz; k++)
+            for(j=0; j<Nr; j++)
+            {
+                int jk = j+Nr*k;
+                for(i=0; i<Np[jk]; i++)
+                {
+                    double phi = theCells[jk][i].piph
+                                    - 0.5*theCells[jk][i].dphi;
+                    while(phi < phia)
+                        phi += phi_max;
+                    if(phi < phib)
+                        set_cell_init(&(theCells[jk][i]), r_jph, z_kph, j, k);
+                }
+            }  
+    }
+}
