@@ -183,7 +183,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             double arg = exp(-mag4/eps);
             rate = sinkPar1*thePlanets[pi].omega;
             surfdiff = rho*rate*arg;
-            thePlanets[pi].dM += surfdiff*dV;
+            thePlanets[pi].dM += surfdiff*dV*dt;
 
             double delta = fmin(sinkPar2, 1.0);
             delta = fmax(0.0, sinkPar2);
