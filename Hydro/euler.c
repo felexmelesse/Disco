@@ -187,8 +187,9 @@ void source( const double * prim , double * cons , const double * xp , const dou
    //in a cartesian frame, assuming rho and omega are constant. This leads to
    //better behaviour at r=0.
    //
-   //The naive source term (polar_sources==0), on the other hand, can exactly
-   //cancel with gravitational source terms.
+   //The naive source term (polar_sources==0), on the other hand, may exactly
+   //cancel with source terms from other physics in the code. Gravitational
+   //source terms obey polar_sources.
    //
    double centrifugal = rho*omega*omega*r;
    

@@ -212,8 +212,9 @@ void source( const double * prim , double * cons , const double * xp , const dou
    //
    //TODO: IMPLEMENT THIS
    //
-   //The naive source term (polar_sources==0), on the other hand, can exactly
-   //cancel with gravitational source terms.
+   //The naive source term (polar_sources==0), on the other hand, may exactly
+   //cancel with source terms from other physics in the code. Gravitational
+   //source terms obey polar_sources.
    //
    double centrifugal_r = rho*r*sinth*sinth*up*up + rho*r*ut*ut;
    double centrifugal_th = rho*r*r*sinth*costh*up*up;
