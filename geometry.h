@@ -32,4 +32,6 @@ void get_centroid_arr(const double *xp, const double *xm, double *x);
 void get_vec_contravariant(const double *x, double *v, double *vc);
 void get_vec_covariant(const double *x, double *v, double *vc);
 
+void geom_polar_vec_adjust(const double *xp, const double *xm, double *fac);
+
 #endif
