@@ -20,7 +20,7 @@ void setHydroParams( struct domain * theDomain ){
    explicit_viscosity = theDomain->theParList.viscosity;
    include_viscosity = theDomain->theParList.visc_flag;
    alpha_flag = theDomain->theParList.alpha_flag;
-   if(theDomain->NgRa == 0)
+   if(theDomain->theParList.NoBC_Rmin == 1)
        polar_sources = 1;
 }
 
@@ -171,7 +171,6 @@ void source( const double * prim , double * cons , const double * xp , const dou
    
    double rp = xp[0];
    double rm = xm[0];
-   double dphi = get_dp(xp[1],xm[1]);
    double rho = prim[RHO];
    double Pp  = prim[PPP];
    double r = get_centroid(rp, rm, 1);
@@ -190,12 +189,13 @@ void source( const double * prim , double * cons , const double * xp , const dou
    //The naive source term (polar_sources==0), on the other hand, can exactly
    //cancel with gravitational source terms.
    //
-   double centrifugal;
+   double centrifugal = rho*omega*omega*r;
    if(polar_sources)
-      centrifugal = rho*omega*omega*r*sin(.5*dphi)/(.5*dphi);
-   else
-      centrifugal = rho*omega*omega*r;
-
+   {
+      double adjust[3];
+      geom_polar_vec_adjust(xp, xm, adjust);
+      centrifugal *= adjust[0];
+   }
    double press_bal   = Pp/r_1;
 
    // Geometric source term

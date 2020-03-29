@@ -171,3 +171,13 @@ void geom_grad(const double *prim, double *grad, const double *xp, const double 
             grad[q] = 0.0;
     }
 }
+
+void geom_polar_vec_adjust(const double *xp, const double *xm, double *fac)
+{
+    double dphi = get_dp(xp[1], xm[1]);
+    double adjust = sin(0.5*dphi) / (0.5*dphi);
+
+    fac[0] = adjust;
+    fac[1] = adjust;
+    fac[2] = 1.0;
+}

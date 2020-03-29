@@ -135,3 +135,10 @@ void geom_grad(const double *prim, double *grad, const double *xp, const double 
     printf("--Cartesian setup has NO geometric boundaries.\n");
     return;
 }
+
+void geom_polar_vec_adjust(const double *xp, const double *xm, double *fac)
+{
+    fac[0] = 1.0;
+    fac[1] = 1.0;
+    fac[2] = 1.0;
+}
