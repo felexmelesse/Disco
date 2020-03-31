@@ -224,9 +224,10 @@ void report( struct domain * theDomain ){
       //fprintf(rFile,"%le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le\n",
       //          t,Torque,Power,Fr,rho_min,rhoavg_min,PsiR,PsiI,Mass,Mdot,S_R,
       //          L1_rho,L1_isen,L1_B,Br2,aM,bM,M_acc);
-      fprintf(rFile,"%le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le ",
-                t,Torque,Power,Fr,rho_min,rhoavg_min,PsiR,PsiI,Mass,Mdot,S_R,
-                L1_rho,L1_isen,L1_B,Br2,aM,bM);
+      //fprintf(rFile,"%le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le ",
+      //          t,Torque,Power,Fr,rho_min,rhoavg_min,PsiR,PsiI,Mass,Mdot,S_R,
+      //          L1_rho,L1_isen,L1_B,Br2,aM,bM);
+      fprintf(rFile,"%le %le %le ",  t,Torque,Torque2);
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", M_acc[j]);
       }
