@@ -1,6 +1,7 @@
 
 #include "paul.h"
 #include "hydro.h"
+#include "profiler.h"
 
 void AMR( struct domain * ); 
 void move_BCs( struct domain * , double );
@@ -90,35 +91,62 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
    adjust_RK_cons( theDomain , RK );
 
    //Reconstruction
+   prof_tick(theDomain->prof, PROF_RECON);
+   prof_tick(theDomain->prof, PROF_RECON_P);
+   
    plm_phi( theDomain );
+   
+   prof_tock(theDomain->prof, PROF_RECON_P);
+
    if( Nr > 1 ){
+      prof_tick(theDomain->prof, PROF_RECON_R);
       setup_faces( theDomain , 1 );
       int Nfr = theDomain->fIndex_r[theDomain->N_ftracks_r];
       plm_trans(theDomain, theDomain->theFaces_1, Nfr, 1);
+      prof_tock(theDomain->prof, PROF_RECON_R);
    }
    if( Nz > 1 ){
+      prof_tick(theDomain->prof, PROF_RECON_Z);
       setup_faces( theDomain , 2 );
       int Nfz = theDomain->fIndex_z[theDomain->N_ftracks_z];
       plm_trans(theDomain, theDomain->theFaces_2, Nfz, 2);
+      prof_tock(theDomain->prof, PROF_RECON_Z);
    }
+   prof_tock(theDomain->prof, PROF_RECON);
 
    //Flux
+   prof_tick(theDomain->prof, PROF_FLUX);
+   prof_tick(theDomain->prof, PROF_FLUX_P);
+
    phi_flux( theDomain , dt );
+   prof_tock(theDomain->prof, PROF_FLUX_P);
    if( Nr > 1)
+   {
+      prof_tick(theDomain->prof, PROF_FLUX_R);
       trans_flux( theDomain , dt , 1 );
+      prof_tock(theDomain->prof, PROF_FLUX_R);
+   }
    if( Nz > 1 )
+   {
+      prof_tick(theDomain->prof, PROF_FLUX_Z);
       trans_flux( theDomain , dt , 2 );
-   
+      prof_tock(theDomain->prof, PROF_FLUX_Z);
+   }
+   prof_tock(theDomain->prof, PROF_FLUX);
 
    //CT update
    if( bflag && NUM_EDGES >= 4 ){
+      prof_tick(theDomain->prof, PROF_CT);
       avg_Efields( theDomain );
       subtract_advective_B_fluxes( theDomain );
       update_B_fluxes( theDomain , dt );
+      prof_tock(theDomain->prof, PROF_CT);
    }
   
    //Soucres
+   prof_tick(theDomain->prof, PROF_SOURCE);
    add_source( theDomain , dt );
+   prof_tock(theDomain->prof, PROF_SOURCE);
 
    if( first_step ){
       move_cells( theDomain , dt );
@@ -140,6 +168,7 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
    clean_pi( theDomain );
    calc_dp( theDomain );
 
+   prof_tick(theDomain->prof, PROF_C2P);
    
    if( bflag && theDomain->theParList.CT ){
       B_faces_to_cells( theDomain , 1 );
@@ -147,6 +176,8 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
    
    
    calc_prim( theDomain ); //ORDERING??? AFTER?
+   
+   prof_tock(theDomain->prof, PROF_C2P);
    
    /*
    if( bflag && theDomain->theParList.CT ){
@@ -159,14 +190,29 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
    calc_cons(theDomain);
    */
 
+   prof_tick(theDomain->prof, PROF_EXCHANGE);
    exchangeData( theDomain , 0 );
+   prof_tock(theDomain->prof, PROF_EXCHANGE);
+
    if(! theDomain->theParList.R_Periodic)
+   {
+      prof_tick(theDomain->prof, PROF_BOUND);
       boundary_trans( theDomain , 1 );
-   if( Nz > 1 ){
-      exchangeData( theDomain , 1 );
-      if(! theDomain->theParList.Z_Periodic)
-         boundary_trans( theDomain , 2 );
+      prof_tock(theDomain->prof, PROF_BOUND);
    }
+   if( Nz > 1 ){
+      prof_tick(theDomain->prof, PROF_EXCHANGE);
+      exchangeData( theDomain , 1 );
+      prof_tock(theDomain->prof, PROF_EXCHANGE);
+      if(! theDomain->theParList.Z_Periodic)
+      {
+         prof_tick(theDomain->prof, PROF_BOUND);
+         boundary_trans( theDomain , 2 );
+         prof_tock(theDomain->prof, PROF_BOUND);
+      }
+   }
+   
+   prof_tock(theDomain->prof, PROF_BOUND);
    
    //TODO: This was BEFORE BCs, but if wrecks cell pointers...
    //      Here, the BCs may not be satisfied if boundary zones are AMR'd...

@@ -1,5 +1,6 @@
 
 #include "paul.h"
+#include "boundary.h"
 #include "geometry.h"
 #include "hydro.h"
 #include "omega.h"
@@ -18,7 +19,6 @@ void setMetricParams( struct domain * );
 void setFrameParams(struct domain * );
 void setDiagParams( struct domain * );
 void setNoiseParams( struct domain * );
-void setBCParams( struct domain * );
 void setSinkParams( struct domain * );
 
 int get_num_rzFaces( int , int , int );
@@ -211,6 +211,7 @@ void setupCells( struct domain * theDomain ){
    if(!restart_flag && set_B_flag() && theDomain->theParList.CT)
    {
       // Communicate piph values to ghost zones.
+      // TODO: WHY is this obly for CT??
       exchangeData(theDomain, 0);
       if( Nz > 1 )
          exchangeData(theDomain, 1);

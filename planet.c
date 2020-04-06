@@ -3,10 +3,33 @@
 
 double PHI_ORDER = 2.0;
 static int grav2D = 0;
+static int polar_sources_r = 0;
+static int polar_sources_p = 0;
+static int polar_sources_z = 0;
 
 void setGravParams( struct domain * theDomain ){
 
-   grav2D = theDomain->theParList.grav2D; 
+   grav2D = theDomain->theParList.grav2D;
+   if(strcmp(GEOMETRY, "cylindrical") == 0
+             && theDomain->theParList.NoBC_Rmin == 1)
+   {
+       polar_sources_r = 1;
+       polar_sources_p = 1;
+   }
+   if(strcmp(GEOMETRY, "spherical") == 0)
+   {
+       if(theDomain->theParList.NoBC_Rmin == 1)
+       {
+           polar_sources_r = 1;
+           polar_sources_p = 1;
+       }
+       if(theDomain->theParList.NoBC_Zmin == 1
+          || theDomain->theParList.NoBC_Zmax == 1)
+       {
+           polar_sources_p = 1;
+           polar_sources_z = 1;
+       }
+   }
 
 }
 
@@ -153,6 +176,17 @@ void planet_src( struct planet * pl , double * prim , double * cons , double * x
    double hp = get_scale_factor(x, 0);
    double hz = get_scale_factor(x, 2);
 
+   if(polar_sources_r || polar_sources_p || polar_sources_z)
+   {
+       double adjust[3];
+       geom_polar_vec_adjust(xp, xm, adjust);
+       if(polar_sources_r)
+           F[0] *= adjust[0];
+       if(polar_sources_p)
+           F[1] *= adjust[1];
+       if(polar_sources_z)
+           F[2] *= adjust[2];
+   }
 
    cons[SRR] += rho*hr*F[0]*dVdt;
    cons[LLL] += rho*hp*F[1]*dVdt;

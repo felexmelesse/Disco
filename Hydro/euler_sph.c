@@ -212,18 +212,21 @@ void source( const double * prim , double * cons , const double * xp , const dou
    //
    //TODO: IMPLEMENT THIS
    //
-   //The naive source term (polar_sources==0), on the other hand, can exactly
-   //cancel with gravitational source terms.
+   //The naive source term (polar_sources==0), on the other hand, may exactly
+   //cancel with source terms from other physics in the code. Gravitational
+   //source terms obey polar_sources.
    //
-   double centrifugal_r, centrifugal_th;
-   if(polar_sources_r)
-      centrifugal_r = rho*r*sinth*sinth*up*up + rho*r*ut*ut;
-   else
-      centrifugal_r = rho*r*sinth*sinth*up*up + rho*r*ut*ut;
-   if(polar_sources_th)
-      centrifugal_th = rho*r*r*sinth*costh*up*up;
-   else
-      centrifugal_th = rho*r*r*sinth*costh*up*up;
+   double centrifugal_r = rho*r*sinth*sinth*up*up + rho*r*ut*ut;
+   double centrifugal_th = rho*r*r*sinth*costh*up*up;
+   if(polar_sources_r || polar_sources_th)
+   {
+      double adjust[3];
+      geom_polar_vec_adjust(xp, xm, adjust);
+      if(polar_sources_r)
+          centrifugal_r *= adjust[0];
+      if(polar_sources_th)
+          centrifugal_th *= adjust[2];
+   }
 
    double r1_2 = 0.5*(xp[0]+xm[0]);
    double r2_3 = (xp[0]*xp[0] + xp[0]*xm[0] + xm[0]*xm[0]) / 3.0;

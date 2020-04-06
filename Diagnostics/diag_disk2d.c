@@ -20,7 +20,6 @@ void get_diagnostics( double * x , double * prim , double * Qrz,
 {
    double r = x[0];
    double phi = x[1];
-   double z = x[2];
 
    double rho = prim[RHO];
    double vr = prim[URR];
