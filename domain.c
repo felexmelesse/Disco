@@ -211,6 +211,7 @@ void setupCells( struct domain * theDomain ){
    if(!restart_flag && set_B_flag() && theDomain->theParList.CT)
    {
       // Communicate piph values to ghost zones.
+      // TODO: WHY is this obly for CT??
       exchangeData(theDomain, 0);
       if( Nz > 1 )
          exchangeData(theDomain, 1);
