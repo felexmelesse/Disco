@@ -51,8 +51,8 @@ void initial(double *prim, double *x)
     else{
        double omtot = 0;
        double cosp, sinp, px, py, dx, dy, gx, gy, mag;
-       gx = r*sin(phi);
-       gy = r*cos(phi);
+       gx = r*cos(phi);
+       gy = r*sin(phi);
        for(np = 0; np<Npl; np++){
           cosp = cos(thePlanets[np].phi);
           sinp = sin(thePlanets[np].phi);
