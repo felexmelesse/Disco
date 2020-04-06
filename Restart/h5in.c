@@ -2,6 +2,9 @@
 #include "../paul.h"
 #include <hdf5.h>
 #include <string.h>
+#include "../boundary.h"
+#include "../omega.h"
+#include "../hydro.h"
 
 void getH5dims( char * file , char * group , char * dset , hsize_t * dims ){
    hid_t h5fil = H5Fopen( file , H5F_ACC_RDWR , H5P_DEFAULT );
@@ -81,6 +84,18 @@ void setPlanetParams( struct domain * );
 void initializePlanets( struct planet * );
 int num_diagnostics( void );
 int get_num_rzFaces( int , int , int );
+
+void setICparams( struct domain * );
+void setRiemannParams( struct domain * );
+void setGravParams( struct domain * );
+void setPlanetParams( struct domain * );
+void setHlldParams( struct domain * );
+void setRotFrameParams( struct domain * );
+void setMetricParams( struct domain * );
+void setFrameParams(struct domain * );
+void setDiagParams( struct domain * );
+void setNoiseParams( struct domain * );
+void setSinkParams( struct domain * );
 
 void restart( struct domain * theDomain ){
 
@@ -321,5 +336,19 @@ void restart( struct domain * theDomain ){
    theDomain->fIndex_r = (int *) malloc( (theDomain->N_ftracks_r+1)*sizeof(int) );
    theDomain->fIndex_z = (int *) malloc( (theDomain->N_ftracks_z+1)*sizeof(int) );
 
+   // Reset parameters in case the restart changed things
+   // This really necessary only if pointers moved around.
+   setICparams( theDomain );
+   setHydroParams( theDomain );
+   setRiemannParams( theDomain );
+   setHlldParams( theDomain );
+   setOmegaParams( theDomain );
+   setRotFrameParams( theDomain );
+   setMetricParams( theDomain );
+   setFrameParams( theDomain );
+   setDiagParams( theDomain );
+   setNoiseParams( theDomain );
+   setBCParams( theDomain );
+   setSinkParams( theDomain );
 }
 
