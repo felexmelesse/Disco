@@ -219,4 +219,5 @@ void planet_RK_adjust( struct planet * pl , double RK ){
    pl->Ls    = (1.-RK)*pl->Ls    + RK*pl->RK_Ls;
    pl->kin   = (1.-RK)*pl->kin   + RK*pl->RK_kin;
    pl->therm = (1.-RK)*pl->therm + RK*pl->RK_therm;
+   pl->Ltorque=(1.-RK)*pl->Ltorque+RK*pl->RK_Ltorque;
 }

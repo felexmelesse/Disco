@@ -57,10 +57,11 @@ void report( struct domain * theDomain ){
    double BrBp = 0.0;
    double PdV  = 0.0;
 
-   double * M_acc, * L_pls, * Ls_pls, *kin_pls, *therm_pls;
+   double * M_acc, * L_pls, * Ls_pls, *kin_pls, *therm_pls, *Lt_pls;
    M_acc = calloc(Npl, sizeof(double) );
    L_pls = calloc(Npl, sizeof(double) );
    Ls_pls = calloc(Npl, sizeof(double) );
+   Lt_pls = calloc(Npl, sizeof(double) );
    kin_pls = calloc(Npl, sizeof(double) );
    therm_pls = calloc(Npl, sizeof(double) );
 
@@ -72,11 +73,19 @@ void report( struct domain * theDomain ){
    //for( j=0 ; j<10 ; ++j ){ T_cut[j]=0.;  P_cut[j]=0.; }
 
    for( j=0; j<Npl; ++j){
-      M_acc[j] = 0.5*thePlanets[j].dM + 0.5*thePlanets[j].RK_dM;
-      L_pls[j] = 0.5*thePlanets[j].L + 0.5*thePlanets[j].RK_L;
-      Ls_pls[j] = 0.5*thePlanets[j].Ls + 0.5*thePlanets[j].RK_Ls;
-      therm_pls[j] = 0.5*thePlanets[j].therm + 0.5*thePlanets[j].RK_therm;
-      kin_pls[j] = 0.5*thePlanets[j].kin + 0.5*thePlanets[j].RK_kin;
+      //M_acc[j] = 0.5*thePlanets[j].dM + 0.5*thePlanets[j].RK_dM;
+      //L_pls[j] = 0.5*thePlanets[j].L + 0.5*thePlanets[j].RK_L;
+      //Ls_pls[j] = 0.5*thePlanets[j].Ls + 0.5*thePlanets[j].RK_Ls;
+      //therm_pls[j] = 0.5*thePlanets[j].therm + 0.5*thePlanets[j].RK_therm;
+      //kin_pls[j] = 0.5*thePlanets[j].kin + 0.5*thePlanets[j].RK_kin;
+
+      M_acc[j] = thePlanets[j].dM;
+      L_pls[j] = thePlanets[j].L;
+      Ls_pls[j] = thePlanets[j].Ls;
+      therm_pls[j] = thePlanets[j].therm;
+      kin_pls[j] = thePlanets[j].kin;
+      Lt_pls[j] = thePlanets[j].Ltorque;
+
       thePlanets[j].dM = 0.0;
       thePlanets[j].RK_dM = 0.0;
       thePlanets[j].L = 0.0;
@@ -87,6 +96,8 @@ void report( struct domain * theDomain ){
       thePlanets[j].RK_therm = 0.0;
       thePlanets[j].kin = 0.0;
       thePlanets[j].RK_kin = 0.0;
+      thePlanets[j].Ltorque = 0.0;
+      thePlanets[j].RK_Ltorque = 0.0;
   }
    for( j=jmin ; j<jmax ; ++j ){
       double rho0 = 1.0;//pow( r , -1.5 );
@@ -227,7 +238,11 @@ void report( struct domain * theDomain ){
       //fprintf(rFile,"%le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le %le ",
       //          t,Torque,Power,Fr,rho_min,rhoavg_min,PsiR,PsiI,Mass,Mdot,S_R,
       //          L1_rho,L1_isen,L1_B,Br2,aM,bM);
-      fprintf(rFile,"%le %le %le ",  t,Torque,Torque2);
+      //fprintf(rFile,"%le %le %le ",  t,Torque,Torque2);
+      fprintf(rFile,"%le ",  t);
+      for( j=0; j<Npl; ++j){
+         fprintf(rFile,"%le ", Lt_pls[j]);
+      }
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", M_acc[j]);
       }

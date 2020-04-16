@@ -247,6 +247,9 @@ struct planet{
    double L;
    double RK_L;
 
+   double Ltorque;
+   double RK_Ltorque;
+
    double kin;
    double RK_kin;
    double therm;

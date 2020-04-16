@@ -162,7 +162,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
         double gx = r*cosg;
         double gy = r*sing;
 
-        double px, py, dx, dy, mag, eps;
+        double px, py, dx, dy, mag, eps, gmag3;
         double rate, surfdiff;
         int pi;
         for (pi=0; pi<Npl; pi++){
@@ -176,6 +176,9 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             mag = dx*dx + dy*dy + z*z;
             double mag4 = mag*mag;
             mag = sqrt(mag);
+
+            gmag3 = dx*dx + dy*dy + z*z + thePlanets[pi].eps*thePlanets[pi].eps;
+            gmag3 = gmag3*sqrt(gmag3);
 
             eps = sinkPar3;
             eps = eps*eps*eps*eps;
@@ -224,6 +227,10 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             cons[TAU] -= acc_factor*(0.5*v2 + prim[PPP]/(gamma_law-1.0));
             thePlanets[pi].kin += 0.5*v2*acc_factor;
             thePlanets[pi].therm += prim[PPP]*acc_factor/(gamma_law-1.0);
+
+            //not actually a sink, just accounting
+            thePlanets[pi].Ltorque += thePlanets[pi].M*rho*dV*dt*(dx*py - dy*px)/gmag3;
+
         }
     }
 
@@ -247,7 +254,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
         double gx = r*cosg;
         double gy = r*sing;
 
-        double px, py, dx, dy, mag, eps;
+        double px, py, dx, dy, mag, eps, gmag3;
         double rate, surfdiff;
         int pi;
         for (pi=0; pi<Npl; pi++){
@@ -261,6 +268,9 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             mag = dx*dx + dy*dy + z*z;
             double mag4 = mag*mag;
             mag = sqrt(mag);
+
+            gmag3 = dx*dx + dy*dy + z*z + thePlanets[pi].eps*thePlanets[pi].eps;
+            gmag3 = gmag3*sqrt(gmag3);
 
             double R = sinkPar3;
             double pwr = sinkPar4;
@@ -311,6 +321,9 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             cons[TAU] -= acc_factor*(0.5*v2 + prim[PPP]/(gamma_law-1.0));
             thePlanets[pi].kin += 0.5*v2*acc_factor;
             thePlanets[pi].therm += prim[PPP]*acc_factor/(gamma_law-1.0);
+
+            //not actually a sink, just accounting
+            thePlanets[pi].Ltorque += thePlanets[pi].M*rho*dV*dt*(dx*py - dy*px)/gmag3;
         }
     }
 }
