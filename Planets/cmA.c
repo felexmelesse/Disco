@@ -40,6 +40,8 @@ void initializePlanets( struct planet * thePlanets ){
    thePlanets[0].RK_L = 0.0;
    thePlanets[0].Ls = 0.0;
    thePlanets[0].RK_Ls = 0.0;
+   thePlanets[0].Ltorque = 0.0;
+   thePlanets[0].RK_Ltorque = 0.0;
    thePlanets[0].kin = 0.0;
    thePlanets[0].RK_kin = 0.0;
    thePlanets[0].therm = 0.0;
