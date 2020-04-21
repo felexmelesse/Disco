@@ -110,6 +110,7 @@ struct param_list{
    double sinkPar2;
    double sinkPar3;
    double sinkPar4;
+   double sinkPar5;
    int nozzleType;
    double nozzlePar1;
    double nozzlePar2;

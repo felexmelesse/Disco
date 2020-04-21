@@ -148,6 +148,7 @@ int read_par_file( struct domain * theDomain ){
          err += readvar(pfile, "Sink_Par2", VAR_DOUB, &(theList->sinkPar2));
          err += readvar(pfile, "Sink_Par3", VAR_DOUB, &(theList->sinkPar3));
          err += readvar(pfile, "Sink_Par4", VAR_DOUB, &(theList->sinkPar4));
+         err += readvar(pfile, "Sink_Par5", VAR_DOUB, &(theList->sinkPar5));
          err += readvar(pfile, "Nozzle_Type", VAR_INT , &(theList->nozzleType));
          err += readvar(pfile, "Nozzle_Par1", VAR_DOUB, &(theList->nozzlePar1));
          err += readvar(pfile, "Nozzle_Par2", VAR_DOUB, &(theList->nozzlePar2));

@@ -6,6 +6,7 @@ static double sinkPar1 = 0.0;
 static double sinkPar2 = 0.0;
 static double sinkPar3 = 0.0;
 static double sinkPar4 = 0.0;
+static double sinkPar5 = 0.0;
 static int nozzleType;
 static double nozzlePar1 = 0.0;
 static double nozzlePar2 = 0.0;
@@ -33,6 +34,7 @@ void setSinkParams(struct domain *theDomain)
     sinkPar2 = theDomain->theParList.sinkPar2;
     sinkPar3 = theDomain->theParList.sinkPar3;
     sinkPar4 = theDomain->theParList.sinkPar4;
+    sinkPar5 = theDomain->theParList.sinkPar5;
     nozzleType = theDomain->theParList.nozzleType;
     nozzlePar1 = theDomain->theParList.nozzlePar1;
     nozzlePar2 = theDomain->theParList.nozzlePar2;
@@ -273,10 +275,12 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             gmag3 = gmag3*sqrt(gmag3);
 
             double R = sinkPar3;
-            double pwr = sinkPar4;
+            double pwrN = sinkPar4;
+            double pwrM = sinkPar5;
 
-            double arg = 1.0 - pow((mag/R),pwr);
-            arg = fmax(0.0, arg);
+            double arg = 1.0 - pow((mag/R),pwrN);
+            arg = pow(arg, pwrM);
+            if (mag >= R) arg = 0.0;
 
             rate = sinkPar1*thePlanets[pi].omega;
             surfdiff = rho*rate*arg;

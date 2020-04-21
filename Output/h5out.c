@@ -327,6 +327,8 @@ void writePars(struct domain *theDomain, char filename[])
                     H5T_NATIVE_DOUBLE);
     dumpVal(filename, "Pars", "Sink_Par4", &(pars->sinkPar4),
                     H5T_NATIVE_DOUBLE);
+    dumpVal(filename, "Pars", "Sink_Par5", &(pars->sinkPar5),
+                    H5T_NATIVE_DOUBLE);
     dumpVal(filename, "Pars", "Nozzle_Type", &(pars->nozzleType),
                     H5T_NATIVE_INT);
     dumpVal(filename, "Pars", "Nozzle_Par1", &(pars->nozzlePar1),
