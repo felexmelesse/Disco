@@ -54,25 +54,25 @@ double gap_density(double r, double a, double Mach, double alpha, double q, doub
 struct Gap_Vals gap_density(double r, double d, double M, double alpha, double q, double rho_0){
 //double d_gap_density(double r, double d, double M, double alpha, double q, double rho_0){
 
-	double qNL	= 1.04*pow(M, -3);
+	double qNL	= 1.04*pow(M, -3.);
 	double qw	= 34.*qNL*pow(alpha*M, 0.5);
-	double D	= 7.*pow(M, 1.5)*pow(alpha, 0.25);
+	double D	= 7.*pow(M, 1.5)/pow(alpha, 0.25);
 	double A, dA, denom, q_denom, del_q, ddel_q, qr, dqr, drE;
 	
-	q_denom	= 1 + D*D*D*pow( pow( r/d, 1./6.) - 1, 6);
+	q_denom	= 1 + D*D*D*pow( pow( r/d, 1./6.) - 1., 6.);
 	qr	= q*pow(q_denom, -1./3.);
-	dqr	= (-q/3)*pow(q_denom, -4./3.)*D*D*D*pow( pow(r/a, 1./6.) - 1 , 5)*pow(r/d, -5./6.)/d;
+	dqr	= (-q/3)*pow(q_denom, -4./3.)*D*D*D*pow( pow(r/a, 1./6.) - 1. , 5.)*pow(r/d, -5./6.)/d;
 	
 	if (qr < qNL){
-		del_q = 1;
-		ddel_q = 0;
+		del_q = 1.;
+		ddel_q = 0.;
 	} else {
-		del_q	= pow(qr/qNL, -0.5) + pow(qr/qw, 3);
-		ddel_q	= -0.5*pow(qr/qNL, -1.5)*(dqr/qNL) + 3.*pow(qr/qw, 2)*(dqr/qw);
+		del_q	= pow(qr/qNL, -0.5) + pow(qr/qw, 3.);
+		ddel_q	= -0.5*pow(qr/qNL, -1.5)*(dqr/qNL) + 3.*pow(qr/qw, 2.)*(dqr/qw);
 	}
 	
-	A	= (0.45/(3.*M_PI))*qr*qr*pow(M, 5)/alpha;
-	dA	= (0.45/(3.*M_PI))*2*qr*dqr*pow(M, 5)/alpha;
+	A	= (0.45/(3.*M_PI))*qr*qr*pow(M, 5.)/alpha;
+	dA	= (0.45/(3.*M_PI))*2.*qr*dqr*pow(M, 5.)/alpha;
 	
 	denom	= 1 + A*del_q;
 	drE	= -rho_0*pow(denom, -2)*(dA*del_q + A*ddel_q);
