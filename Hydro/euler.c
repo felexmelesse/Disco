@@ -221,7 +221,9 @@ void visc_flux(const double * prim, const double * gradr, const double * gradp,
       double alpha = explicit_viscosity;
       double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
       double h = c*pow( r , 1.5 );
-      nu = alpha*c*h;
+      //nu = alpha*c*h;
+      double omgot = get_om(x);
+      nu = alpha*c*c/omgot;
    }
 
    double rho = prim[RHO];
@@ -267,7 +269,9 @@ void visc_source(const double * prim, const double * gradr, const double *gradp,
       double alpha = explicit_viscosity;
       double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
       double h = c*pow( r , 1.5 );
-      nu = alpha*c*h;
+      //nu = alpha*c*h;
+      double omgot = get_om(x);
+      nu = alpha*c*c/omgot;
    }
 
    double rho = prim[RHO];
@@ -360,10 +364,14 @@ double mindt(const double * prim , double w ,
 
        double nu = explicit_viscosity;
        if( alpha_flag ){
+          double x[3];
+          get_centroid_arr(xp, xm, x);
           double alpha = explicit_viscosity;
           double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
           double h = c*pow( r , 1.5 );
-          nu = alpha*c*h;
+          //nu = alpha*c*h;
+          double omgot = get_om(x);
+          nu = alpha*c*c/omgot;
        }
 
        double dt_visc = 0.5*dx*dx/nu;

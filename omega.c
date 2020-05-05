@@ -148,8 +148,8 @@ double get_cs2( const double *x ){
     }
     else if(cs2Choice == 5) 
     {
-      double r = 0.5*x[0];
-      double phi = 0.5*x[1];
+      double r = x[0];
+      double phi = x[1];
 
       double cosp = cos(phi);
       double sinp = sin(phi);
