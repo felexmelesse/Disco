@@ -20,12 +20,13 @@ void initial( double * prim , double * x ){
    double R = sqrt(r*r + eps*eps);
 
    double omega02 = 1.0/pow(R,3.);
-   double omegaP2 = (1.5/(Mach*Mach*R*R*R)) - (2.25*nu*nu/(Mach*Mach*Mach*Mach*r*r))*(0.5/R - R/(r*r));
+   double omegaP2 = (1.5/(Mach*Mach*R*R*R));
 
    double omega2 = fmax( (omega02 - omegaP2), 0.0 );
    double omega = sqrt(omega2);
    double cs2 = 1.0/(R*Mach*Mach);
-   double visc = nu*cs2*pow(R, 1.5);
+   double visc = nu;
+   if (alpha_flag == 1) visc = nu*cs2/omega;
    double rho = 1.0;
    if (nu > 0) rho = 1.0/visc;
    double Pp = rho*cs2;

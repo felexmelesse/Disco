@@ -176,16 +176,16 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             dx = gx-px;
             dy = gy-py;
             mag = dx*dx + dy*dy + z*z;
-            double mag4 = mag*mag;
+            double magPow = pow(mag, sinkPar4/2.0);
             mag = sqrt(mag);
 
             gmag3 = dx*dx + dy*dy + z*z + thePlanets[pi].eps*thePlanets[pi].eps;
             gmag3 = gmag3*sqrt(gmag3);
 
             eps = sinkPar3;
-            eps = eps*eps*eps*eps;
+            eps = pow(eps, sinkPar4);
 
-            double arg = exp(-mag4/eps);
+            double arg = exp(-magPow/eps);
             rate = sinkPar1*thePlanets[pi].omega;
             surfdiff = rho*rate*arg;
             thePlanets[pi].dM += surfdiff*dV*dt;
@@ -256,7 +256,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
         double gx = r*cosg;
         double gy = r*sing;
 
-        double px, py, dx, dy, mag, eps, gmag3;
+        double px, py, dx, dy, mag, gmag3;
         double rate, surfdiff;
         int pi;
         for (pi=0; pi<Npl; pi++){
@@ -268,7 +268,6 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             dx = gx-px;
             dy = gy-py;
             mag = dx*dx + dy*dy + z*z;
-            double mag4 = mag*mag;
             mag = sqrt(mag);
 
             gmag3 = dx*dx + dy*dy + z*z + thePlanets[pi].eps*thePlanets[pi].eps;
