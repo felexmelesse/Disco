@@ -274,11 +274,11 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             gmag3 = gmag3*sqrt(gmag3);
 
             double R = sinkPar3;
-            double pwrN = sinkPar4;
-            double pwrM = sinkPar5;
+            double pwrM = sinkPar4;
+            double pwrN = sinkPar5;
 
-            double arg = 1.0 - pow((mag/R),pwrN);
-            arg = pow(arg, pwrM);
+            double arg = 1.0 - pow((mag/R),pwrM);
+            arg = pow(arg, pwrN);
             if (mag >= R) arg = 0.0;
 
             rate = sinkPar1*thePlanets[pi].omega;

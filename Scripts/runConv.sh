@@ -17,6 +17,6 @@ do
         sed -i "s/^Num_Checkpoints\s.*$/Num_Checkpoints 0/" in.par
     fi
 
-    mpiexec -np 12 disco
+    mpiexec -np 32 disco
     mv output.h5 output.$nr.h5
 done
