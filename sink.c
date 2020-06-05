@@ -231,7 +231,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             thePlanets[pi].therm += prim[PPP]*acc_factor/(gamma_law-1.0);
 
             //not actually a sink, just accounting
-            thePlanets[pi].Ltorque += thePlanets[pi].M*rho*dV*dt*(dx*py - dy*px)/gmag3;
+            thePlanets[pi].Ltorque += thePlanets[pi].M*rho*dV*dt*(dy*px - dx*py)/gmag3;
 
         }
     }
@@ -326,7 +326,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             thePlanets[pi].therm += prim[PPP]*acc_factor/(gamma_law-1.0);
 
             //not actually a sink, just accounting
-            thePlanets[pi].Ltorque += thePlanets[pi].M*rho*dV*dt*(dx*py - dy*px)/gmag3;
+            thePlanets[pi].Ltorque += thePlanets[pi].M*rho*dV*dt*(dy*px - dx*py)/gmag3;
         }
     }
 }
