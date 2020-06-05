@@ -32,28 +32,24 @@ void initial(double *prim, double *x)
     double cs2 = get_cs2(x);
 
     double xi = 4.0;
-    double p = 0.5;
+    double p = 0.0;
     double rho, fact;
 
-    double sig0 = 1.0;
-
-    fact = exp(-pow((R),-xi));
-    rho = sig0*pow(R,-p)*fact+0.01;
     double om = 1.0;
     if (r > 1.0) om = pow(r,-1.5);
     int np;
-    double nu;
     double alpha = visc;
-    //double c = sqrt( gam*prim[PPP]/prim[RHO] );
-    if (Npl < 2){
-        nu = alpha*cs2/sqrt(om);
-    }
-    else{
-       double omtot = 0;
-       double cosp, sinp, px, py, dx, dy, gx, gy, mag;
-       gx = r*cos(phi);
-       gy = r*sin(phi);
-       for(np = 0; np<Npl; np++){
+    double nu = visc;
+    if (alpha_flag == 1){
+      if (Npl < 2){
+          nu = alpha*cs2/sqrt(om);
+      }
+      else{
+        double omtot = 0;
+        double cosp, sinp, px, py, dx, dy, gx, gy, mag;
+        gx = r*cos(phi);
+        gy = r*sin(phi);
+        for(np = 0; np<Npl; np++){
           cosp = cos(thePlanets[np].phi);
           sinp = sin(thePlanets[np].phi);
           px = thePlanets[np].r*cosp;
@@ -62,11 +58,16 @@ void initial(double *prim, double *x)
           dy = gy-py;
           mag = dx*dx + dy*dy + thePlanets[np].eps*thePlanets[np].eps;
           omtot +=	thePlanets[np].M*pow(mag, -1.5);
-       }  	
-       nu = alpha*cs2/sqrt(omtot);
-       om = sqrt(omtot);
+        }  	
+        nu = alpha*cs2/sqrt(omtot);
+        om = sqrt(omtot);
+      }
     }
 
+    double sig0 = Mdot;
+    fact = exp(-pow((R),-xi));
+    rho = sig0*pow(R,-p)*fact + 0.01;
+ 
     double v = -1.5*nu/r;
     double P = rho*cs2/gam;
  
