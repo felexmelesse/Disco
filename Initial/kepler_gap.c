@@ -9,6 +9,7 @@ static double a		= 1.0;
 static double rot_om	= 0.0;
 static double mach_csd	= 0.0;
 static double alpha_csd= 0.0;
+static int profChoice = 0;
 
 void setICparams( struct domain * theDomain ){
    gam  = theDomain->theParList.Adiabatic_Index;
@@ -16,6 +17,7 @@ void setICparams( struct domain * theDomain ){
    Mach = theDomain->theParList.Disk_Mach;
    q_planet	= theDomain->theParList.Mass_Ratio;
    rot_om	= theDomain->theParList.RotOmega;
+   profChoice	= theDomain->theParList.initPar0;
    mach_csd	= theDomain->theParList.initPar1;
    alpha_csd	= theDomain->theParList.initPar2; 
 }
@@ -33,28 +35,39 @@ void initial( double * prim , double * x ){
    double mu		= q_planet/(1.+q_planet);
    double omega		= sqrt(1./(R*R*R));
 
-   //double alpha_visc	= nu*Mach*Mach/(a*a*omega);
-   //double K		= q_planet*q_planet*Mach*Mach*Mach*Mach*Mach/alpha_visc;
-   double K		= pow(q_planet, 2)*pow(mach_csd, 5)/alpha_csd;
+   double rho;
+   double rho_0 = 1.0;
 
-   double f_0		= 0.45;
-   //double tau_sh	= 1.89 + 0.53/(q_planet*Mach*Mach*Mach);
-   //double tau_r		= 0.3363585661*pow(fabs(1.5*Mach*((R/a) - 1.0)), 2.5);
-   double tau_sh	= 1.89 + 0.53/(q_planet*pow(mach_csd, 3));
-   double tau_r		= 0.3363585661*pow(fabs(1.5*mach_csd*((R/a) - 1.0)), 2.5);
-   double f_r;
-   if (tau_r < tau_sh){
-	f_r	= f_0;
-   }else{
-	f_r	= f_0*sqrt(tau_sh / tau_r);
+   if(profChoice == 1)
+   {
+
+       //double alpha_visc	= nu*Mach*Mach/(a*a*omega);
+       //double K		= q_planet*q_planet*Mach*Mach*Mach*Mach*Mach/alpha_visc;
+       double K		= pow(q_planet, 2)*pow(mach_csd, 5)/alpha_csd;
+
+       double f_0		= 0.45;
+       //double tau_sh	= 1.89 + 0.53/(q_planet*Mach*Mach*Mach);
+       //double tau_r		= 0.3363585661*pow(fabs(1.5*Mach*((R/a) - 1.0)), 2.5);
+       double tau_sh	= 1.89 + 0.53/(q_planet*pow(mach_csd, 3));
+       double tau_r		= 0.3363585661*pow(fabs(1.5*mach_csd*((R/a) - 1.0)), 2.5);
+       double f_r;
+       if (tau_r < tau_sh){
+        f_r	= f_0;
+       }else{
+        f_r	= f_0*sqrt(tau_sh / tau_r);
+       }
+       
+       double nom		= f_r*K/(3.0*M_PI);
+       double denom		= 1.0 + f_0*K/(3.0*M_PI);
+       
+       rho		= rho_0 * (1.0 - (nom/denom)*sqrt(a/R));
    }
-   
-   double rho_0		= 1.0;
-   double nom		= f_r*K/(3.0*M_PI);
-   double denom		= 1.0 + f_0*K/(3.0*M_PI);
-   double rho		= rho_0 * (1.0 - (nom/denom)*sqrt(a/R));
+   else
+       rho = rho_0;
+
    if(q_planet <= 0.0)
        rho = rho_0;
+
    //double Pp		= rho/(gam*Mach*Mach);
    //double Pp		= rho/(gam*mach_csd*mach_csd);
    double  Pp = rho * get_cs2(x) / gam;
