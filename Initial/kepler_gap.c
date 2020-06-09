@@ -80,8 +80,8 @@ void initial( double * prim , double * x ){
    double dr_dPhi	= -a*sin(phi);
    double dphi_dPhi	= 1.0 - (a/r)*cos(phi);
 
-   double vr_global	= dr_dPhi*(sqrt(1./(R*R*R)) - sqrt(1./(a*a*a)));
-   double vp_global	= dphi_dPhi*(sqrt(1./(R*R*R)) - sqrt(1./(a*a*a))) + rot_om;
+   double vr_global	= dr_dPhi*(omega - sqrt(1./(a*a*a)));
+   double vp_global	= dphi_dPhi*(omega - sqrt(1./(a*a*a))) + rot_om;
    double vp_local	= sqrt(mu/(r*r*r));
    
    //Fixing angular velocity profile 
