@@ -144,9 +144,9 @@ void initial( double * prim , double * x ){
    
    //Fixing angular velocity profile 
    double r_in		= 0.005;
-   double r_out		= 0.01;
+   double r_out		= 0.05;
    double vr_f, vp_f, slope_p, slope_r, slope_rho;
-   double rho_in	= 0.1*rho_0;
+   double rho_in	= 0.5*rho_0;
    
    if (r < r_in)
    {
