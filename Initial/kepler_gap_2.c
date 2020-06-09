@@ -144,15 +144,18 @@ void initial( double * prim , double * x ){
    
    //Fixing angular velocity profile 
    double r_in		= 0.005;
-   double r_out		= 0.01;
+   double r_out		= 0.05;
    double vr_f, vp_f, slope_p, slope_r, slope_rho;
-   double rho_in	= 0.1*rho_0;
-   
+   double rho_in	= 0.5*rho_0;
+  
+    double X2;
+
    if (r < r_in)
    {
 	vp_f	= vp_local;
 	vr_f	= 0;
 	rho	= rho_in;
+    X2 = 1.0;
    }
    else if (r_in < r && r < r_out)
    {
@@ -164,10 +167,12 @@ void initial( double * prim , double * x ){
 	
 	slope_rho = (rho - rho_in)/(r_out - r_in);
 	rho	= rho_in + slope_rho*(r-r_in);
+    X2 = (r_out - r) / (r_out - r_in);
    }else{
 	vp_f	= vp_global;
 	vr_f	= vr_global;
 	rho	= rho;
+    X2 = 0.0;
    }
 
    prim[RHO] = rho;
@@ -176,5 +181,6 @@ void initial( double * prim , double * x ){
    prim[UPP] = vp_f; //cos(xi) R * sqrt(1./(a*a*a));
    prim[UZZ] = 0.0;
    if( NUM_N>0 ) prim[NUM_C] = X;
+   if( NUM_N>1 ) prim[NUM_C+1] = X2;
 
 }
