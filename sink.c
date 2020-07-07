@@ -149,7 +149,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             if (mag >= R) arg = 0.0;
           }
 		
-          rate = sinkPar1*thePlanets[pi].omega;
+          rate = sinkPar1*thePlanets[pi].omega; //*sqrt(thePlanets[pi].M);
           surfdiff = rho*rate*arg;
           thePlanets[pi].dM += surfdiff*dV*dt;
 
