@@ -95,184 +95,51 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             cons[NUM_C] += rhodot*dV*dt;
     }
 
-    //sink a la Farris et al. 2014
-    if (sinkType == 1)
-    {
-      double r = 0.5*(xp[0]+xm[0]);
-      double phi = 0.5*(xp[1]+xm[1]);
-      double z = 0.5*(xp[2]+xm[2]);
 
-      double cosp = cos(phi);
-      double sinp = sin(phi);
-      double gx = r*cosp;
-      double gy = r*sinp;
 
-      double px, py, dx, dy, mag, eps;
-      double arg = 0.0;
-      double argt = 0.0;
-      double factor = Mach*Mach/(3.0*M_PI*visc*thePlanets[0].omega);		//assumes alpha viscosity for now
+    if(sinkType != 0){
+      double r = get_centroid(xp[0], xm[0], 1);
+      double phi = get_centroid(xp[1], xm[1], 0);
+      double z = get_centroid(xp[2], xm[2], 2);
+
+      double rho = prim[RHO];
+      double vr  = prim[URR];
+      double vp  = prim[UPP]*r;
+      double vz  = prim[UZZ];
+
+      double cosg = cos(phi);
+      double sing = sin(phi);
+      double gx = r*cosg;
+      double gy = r*sing;
+
+      double px, py, dx, dy, mag, eps, gmag3, epsfactor;
+      double rate, surfdiff;
       int pi;
-      for (pi=0; pi<Npl; pi++)
-      {
-          cosp = cos(thePlanets[pi].phi);
-          sinp = sin(thePlanets[pi].phi);
+      for (pi=0; pi<Npl; pi++){
+          double cosp = cos(thePlanets[pi].phi);
+          double sinp = sin(thePlanets[pi].phi);
           px = thePlanets[pi].r*cosp;
           py = thePlanets[pi].r*sinp;
+
           dx = gx-px;
           dy = gy-py;
-          eps = thePlanets[pi].eps;
-          mag = sqrt(dx*dx + dy*dy + z*z + eps*eps);
+          mag = dx*dx + dy*dy + z*z;
+          mag = sqrt(mag);
 
-          if (mag < 0.5)
-          {
-            arg = factor*pow(mag, 1.5)*pow(thePlanets[pi].M, -0.5);
+          gmag3 = dx*dx + dy*dy + z*z + thePlanets[pi].eps*thePlanets[pi].eps;
+          gmag3 = gmag3*sqrt(gmag3);
 
-            if (arg>0)
-            {
-               argt += dV/(dt*arg); 
-               thePlanets[pi].dM += prim[RHO]*dV/(dt*arg);
-            }
-          }          
-      }
-      double ratio = 1.0;
-      ratio = fmax(1.0 - argt, 1.e-5);
-
-      cons[RHO] *= ratio;
-      cons[URR] *= ratio;
-      cons[UZZ] *= ratio;
-      cons[UPP] *= ratio;
-      cons[TAU] *= ratio;
-    }
-
-    //sink a la Duffell et al. 2019
-    if(sinkType == 2)		
-    {
-     	//double r = 0.5*(xp[0]+xm[0]);
-        //double phi = 0.5*(xp[1]+xm[1]);
-        //double z = 0.5*(xp[2]+xm[2]);
-        double r = get_centroid(xp[0], xm[0], 1);
-        double phi = get_centroid(xp[1], xm[1], 0);
-        double z = get_centroid(xp[2], xm[2], 2);
-
-        double rho = prim[RHO];
-        double vr  = prim[URR];
-        double vp  = prim[UPP]*r;
-        double vz  = prim[UZZ];
-
-        double cosg = cos(phi);
-        double sing = sin(phi);
-        double gx = r*cosg;
-        double gy = r*sing;
-
-        double px, py, dx, dy, mag, eps, gmag3;
-        double rate, surfdiff;
-        int pi;
-        for (pi=0; pi<Npl; pi++){
-            double cosp = cos(thePlanets[pi].phi);
-            double sinp = sin(thePlanets[pi].phi);
-            px = thePlanets[pi].r*cosp;
-            py = thePlanets[pi].r*sinp;
-
-            dx = gx-px;
-            dy = gy-py;
-            mag = dx*dx + dy*dy + z*z;
-            double magPow = pow(mag, sinkPar4/2.0);
-            mag = sqrt(mag);
-
-            gmag3 = dx*dx + dy*dy + z*z + thePlanets[pi].eps*thePlanets[pi].eps;
-            gmag3 = gmag3*sqrt(gmag3);
-
+          //the part that depends on sinkType
+          double arg = 0.0;
+          if(sinkType == 2){	//exponential
             eps = sinkPar3;
             eps = pow(eps, sinkPar4);
-
-            double arg = exp(-magPow/eps);
-            rate = sinkPar1*thePlanets[pi].omega;
-            surfdiff = rho*rate*arg;
-            thePlanets[pi].dM += surfdiff*dV*dt;
-
-            double delta = fmin(sinkPar2, 1.0);
-            delta = fmax(0.0, sinkPar2);
-            double rp, omp, vxp, vyp, vxg, vyg, vxr, vyr, vp_p, vp_r, vxn, vyn, cphi, sphi, vg_r, vg_p;
-            rp = thePlanets[pi].r;
-            omp = thePlanets[pi].omega;
-            vp_p = rp*omp;
-            vp_r = thePlanets[pi].vr;
-            vxp = vp_r*cosp - vp_p*sinp;
-            vyp = vp_r*sinp + vp_p*cosp;
-
-            vxg = vr*cosg - vp*sing;
-            vyg = vr*sing + vp*cosg;
-
-            vxr = vxg - vxp;
-            vyr = vyg - vyp;
-            cphi = dx/mag;
-            sphi = dy/mag;
-
-            double acc_factor = dV*dt*surfdiff;
-
-            double vpr = cphi*vyr - sphi*vxr;
-            thePlanets[pi].Ls += (1.0-delta)*mag*vpr*acc_factor;
-            vxn = (cphi*cphi + (1.0-delta)*sphi*sphi)*vxr + delta*sphi*cphi*vyr;
-            vyn = delta*cphi*sphi*vxr + (sphi*sphi + (1.0-delta)*cphi*cphi)*vyr;
-
-            vxg = vxn + vxp;
-            vyg = vyn + vyp;
-            vg_r =  vxg*cosg + vyg*sing;
-            vg_p = -vxg*sing + vyg*cosg;
-
-            thePlanets[pi].L += vg_p*r*acc_factor;
-            cons[DDD] -= acc_factor;
-            cons[SRR] -= vg_r*acc_factor;
-            cons[LLL] -= r*vg_p*acc_factor;
-            cons[SZZ] -= vz*acc_factor;
-            double v2 = vg_p*vg_p + vg_r*vg_r + vz*vz;
-            cons[TAU] -= acc_factor*(0.5*v2 + prim[PPP]/(gamma_law-1.0));
-            thePlanets[pi].kin += 0.5*v2*acc_factor;
-            thePlanets[pi].therm += prim[PPP]*acc_factor/(gamma_law-1.0);
-
-            //not actually a sink, just accounting
-            thePlanets[pi].Ltorque += thePlanets[pi].M*rho*dV*dt*(dy*px - dx*py)/gmag3;
-
-        }
-    }
-
-    //sink with compact support
-    if(sinkType == 3)		
-    {
-     	//double r = 0.5*(xp[0]+xm[0]);
-        //double phi = 0.5*(xp[1]+xm[1]);
-        //double z = 0.5*(xp[2]+xm[2]);
-        double r = get_centroid(xp[0], xm[0], 1);
-        double phi = get_centroid(xp[1], xm[1], 0);
-        double z = get_centroid(xp[2], xm[2], 2);
-
-        double rho = prim[RHO];
-        double vr  = prim[URR];
-        double vp  = prim[UPP]*r;
-        double vz  = prim[UZZ];
-
-        double cosg = cos(phi);
-        double sing = sin(phi);
-        double gx = r*cosg;
-        double gy = r*sing;
-
-        double px, py, dx, dy, mag, gmag3;
-        double rate, surfdiff;
-        int pi;
-        for (pi=0; pi<Npl; pi++){
-            double cosp = cos(thePlanets[pi].phi);
-            double sinp = sin(thePlanets[pi].phi);
-            px = thePlanets[pi].r*cosp;
-            py = thePlanets[pi].r*sinp;
-
-            dx = gx-px;
-            dy = gy-py;
-            mag = dx*dx + dy*dy + z*z;
-            mag = sqrt(mag);
-
-            gmag3 = dx*dx + dy*dy + z*z + thePlanets[pi].eps*thePlanets[pi].eps;
-            gmag3 = gmag3*sqrt(gmag3);
-
+            epsfactor = sinkPar5;
+            if(epsfactor <= 0.0) epsfactor = 1.0;
+            double magPow = pow(mag, sinkPar4/2.0);
+            arg = exp(-magPow/(eps*epsfactor));
+          }
+          if(sinkType == 3){	//polynomial, compact support
             double R = sinkPar3;
             double pwrM = sinkPar4;
             double pwrN = sinkPar5;
@@ -280,56 +147,60 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             double arg = 1.0 - pow((mag/R),pwrM);
             arg = pow(arg, pwrN);
             if (mag >= R) arg = 0.0;
+          }
+		
+          rate = sinkPar1*thePlanets[pi].omega; //*sqrt(thePlanets[pi].M);
+          surfdiff = rho*rate*arg;
+          thePlanets[pi].dM += surfdiff*dV*dt;
 
-            rate = sinkPar1*thePlanets[pi].omega;
-            surfdiff = rho*rate*arg;
-            thePlanets[pi].dM += surfdiff*dV*dt;
+          double delta = fmin(sinkPar2, 1.0);
+          delta = fmax(0.0, sinkPar2);
+          double rp, omp, vxp, vyp, vxg, vyg, vxr, vyr, vp_p, vp_r, vxn, vyn, cphi, sphi, vg_r, vg_p;
+          rp = thePlanets[pi].r;
+          omp = thePlanets[pi].omega;
+          vp_p = rp*omp;
+          vp_r = thePlanets[pi].vr;
+          vxp = vp_r*cosp - vp_p*sinp;
+          vyp = vp_r*sinp + vp_p*cosp;
 
-            double delta = fmin(sinkPar2, 1.0);
-            delta = fmax(0.0, sinkPar2);
-            double rp, omp, vxp, vyp, vxg, vyg, vxr, vyr, vp_p, vp_r, vxn, vyn, cphi, sphi, vg_r, vg_p;
-            rp = thePlanets[pi].r;
-            omp = thePlanets[pi].omega;
-            vp_p = rp*omp;
-            vp_r = thePlanets[pi].vr;
-            vxp = vp_r*cosp - vp_p*sinp;
-            vyp = vp_r*sinp + vp_p*cosp;
+          vxg = vr*cosg - vp*sing;
+          vyg = vr*sing + vp*cosg;
 
-            vxg = vr*cosg - vp*sing;
-            vyg = vr*sing + vp*cosg;
+          vxr = vxg - vxp;
+          vyr = vyg - vyp;
+          cphi = dx/mag;
+          sphi = dy/mag;
 
-            vxr = vxg - vxp;
-            vyr = vyg - vyp;
-            cphi = dx/mag;
-            sphi = dy/mag;
+          double acc_factor = dV*dt*surfdiff;
 
-            double acc_factor = dV*dt*surfdiff;
+          double vpr = cphi*vyr - sphi*vxr;
+          thePlanets[pi].Ls += (1.0-delta)*mag*vpr*acc_factor;
+          vxn = (cphi*cphi + (1.0-delta)*sphi*sphi)*vxr + delta*sphi*cphi*vyr;
+          vyn = delta*cphi*sphi*vxr + (sphi*sphi + (1.0-delta)*cphi*cphi)*vyr;
 
-            double vpr = cphi*vyr - sphi*vxr;
-            thePlanets[pi].Ls += (1.0-delta)*mag*vpr*acc_factor;
-            vxn = (cphi*cphi + (1.0-delta)*sphi*sphi)*vxr + delta*sphi*cphi*vyr;
-            vyn = delta*cphi*sphi*vxr + (sphi*sphi + (1.0-delta)*cphi*cphi)*vyr;
+          vxg = vxn + vxp;
+          vyg = vyn + vyp;
+          vg_r =  vxg*cosg + vyg*sing;
+          vg_p = -vxg*sing + vyg*cosg;
 
-            vxg = vxn + vxp;
-            vyg = vyn + vyp;
-            vg_r =  vxg*cosg + vyg*sing;
-            vg_p = -vxg*sing + vyg*cosg;
+          thePlanets[pi].L += vg_p*r*acc_factor;
+          cons[DDD] -= acc_factor;
+          cons[SRR] -= vg_r*acc_factor;
+          cons[LLL] -= r*vg_p*acc_factor;
+          cons[SZZ] -= vz*acc_factor;
+          double v2 = vg_p*vg_p + vg_r*vg_r + vz*vz;
+          cons[TAU] -= acc_factor*(0.5*v2 + prim[PPP]/(rho*(gamma_law-1.0)));
+          thePlanets[pi].kin += 0.5*v2*acc_factor;
+          thePlanets[pi].therm += prim[PPP]*acc_factor/(rho*(gamma_law-1.0));
 
-            thePlanets[pi].L += vg_p*r*acc_factor;
-            cons[DDD] -= acc_factor;
-            cons[SRR] -= vg_r*acc_factor;
-            cons[LLL] -= r*vg_p*acc_factor;
-            cons[SZZ] -= vz*acc_factor;
-            double v2 = vg_p*vg_p + vg_r*vg_r + vz*vz;
-            cons[TAU] -= acc_factor*(0.5*v2 + prim[PPP]/(gamma_law-1.0));
-            thePlanets[pi].kin += 0.5*v2*acc_factor;
-            thePlanets[pi].therm += prim[PPP]*acc_factor/(gamma_law-1.0);
-
-            //not actually a sink, just accounting
-            thePlanets[pi].Ltorque += thePlanets[pi].M*rho*dV*dt*(dy*px - dx*py)/gmag3;
-        }
+          //not actually a sink, just accounting
+          thePlanets[pi].Ltorque += thePlanets[pi].M*rho*dV*dt*(dy*px - dx*py)/gmag3;
+      }
     }
 }
+
+
+
 
 void cooling(double *prim, double *cons, double *xp, double *xm, double dV, double dt )
 {
