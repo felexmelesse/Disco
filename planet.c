@@ -205,6 +205,9 @@ void planet_RK_copy( struct planet * pl ){
    pl->RK_Ls    = pl->Ls;
    pl->RK_therm = pl->therm;
    pl->RK_kin   = pl->kin;
+   pl->RK_Ltorque   = pl->Ltorque;
+   pl->RK_linXmom   = pl->linXmom;
+   pl->RK_linYmom   = pl->linYmom;
 
 }
 

@@ -256,6 +256,11 @@ struct planet{
    double therm;
    double RK_therm;
 
+   double linXmom;
+   double RK_linXmom;
+   double linYmom;
+   double RK_linYmom;
+
    double eps;
    double Fr;
    double Fp;

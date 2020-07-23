@@ -57,13 +57,15 @@ void report( struct domain * theDomain ){
    double BrBp = 0.0;
    double PdV  = 0.0;
 
-   double * M_acc, * L_pls, * Ls_pls, *kin_pls, *therm_pls, *Lt_pls;
+   double * M_acc, * L_pls, * Ls_pls, *kin_pls, *therm_pls, *Lt_pls, *xMom_pls, *yMom_pls;
    M_acc = calloc(Npl, sizeof(double) );
    L_pls = calloc(Npl, sizeof(double) );
    Ls_pls = calloc(Npl, sizeof(double) );
    Lt_pls = calloc(Npl, sizeof(double) );
    kin_pls = calloc(Npl, sizeof(double) );
    therm_pls = calloc(Npl, sizeof(double) );
+   xMom_pls = calloc(Npl, sizeof(double) );
+   yMom_pls = calloc(Npl, sizeof(double) );
 
    double S_R = 0.0;
    double S_0 = 0.0;
@@ -85,6 +87,8 @@ void report( struct domain * theDomain ){
       therm_pls[j] = thePlanets[j].therm;
       kin_pls[j] = thePlanets[j].kin;
       Lt_pls[j] = thePlanets[j].Ltorque;
+      xMom_pls[j] = thePlanets[j].linXmom;
+      yMom_pls[j] = thePlanets[j].linYmom;
 
       thePlanets[j].dM = 0.0;
       thePlanets[j].RK_dM = 0.0;
@@ -98,6 +102,11 @@ void report( struct domain * theDomain ){
       thePlanets[j].RK_kin = 0.0;
       thePlanets[j].Ltorque = 0.0;
       thePlanets[j].RK_Ltorque = 0.0;
+      thePlanets[j].linXmom = 0.0;
+      thePlanets[j].RK_linXmom = 0.0;
+      thePlanets[j].linYmom = 0.0;
+      thePlanets[j].RK_linYmom = 0.0;
+
   }
    for( j=jmin ; j<jmax ; ++j ){
       double rho0 = 1.0;//pow( r , -1.5 );
@@ -257,6 +266,12 @@ void report( struct domain * theDomain ){
       }
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", therm_pls[j]);
+      }
+      for( j=0; j<Npl; ++j){
+         fprintf(rFile,"%le ", xMom_pls[j]);
+      }
+      for( j=0; j<Npl; ++j){
+         fprintf(rFile,"%le ", yMom_pls[j]);
       }
       fprintf(rFile,"\n");
 

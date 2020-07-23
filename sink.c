@@ -193,8 +193,13 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
           thePlanets[pi].kin += 0.5*v2*acc_factor;
           thePlanets[pi].therm += prim[PPP]*acc_factor/(rho*(gamma_law-1.0));
 
-          //not actually a sink, just accounting
+          thePlanets[pi].linXmom += acc_factor*vxg;
+          thePlanets[pi].linYmom += acc_factor*vyg;
+
+
+          //not actually a sink, just accounting. This should really be named Lgrav or something.
           thePlanets[pi].Ltorque += thePlanets[pi].M*rho*dV*dt*(dy*px - dx*py)/gmag3;
+
       }
     }
 }
