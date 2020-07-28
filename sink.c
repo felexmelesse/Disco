@@ -183,7 +183,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
           vg_r =  vxg*cosg + vyg*sing;
           vg_p = -vxg*sing + vyg*cosg;
 
-          thePlanets[pi].L += vg_p*r*acc_factor;
+          thePlanets[pi].accL += vg_p*r*acc_factor;
           cons[DDD] -= acc_factor;
           cons[SRR] -= vg_r*acc_factor;
           cons[LLL] -= r*vg_p*acc_factor;
@@ -198,7 +198,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
 
 
           //not actually a sink, just accounting. This should really be named Lgrav or something.
-          thePlanets[pi].Ltorque += thePlanets[pi].M*rho*dV*dt*(dy*px - dx*py)/gmag3;
+          thePlanets[pi].gravL += thePlanets[pi].M*rho*dV*dt*(dy*px - dx*py)/gmag3;
 
       }
     }

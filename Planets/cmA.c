@@ -36,12 +36,12 @@ void initializePlanets( struct planet * thePlanets ){
    thePlanets[0].RK_dM = 0.0;
    thePlanets[0].dM = 0.0;
 
-   thePlanets[0].L = 0.0;
-   thePlanets[0].RK_L = 0.0;
+   thePlanets[0].accL = 0.0;
+   thePlanets[0].RK_accL = 0.0;
    thePlanets[0].Ls = 0.0;
    thePlanets[0].RK_Ls = 0.0;
-   thePlanets[0].Ltorque = 0.0;
-   thePlanets[0].RK_Ltorque = 0.0;
+   thePlanets[0].gravL = 0.0;
+   thePlanets[0].RK_gravL = 0.0;
    thePlanets[0].kin = 0.0;
    thePlanets[0].RK_kin = 0.0;
    thePlanets[0].therm = 0.0;
@@ -63,8 +63,10 @@ void initializePlanets( struct planet * thePlanets ){
    thePlanets[1].RK_dM = 0.0;
    thePlanets[1].dM = 0.0;
 
-   thePlanets[1].L = 0.0;
-   thePlanets[1].RK_L = 0.0;
+   thePlanets[1].accL = 0.0;
+   thePlanets[1].RK_accL = 0.0;
+   thePlanets[1].gravL = 0.0;
+   thePlanets[1].RK_gravL = 0.0;
    thePlanets[1].Ls = 0.0;
    thePlanets[1].RK_Ls = 0.0;
    thePlanets[1].kin = 0.0;

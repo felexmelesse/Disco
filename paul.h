@@ -245,11 +245,11 @@ struct planet{
 
    double Ls;
    double RK_Ls;
-   double L;
-   double RK_L;
+   double accL;
+   double RK_accL;
 
-   double Ltorque;
-   double RK_Ltorque;
+   double gravL;
+   double RK_gravL;
 
    double kin;
    double RK_kin;

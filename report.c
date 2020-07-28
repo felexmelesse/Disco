@@ -57,11 +57,11 @@ void report( struct domain * theDomain ){
    double BrBp = 0.0;
    double PdV  = 0.0;
 
-   double * M_acc, * L_pls, * Ls_pls, *kin_pls, *therm_pls, *Lt_pls, *xMom_pls, *yMom_pls;
+   double * M_acc, * La_pls, * Ls_pls, *kin_pls, *therm_pls, *Lg_pls, *xMom_pls, *yMom_pls;
    M_acc = calloc(Npl, sizeof(double) );
-   L_pls = calloc(Npl, sizeof(double) );
+   La_pls = calloc(Npl, sizeof(double) );
    Ls_pls = calloc(Npl, sizeof(double) );
-   Lt_pls = calloc(Npl, sizeof(double) );
+   Lg_pls = calloc(Npl, sizeof(double) );
    kin_pls = calloc(Npl, sizeof(double) );
    therm_pls = calloc(Npl, sizeof(double) );
    xMom_pls = calloc(Npl, sizeof(double) );
@@ -70,38 +70,28 @@ void report( struct domain * theDomain ){
    double S_R = 0.0;
    double S_0 = 0.0;
 
-   //double T_cut[10];
-   //double P_cut[10];
-   //for( j=0 ; j<10 ; ++j ){ T_cut[j]=0.;  P_cut[j]=0.; }
-
    for( j=0; j<Npl; ++j){
-      //M_acc[j] = 0.5*thePlanets[j].dM + 0.5*thePlanets[j].RK_dM;
-      //L_pls[j] = 0.5*thePlanets[j].L + 0.5*thePlanets[j].RK_L;
-      //Ls_pls[j] = 0.5*thePlanets[j].Ls + 0.5*thePlanets[j].RK_Ls;
-      //therm_pls[j] = 0.5*thePlanets[j].therm + 0.5*thePlanets[j].RK_therm;
-      //kin_pls[j] = 0.5*thePlanets[j].kin + 0.5*thePlanets[j].RK_kin;
-
       M_acc[j] = thePlanets[j].dM;
-      L_pls[j] = thePlanets[j].L;
+      La_pls[j] = thePlanets[j].accL;
       Ls_pls[j] = thePlanets[j].Ls;
       therm_pls[j] = thePlanets[j].therm;
       kin_pls[j] = thePlanets[j].kin;
-      Lt_pls[j] = thePlanets[j].Ltorque;
+      Lg_pls[j] = thePlanets[j].gravL;
       xMom_pls[j] = thePlanets[j].linXmom;
       yMom_pls[j] = thePlanets[j].linYmom;
 
       thePlanets[j].dM = 0.0;
       thePlanets[j].RK_dM = 0.0;
-      thePlanets[j].L = 0.0;
-      thePlanets[j].RK_L = 0.0;
+      thePlanets[j].accL = 0.0;
+      thePlanets[j].RK_accL = 0.0;
       thePlanets[j].Ls = 0.0;
       thePlanets[j].RK_Ls = 0.0;
       thePlanets[j].therm = 0.0;
       thePlanets[j].RK_therm = 0.0;
       thePlanets[j].kin = 0.0;
       thePlanets[j].RK_kin = 0.0;
-      thePlanets[j].Ltorque = 0.0;
-      thePlanets[j].RK_Ltorque = 0.0;
+      thePlanets[j].gravL = 0.0;
+      thePlanets[j].RK_gravL = 0.0;
       thePlanets[j].linXmom = 0.0;
       thePlanets[j].RK_linXmom = 0.0;
       thePlanets[j].linYmom = 0.0;
@@ -219,12 +209,14 @@ void report( struct domain * theDomain ){
    //MPI_Allreduce( MPI_IN_PLACE , &M_acc   , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    for( j=0; j<Npl; ++j){
       MPI_Allreduce( MPI_IN_PLACE , &M_acc[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
-      MPI_Allreduce( MPI_IN_PLACE , &L_pls[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+      MPI_Allreduce( MPI_IN_PLACE , &La_pls[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
       MPI_Allreduce( MPI_IN_PLACE , &Ls_pls[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+      MPI_Allreduce( MPI_IN_PLACE , &Lg_pls[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
       MPI_Allreduce( MPI_IN_PLACE , &kin_pls[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
       MPI_Allreduce( MPI_IN_PLACE , &therm_pls[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+      MPI_Allreduce( MPI_IN_PLACE , &xMom_pls[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+      MPI_Allreduce( MPI_IN_PLACE , &yMom_pls[j]  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    }
-
 //   MPI_Allreduce( MPI_IN_PLACE , T_cut  , 10 , MPI_DOUBLE , MPI_SUM , grid_comm );
 //   MPI_Allreduce( MPI_IN_PLACE , P_cut  , 10 , MPI_DOUBLE , MPI_SUM , grid_comm );
 #endif
@@ -236,8 +228,8 @@ void report( struct domain * theDomain ){
    Mdot /= Vol;
    S_R /= S_0;
 
-   double aM = BrBp/PdV;
-   double bM = PdV/B2;
+   //double aM = BrBp/PdV;
+   //double bM = PdV/B2;
 
    if( rank==0 ){
       FILE * rFile = fopen("report.dat","a");
@@ -250,13 +242,13 @@ void report( struct domain * theDomain ){
       //fprintf(rFile,"%le %le %le ",  t,Torque,Torque2);
       fprintf(rFile,"%le ",  t);
       for( j=0; j<Npl; ++j){
-         fprintf(rFile,"%le ", Lt_pls[j]);
+         fprintf(rFile,"%le ", Lg_pls[j]);
       }
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", M_acc[j]);
       }
       for( j=0; j<Npl; ++j){
-         fprintf(rFile,"%le ", L_pls[j]);
+         fprintf(rFile,"%le ", La_pls[j]);
       }
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", Ls_pls[j]);
@@ -281,4 +273,11 @@ void report( struct domain * theDomain ){
       fclose(rFile);
    }
    free(M_acc);
+   free(La_pls);
+   free(Ls_pls);
+   free(kin_pls);
+   free(therm_pls);
+   free(Lg_pls);
+   free(xMom_pls);
+   free(yMom_pls);
 }
