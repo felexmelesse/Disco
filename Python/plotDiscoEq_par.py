@@ -57,7 +57,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
     #z_eq = Zs[len(Zs)/2]
     #eq_ind = (z==z_eq)
     Z = z[zind].mean()
-    title = "DISCO t = {0:.1f}".format(t)
+    title = "DISCO t = {0:.1f}".format(t/(2.0*np.pi))
     name = file.split('/')[-1].split('.')[0].split('_')[-1]
 
     if vars is None:
