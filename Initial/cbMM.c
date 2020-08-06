@@ -7,6 +7,9 @@ static struct planet *thePlanets = NULL;
 static double Mach = 0.0;
 static int Npl = 0;
 static double massq = 0.0;
+static double xi = 0.0;
+static double rin = 0.0;
+static double redge = 0.0;
 
 double get_cs2(double *);
 
@@ -19,23 +22,26 @@ void setICparams( struct domain * theDomain )
     massq = theDomain->theParList.Mass_Ratio;
     thePlanets = theDomain->thePlanets;
     Npl = theDomain->Npl;
+    xi = theDomain->theParList.initPar1;
+    rin = theDomain->theParList.initPar2;
+    redge = theDomain->theParList.initPar3;
+
 }
 
 void initial(double *prim, double *x)
 {
-    double epsfl = 0.001;
+    double epsfl = 0.0001;
     double r = x[0];
     double R = r + epsfl;
     double phi = x[1];
 
     double cs2 = get_cs2(x);
 
-    double xi = 2.0;
-    double rin = 2.0;
     double rho, efact, ztfact;
 
     //double om = 1.0;
     double om = pow(R,-1.5);
+    if (R<0.1) om = pow(0.1, -1.5);
     int np;
     double alpha = visc;
     double nu = visc;
@@ -74,11 +80,11 @@ void initial(double *prim, double *x)
     }
 
     double sig0 = 1.0;
-    efact = exp(-pow((R/rin),-xi));
+    efact = exp(-pow((R/redge),-xi));
     ztfact = 1.0 - sqrt(rin/(R));
     ztfact = fmax(ztfact, epsfl);
     rho = sig0*ztfact*efact + epsfl;
-    double drho = efact*(0.5*sqrt(rin)/(R*sqrt(R))) + ztfact*(2*rin*rin/(R*R*R))*efact;
+    double drho = efact*(0.5*sqrt(rin)/(R*sqrt(R))) + ztfact*(xi*redge*redge/(R*R*R))*efact;
  
     double v = -1.5*nu/(R*ztfact);
     double P = -rho*phitot/(Mach*Mach);
@@ -86,7 +92,7 @@ void initial(double *prim, double *x)
     double multom = 1.0 + 0.75*massq/(R*R*(1.0 + massq)*(1.0 + massq));
     double addom = rho*dphitot + phitot*drho;
     addom *= -1.0/(Mach*Mach*R*rho);
-    om = sqrt(om*om*multom + addom);
+    om = sqrt(fabs(om*om*multom + addom));
 
     prim[RHO] = rho;
     prim[PPP] = P;
