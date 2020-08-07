@@ -136,7 +136,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             eps = pow(eps, sinkPar4);
             epsfactor = sinkPar5;
             if(epsfactor <= 0.0) epsfactor = 1.0;
-            double magPow = pow(mag, sinkPar4/2.0);
+            double magPow = pow(mag, sinkPar4);
             arg = exp(-magPow/(eps*epsfactor));
           }
           if(sinkType == 3){	//polynomial, compact support
