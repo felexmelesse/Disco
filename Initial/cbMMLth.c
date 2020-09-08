@@ -32,9 +32,15 @@ void setICparams( struct domain * theDomain )
 
 void initial(double *prim, double *x)
 {
+<<<<<<< HEAD
     double epsfl = 0.00025;
     double r = x[0];
     double R = r + 05;
+=======
+    double epsfl = 0.000025;
+    double r = x[0];
+    double R = r + 0.05;
+>>>>>>> 3127c32d4495e12a874106a6b1f6b6db74e082d3
     double phi = x[1];
 
     double cs2 = get_cs2(x);
@@ -86,16 +92,18 @@ void initial(double *prim, double *x)
 
     //double rho, efact, ztfact1, ztfact, fth, dfth;
 
-    ztfact1 = 1.0 - sqrt(rin/(R));
+    //ztfact1 = 1.0 - sqrt(rin/(R));
+    ztfact1 = 1.0;
     fth = 0.5*(1.0 + tanh(r - rswitch));
     dfth = cosh(r - rswitch);
     dfth = 0.5/(dfth*dfth);
     ztfact = ztfact1*(1.0 - fth) + fth;
-    ztfact = fmax(ztfact, epsfl);
+    //ztfact = fmax(ztfact, epsfl);
+    ztfact = 1.0;
 
     rho = sig0*ztfact*efact + epsfl;
-    double drho = efact*(0.5*sqrt(rin)/(R*sqrt(R)))*(1.0 - fth);
-    drho = drho + dfth + dfth*ztfact1*(fth-1.0) + ztfact*(xi*redge*redge/(R*R*R))*efact;
+    //double drho = efact*(0.5*sqrt(rin)/(R*sqrt(R)))*(1.0 - fth);
+    double drho = ztfact*(xi*redge*redge/(R*R*R))*efact;
  
     double v = -1.5*nu/(R*ztfact);
     double P = -rho*phitot/(Mach*Mach);
