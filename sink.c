@@ -129,7 +129,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
           gmag3 = dx*dx + dy*dy + z*z + thePlanets[pi].eps*thePlanets[pi].eps;
           gmag3 = gmag3*sqrt(gmag3);
 
-          //the part that depends on sinkType
+          //the part tÌhat depends on sinkType
           double arg = 0.0;
           if(sinkType == 2){	//exponential
             eps = sinkPar3;
@@ -139,18 +139,21 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             double magPow = pow(mag, sinkPar4);
             arg = exp(-magPow/(eps*epsfactor));
           }
-          if(sinkType == 3){	//polynomial, compact support
-            double R = sinkPar3;
+          else if(sinkType == 1){	//polynomial, compact support
+            eps = sinkPar3;
             double pwrM = sinkPar4;
             double pwrN = sinkPar5;
 
-            double arg = 1.0 - pow((mag/R),pwrM);
+            arg = 1.0 - pow((mag/eps),pwrM);
             arg = pow(arg, pwrN);
-            if (mag >= R) arg = 0.0;
+            if (mag >= eps){
+              arg = 0.0;
+            }
           }
 		
-          rate = sinkPar1*thePlanets[pi].omega; //*sqrt(thePlanets[pi].M);
+          rate = sinkPar1*thePlanets[pi].omega;
           surfdiff = rho*rate*arg;
+
           thePlanets[pi].dM += surfdiff*dV*dt;
 
           double delta = fmin(sinkPar2, 1.0);
@@ -184,6 +187,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
           vg_p = -vxg*sing + vyg*cosg;
 
           thePlanets[pi].accL += vg_p*r*acc_factor;
+
           cons[DDD] -= acc_factor;
           cons[SRR] -= vg_r*acc_factor;
           cons[LLL] -= r*vg_p*acc_factor;

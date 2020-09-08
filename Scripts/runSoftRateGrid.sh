@@ -7,13 +7,14 @@ make
 # NR=(0128 0256 0512 1024 2048)
 # NS=(020 030 040 050 060)
 # NS=(050 040 020 030 010)
-NS=(100 070 050 030)
-NRa=(20.0 10.0 5.0 3.0 1.0)
+NS=(050 070 100)
+NRa=(3.0 1.0 5.0)
+# NRa=(5.0)
 
 for nr in "${NS[@]}"
 do
-for nra in "${NRa[@]}"
-do
+  for nra in "${NRa[@]}"
+  do
     if [ "$(uname)" == "Darwin" ]; then
         sed -e "s/^Num_R[[:blank:]].*$/Num_R ${nr}/" -i '' in.par
         sed -e "s/^Num_Checkpoints[[:blank:]].*$/Num_Checkpoints 0/" -i '' in.par
@@ -24,7 +25,7 @@ do
     fi
     mpirun -n 32 ./disco
     mv output.h5 output.$nr.$nra.h5
-done
+  done
 done
 
 #python3 Python/shearCartAnalysis.py output.*.h5

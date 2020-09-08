@@ -28,7 +28,7 @@ void initial( double * prim , double * x ){
    double visc = nu;
    if (alpha_flag == 1) visc = nu*cs2/omega;
    double rho = 1.0;
-   if (nu > 0) rho = 1.0/visc;
+   if (nu > 0.0) rho = rho/nu;
    double Pp = rho*cs2;
 
    double X = 0.0; 

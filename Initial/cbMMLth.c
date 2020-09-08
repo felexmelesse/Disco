@@ -32,9 +32,9 @@ void setICparams( struct domain * theDomain )
 
 void initial(double *prim, double *x)
 {
-    double epsfl = 0.0001;
+    double epsfl = 0.00025;
     double r = x[0];
-    double R = r + epsfl;
+    double R = r + 05;
     double phi = x[1];
 
     double cs2 = get_cs2(x);
