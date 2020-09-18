@@ -6,7 +6,8 @@ from . import geom
 
 def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
                vmax=None, noGhost=False, colorbar=True, xlabel=None,
-               ylabel=None, log=False, rmax=None, planets=None, cmap=None):
+               ylabel=None, log=False, rmax=None, planets=None, cmap=None, 
+               symlog=False, symlthresh=None):
 
     phi_max = pars['Phi_Max']
 
@@ -20,6 +21,9 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
         vmin = q.min()
     if vmax is None:
         vmax = q.max()
+
+    if symlthresh is None:
+        symlthresh = np.percentile(np.abs(q), 0.5)
 
     Rs = np.unique(r)
     if noGhost:
@@ -35,6 +39,8 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
         norm = mpl.colors.LogNorm(vmin, vmax)
     else:
         norm = mpl.colors.Normalize(vmin, vmax)
+    if symlog:
+        norm = mpl.colors.SymLogNorm(symlthresh, vmin = vmin, vmax = vmax, base=10)
 
     pimh_min = np.inf
 
@@ -98,7 +104,7 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
 def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, opts, vmin=None,
                  vmax=None, noGhost=False, colorbar=True, xlabel=None,
                  ylabel=None, log=False, rmax=None, planets=None,
-                 cmap=None):
+                 cmap=None, symlog=False, symlthresh=None):
 
     if cmap is None:
         try:
@@ -110,6 +116,8 @@ def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, opts, vmin=None,
         vmin = q.min()
     if vmax is None:
         vmax = q.max()
+    if symlthresh is None:
+        symlthresh = np.percentile(np.abs(q), 0.5)
 
     Nr = rjph.shape[0]-1
     Nz = zkph.shape[0]-1
@@ -151,6 +159,8 @@ def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, opts, vmin=None,
         norm = mpl.colors.LogNorm(vmin, vmax)
     else:
         norm = mpl.colors.Normalize(vmin, vmax)
+    if symlog:
+        norm = mpl.colors.SymLogNorm(symlthresh, vmin = vmin, vmax = vmax, base=10)
 
     x, y, z = geom.getXYZ(rjph_loc[None, :], 0.0, zkph_loc[:, None],
                           opts, pars)

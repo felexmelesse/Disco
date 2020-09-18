@@ -11,7 +11,7 @@ from itertools import repeat
 from multiprocessing import Pool
 
 def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
-                    bounds=None, rmax=None, planets=False, k=None):
+                    bounds=None, rmax=None, planets=False, k=None, symlogvars=None, slt=None):
     
     print("Loading {0:s}...".format(file))
 
@@ -67,7 +67,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
         logvars = []
 
     for q in range(nq):
-        if q in vars or q in logvars:
+        if q in vars or q in logvars or q in symlogvars:
             print("   Plotting...")
 
             if bounds is not None:
@@ -104,6 +104,19 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
                 fig.savefig(plotname, dpi=300)
                 plt.close(fig)
 
+            if q in symlogvars:
+                fig, ax = plt.subplots(1,1, figsize=(12,9))
+
+                plot.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], Z, vartex[q],
+                                pars, opts, vmin=vmin, vmax=vmax, rmax=rmax, 
+                                planets=planetDat, symlog=True, symlthresh=slt)
+                fig.suptitle(title, fontsize=24)
+                plotname = "plot_eq_{0:s}_log_{1:s}.png".format(name, varnames[q])
+
+                print("   Saving {0:s}...".format(plotname))
+                fig.savefig(plotname, dpi=300)
+                plt.close(fig)
+
     
 def getBounds(use_bounds, names, files):
 
@@ -123,16 +136,16 @@ def getBounds(use_bounds, names, files):
 
     return bounds
 
-def process_images(files, Vars, logvars, bounds, om, rmax, noghost, planets, ncpu):
+def process_images(files, Vars, logvars, bounds, om, rmax, noghost, planets, ncpu, symlogvars, slt):
     
     with Pool(ncpu) as pool:
         pool.starmap(plot_routine, zip(files, repeat(Vars), repeat(logvars), repeat(bounds), 
-			repeat(om), repeat(rmax), repeat(noghost), repeat(planets)))
+			repeat(om), repeat(rmax), repeat(noghost), repeat(planets), repeat(symlogvars), repeat(slt)))
 
-def plot_routine(f, Vars, logvars, bounds, om, rmax, noghost, planets):
+def plot_routine(f, Vars, logvars, bounds, om, rmax, noghost, planets, symlogvars, slt):
 	
 	plotCheckpoint(f, vars=Vars, logvars=logvars, bounds=bounds, om=om, 
-                rmax=rmax, noGhost=noghost, planets=planets)
+                rmax=rmax, noGhost=noghost, planets=planets, symlogvars=symlogvars, slt=slt)
 
 if __name__ == "__main__":
 
@@ -143,6 +156,8 @@ if __name__ == "__main__":
                             help="Variables to plot.")
     parser.add_argument('-l', '--logvars', nargs='+', type=int,
                             help="Variables to plot logscale.")
+    parser.add_argument('-s', '--symlogvars', nargs='+', type=int,
+                            help="Variables to plot symlogscale.")
     parser.add_argument('-p', '--planets', action='store_true',
                             help="Plot planets.")
     parser.add_argument('-b', '--bounds', nargs='?', const=True,
@@ -151,6 +166,8 @@ if __name__ == "__main__":
                             help="Set plot limits to RMAX.")
     parser.add_argument('-o', '--omega', type=float, 
                             help="Rotate frame at rate OMEGA.")
+    parser.add_argument('-st', '--symlogthresh', type=float, 
+                            help="symlog threshold")
     parser.add_argument('-n', '--ncpu', type=int, nargs='?', action='store', const= os.cpu_count() - 1, default=False,
                             help="Turns on parallel processing. If number of cores not given, then it will default to N-1 cores.")
     parser.add_argument('--noghost', action='store_true', 
@@ -160,7 +177,9 @@ if __name__ == "__main__":
 
     vars = args.vars
     logvars = args.logvars
+    slogvars = args.slogvars
     om = args.omega
+    slt = args.symlogthresh
     rmax = args.rmax
     use_bounds = args.bounds
     planets = args.planets
@@ -177,9 +196,9 @@ if __name__ == "__main__":
     bounds = getBounds(use_bounds, names, files)
     
     if ncpu:
-        process_images(files, vars, logvars, bounds, om, rmax, noghost, planets, ncpu)
+        process_images(files, vars, logvars, bounds, om, rmax, noghost, planets, ncpu, slogvars, slt)
     else:
         for f in files:
                 plotCheckpoint(f, vars=vars, logvars=logvars, bounds=bounds, om=om, 
-			rmax=rmax, noGhost=noghost, planets=planets)
+			rmax=rmax, noGhost=noghost, planets=planets, symlogvars = slogvars, slt = slt)
 

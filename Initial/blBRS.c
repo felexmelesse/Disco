@@ -60,7 +60,7 @@ void initial( double * prim , double * x ){
 
    prim[RHO] = rho;
    prim[PPP] = Pp;
-   prim[URR] = -1.5*visc/(R);
+   prim[URR] = 0.0;
    prim[UPP] = omega;
    prim[UZZ] = 0.0;
    if( NUM_N>0 ) prim[NUM_C] = X;
