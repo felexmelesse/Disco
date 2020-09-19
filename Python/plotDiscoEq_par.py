@@ -109,9 +109,9 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
 
                 plot.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], Z, vartex[q],
                                 pars, opts, vmin=vmin, vmax=vmax, rmax=rmax, 
-                                planets=planetDat, symlog=True, symlthresh=slt)
+                                planets=planetDat, symlog=True, symlthresh=slt, cmap=plt.get_cmap('PRGn') )
                 fig.suptitle(title, fontsize=24)
-                plotname = "plot_eq_{0:s}_log_{1:s}.png".format(name, varnames[q])
+                plotname = "plot_eq_{0:s}_symlog_{1:s}.png".format(name, varnames[q])
 
                 print("   Saving {0:s}...".format(plotname))
                 fig.savefig(plotname, dpi=300)
@@ -177,7 +177,7 @@ if __name__ == "__main__":
 
     vars = args.vars
     logvars = args.logvars
-    slogvars = args.slogvars
+    slogvars = args.symlogvars
     om = args.omega
     slt = args.symlogthresh
     rmax = args.rmax
