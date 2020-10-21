@@ -99,11 +99,14 @@ def getVecXYZ(x1, x2, x3, v1, v2, v3, opts):
 
 def getScaleFactors(x1, x2, x3, opts):
     if opts['GEOMETRY'] == "cylindrical":
-        return getScaleFactorscyl(x1, x2, x3)
+        return getScaleFactorscyl(np.atleast_1d(x1), np.atleast_1d(x2),
+                                  np.atleast_1d(x3))
     elif opts['GEOMETRY'] == "spherical":
-        return getScaleFactorssph(x1, x2, x3)
+        return getScaleFactorssph(np.atleast_1d(x1), np.atleast_1d(x2),
+                                  np.atleast_1d(x3))
     else:
-        return getScaleFactorscart(x1, x2, x3)
+        return getScaleFactorscart(np.atleast_1d(x1), np.atleast_1d(x2),
+                                  np.atleast_1d(x3))
 
 
 def getXYZcart(x, y, z, pars):
@@ -533,12 +536,74 @@ def getDA1(x1, x2ph, x3f, dat, opts, pars):
             x3ph[a:b] = x3f[k+1]
     x2mh[x2mh > x2ph] -= x2max
 
+    return getDA1grid(x1, x2ph, x2mh, x3ph, x3mh, opts)
+
+
+def getDA2(x1f, x2, x3f, dat, opts, pars):
+
+    index = dat[8]
+    nx2 = dat[7]
+    x3ph = np.empty(x2.shape)
+    x3mh = np.empty(x2.shape)
+    x1mh = np.empty(x2.shape)
+    x1ph = np.empty(x2.shape)
+    for k in range(index.shape[0]):
+        for j in range(index.shape[1]):
+            a = index[k, j]
+            b = index[k, j] + nx2[k, j]
+            x1mh[a:b] = x1f[j]
+            x1ph[a:b] = x1f[j+1]
+            x3mh[a:b] = x3f[k]
+            x3ph[a:b] = x3f[k+1]
+
+    return getDA2grid(x1ph, x1mh, x2, x3ph, x3mh, opts)
+
+
+def getDA3(x1f, x2ph, x3, dat, opts, pars):
+
+    x2max = pars['Phi_Max']
+    index = dat[8]
+    nx2 = dat[7]
+    x2mh = np.empty(x2ph.shape)
+    x1mh = np.empty(x2ph.shape)
+    x1ph = np.empty(x2ph.shape)
+    for k in range(index.shape[0]):
+        for j in range(index.shape[1]):
+            a = index[k, j]
+            b = index[k, j] + nx2[k, j]
+            x2mh[a:b] = np.roll(x2ph[a:b], 1)
+            x1mh[a:b] = x1f[j]
+            x1ph[a:b] = x1f[j+1]
+    x2mh[x2mh > x2ph] -= x2max
+
+    return DA3grid(x1ph, x1mh, x2ph, x2mh, x3, opts)
+
+
+def getDA1grid(x1, x2ph, x2mh, x3ph, x3mh, opts):
     if opts['GEOMETRY'] == "cylindrical":
         return getDA1cyl(x1, x2ph, x2mh, x3ph, x3mh)
     elif opts['GEOMETRY'] == "spherical":
         return getDA1sph(x1, x2ph, x2mh, x3ph, x3mh)
     else:
         return getDA1cart(x1, x2ph, x2mh, x3ph, x3mh)
+
+
+def getDA2grid(x1ph, x1mh, x2, x3ph, x3mh, opts):
+    if opts['GEOMETRY'] == "cylindrical":
+        return getDA2cyl(x1ph, x1mh, x2, x3ph, x3mh)
+    elif opts['GEOMETRY'] == "spherical":
+        return getDA2sph(x1ph, x1mh, x2, x3ph, x3mh)
+    else:
+        return getDA2cart(x1ph, x1mh, x2, x3ph, x3mh)
+
+
+def getDA3grid(x1ph, x1mh, x2ph, x2mh, x3, opts):
+    if opts['GEOMETRY'] == "cylindrical":
+        return getDA3cyl(x1ph, x1mh, x2ph, x2mh, x3)
+    elif opts['GEOMETRY'] == "spherical":
+        return getDA3sph(x1ph, x1mh, x2ph, x2mh, x3)
+    else:
+        return getDA3cart(x1ph, x1mh, x2ph, x2mh, x3)
 
 
 def getDA1cart(x1, x2ph, x2mh, x3ph, x3mh):
@@ -553,6 +618,29 @@ def getDA1sph(x1, x2ph, x2mh, x3ph, x3mh):
     sinth = np.sin(0.5*(x3ph+x3mh))
     sindth = 2*np.sin(0.5*(x3ph-x3mh))
     return x1*x1*sinth*sindth*(x2ph-x2mh)
+
+
+def getDA2cart(xph, xmh, y, zph, zmh):
+    return (xph-xmh)*(zph-zmh)
+
+def getDA2cyl(rph, rmh, phi, zph, zmh):
+    return (rph-rmh)*(zph-zmh)
+
+def getDA2sph(rph, rmh, phi, tph, tmh):
+    return 0.5*(rph+rmh)*(rph-rmh)*(tph-tmh)
+
+
+def getDA3cart(xph, xmh, yph, ymh, z):
+    return (xph-xmh)*(yph-ymh)
+
+
+def getDA3cyl(rph, rmh, pph, pmh, z):
+    return 0.5*(rph+rmh)*(rph-rmh)*(pph-pmh)
+
+
+def getDA3sph(rph, rmh, pph, pmh, th):
+    sinth = np.sin(th)
+    return 0.5*(rph+rmh)*(rph-rmh)*(pph-pmh)
 
 
 def integrate2(f, dat, opts, pars):
@@ -609,3 +697,338 @@ def integrateTrans1(x1, f, dat, opts, pars, dA=None):
         integral[j] = (f[mask*ind]*dA[mask*ind]).sum()
 
     return integral
+
+
+def calculateGradX2(x2, f, dat, pars):
+
+    index = dat[8]
+    n1 = index.shape[1]
+    n2 = dat[7]
+    n3 = index.shape[0]
+    x2_max = pars['Phi_Max']
+    
+    dfdx2 = np.empty(f.shape)
+
+    for k in range(n3):
+        for j in range(n1):
+            a = index[k, j]
+            b = index[k, j] + n2[k, j]
+
+            fjk = f[a:b]
+            x2jk = x2[a:b]
+
+            x2jkR = np.roll(x2jk, -1)
+            x2jkL = np.roll(x2jk, 1)
+
+            dx2 = np.roll(x2jk, -1) - np.roll(x2jk, 1)
+            dx2[dx2 < 0] += x2_max
+            dx2[dx2 > x2_max] -= x2_max
+
+            dfdx2[a:b] = (np.roll(fjk, -1) - np.roll(fjk, 1)) / dx2
+
+    return dfdx2
+
+
+def unwrap(x, maxval):
+    # 'unwraps' arr x with periodicity maxval
+    # result is increasing arr
+
+    diff = x[1:] - x[:-1]
+
+    moddiff = np.mod(diff, maxval)
+    corr = np.cumsum(moddiff-diff)
+
+    x2 = np.empty(x.shape)
+    x2[0] = x[0]
+    x2[1:] = x[1:] + corr
+
+    return x2
+
+
+def calculateDivV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
+
+    index = dat[8]
+    n1 = index.shape[1]
+    n2 = dat[7]
+    n3 = index.shape[0]
+    x2_max = pars['Phi_Max']
+    x1f = dat[0]
+    x2ph = dat[3]
+    x3f = dat[1]
+
+    if dV is None:
+        dV = getDV(dat, opts, pars)
+    
+    dv1dx2 = calculateGradX2(x2, v1, dat, pars)
+    dv2dx2 = calculateGradX2(x2, v2, dat, pars)
+    dv3dx2 = calculateGradX2(x2, v3, dat, pars)
+
+    divV = np.zeros(v1.shape)
+
+    # x2 part
+   
+    print("x2 div")
+
+    for k in range(n3):
+        for j in range(n1):
+            a = index[k, j]
+            b = index[k, j] + n2[k, j]
+
+            dAph = getDA2grid(x1f[j+1], x1f[j], x2ph[a:b], x3f[k+1], x3f[k],
+                              opts)
+
+            v = v2[a:b] 
+            vR = np.roll(v, -1)
+            vph = 0.5*(v+vR)
+
+            _, hph, _ = getScaleFactors(x1[a:b], x2ph[a:b], x3[a:b], opts)
+
+            fph = vph*hph*dAph
+            fmh = np.roll(fph, 1)
+
+            divV[a:b] += fph-fmh
+
+
+    # x1 part
+
+    print("x1 div")
+
+    for k in range(n3):
+        for jf in range(1, n1):
+            jL = jf-1
+            jR = jf
+            aL = index[k, jL]
+            bL = index[k, jL] + n2[k, jL]
+            aR = index[k, jR]
+            bR = index[k, jR] + n2[k, jR]
+
+            x2phL = unwrap(x2ph[aL:bL], x2_max)
+            x2phR = unwrap(x2ph[aR:bR], x2_max)
+            v1L = v1[aL:bL]
+            v1R = v1[aR:bR]
+            dv1dx2L = dv1dx2[aL:bL]
+            dv1dx2R = dv1dx2[aR:bR]
+
+            x20 = x2phL[0]
+            while x20 > x2phR[-1]:
+                x2phR += x2_max
+            while x20 <= x2phR[0]:
+                x2phR -= x2_max
+            x2mhL = np.roll(x2phL, 1)
+            x2mhL[0] -= x2_max
+            x2mhR = np.roll(x2phR, 1)
+            x2mhR[0] -= x2_max
+
+            iL0 = 0
+            iR0 = np.searchsorted(x2phR, x20)
+            iL = iL0
+            iR = iR0
+            for i in range(n2[k, jL] + n2[k, jR]):
+                x2p = min(x2phL[iL], x2phR[iR])
+                x2m = max(x2mhL[iL], x2mhR[iR])
+                x2i = 0.5*(x2p + x2m)
+                x2L = 0.5*(x2phL[iL] + x2mhL[iL])
+                x2R = 0.5*(x2phR[iR] + x2mhR[iR])
+                vL = v1L[iL] + dv1dx2L[iL]*(x2i-x2L)
+                vR = v1R[iR] + dv1dx2R[iR]*(x2i-x2R)
+
+                dA = getDA1grid(x1f[jf], x2p, x2m, x3f[k+1], x3f[k], opts)
+                h, _, _ = getScaleFactors(x1f[jf], x2i,
+                                          0.5*(x3[aL+iL]+x3[aR+iR]), opts)
+                
+                divV[aL+iL] += 0.5*(vL+vR)*h*dA
+                divV[aR+iR] -= 0.5*(vL+vR)*h*dA
+
+                if x2phL[iL] < x2phR[iR]:
+                    iL += 1
+                    if iL >= n2[k, jL]:
+                        iL = 0
+                        x2phL += x2_max
+                        x2mhL += x2_max
+                else:
+                    iR += 1
+                    if iR >= n2[k, jR]:
+                        iR = 0
+                        x2phR += x2_max
+                        x2mhR += x2_max
+            if iL != iL0 or iR != iR0:
+                print("PROBLEM", aL, bL-aL, iL0, iL,"|", aR, bR-aR, iR0, iR)
+
+    # x3 part
+    print("x3 div")
+
+    for k in range(1, n3):
+        for jf in range(n1):
+            kL = kf-1
+            kR = kf
+            aL = index[kL, j]
+            bL = index[kL, j] + n2[kL, j]
+            aR = index[kR, j]
+            bR = index[kR, j] + n2[kR, j]
+
+            x2phL = unwrap(x2ph[aL:bL], x2_max)
+            x2phR = unwrap(x2ph[aR:bR], x2_max)
+            v3L = v3[aL:bL]
+            v3R = v3[aR:bR]
+            dv3dx2L = dv3dx2[aL:bL]
+            dv3dx2R = dv3dx2[aR:bR]
+
+            x20 = x2phL[0]
+            while x20 > x2phR[-1]:
+                x2phR += x2_max
+            while x20 <= x2phR[0]:
+                x2phR -= x2_max
+            x2mhL = np.roll(x2phL, 1)
+            x2mhL[0] -= x2_max
+            x2mhR = np.roll(x2phR, 1)
+            x2mhR[0] -= x2_max
+
+            iL = 0
+            iR = np.searchsorted(x2phR, x20)
+            for i in range(n2[kL, j] + n2[kR, j]):
+                x2p = min(x2phL[iL], x2phR[iR])
+                x2m = max(x2mhL[iL], x2mhR[iR])
+                x2i = 0.5*(x2p + x2m)
+                x2L = 0.5*(x2phL[iL] + x2mhL[iL])
+                x2R = 0.5*(x2phR[iR] + x2mhR[iR])
+                vL = v3L[iL] + dv3dx2L[iL]*(x2i-x2L)
+                vR = v3R[iR] + dv3dx2R[iR]*(x2i-x2R)
+
+                dA = getDA3grid(x1f[j+1], x1f[j], x2p, x2m, x3f[kf], opts)
+                _, _, h = getScaleFactors(0.5*(x1[aL+iL]+x1[aR+iR]),
+                                          x2i, x3f[kf], opts)
+                
+                divV[aL+iL] += 0.5*(vL+vR)*h*dA
+                divV[aR+iR] -= 0.5*(vL+vR)*h*dA
+
+                if x2phL[iL] < x2phR[iR]:
+                    iL += 1
+                    if iL >= n2[k, jL]:
+                        iL = 0
+                else:
+                    iR += 1
+                    if iR >= n2[k, jR]:
+                        iR = 0
+
+    divV /= dV
+
+    return divV
+
+def calculateZCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
+
+    index = dat[8]
+    n1 = index.shape[1]
+    n2 = dat[7]
+    n3 = index.shape[0]
+    x2_max = pars['Phi_Max']
+    x1f = dat[0]
+    x2ph = dat[3]
+    x3f = dat[1]
+
+    if dV is None:
+        dV = getDV(dat, opts, pars)
+    
+    dv1dx2 = calculateGradX2(x2, v1, dat, pars)
+    dv2dx2 = calculateGradX2(x2, v2, dat, pars)
+    dv3dx2 = calculateGradX2(x2, v3, dat, pars)
+
+    dVrX2 = np.zeros(v1.shape)
+    dVpX1 = np.zeros(v1.shape)
+
+    # x2 part
+   
+    print("x2 div")
+
+    for k in range(n3):
+        for j in range(n1):
+            a = index[k, j]
+            b = index[k, j] + n2[k, j]
+
+            dAph = getDA2grid(x1f[j+1], x1f[j], x2ph[a:b], x3f[k+1], x3f[k],
+                              opts)
+
+            #v = v2[a:b] 
+            v = v1[a:b] 
+            vR = np.roll(v, -1)
+            vph = 0.5*(v+vR)
+
+            _, hph, _ = getScaleFactors(x1[a:b], x2ph[a:b], x3[a:b], opts)
+
+            fph = vph*hph*dAph
+            fmh = np.roll(fph, 1)
+
+            dVrX2[a:b] += fph-fmh
+
+    # x1 part
+
+    print("x1 div")
+
+    for k in range(n3):
+        for jf in range(1, n1):
+            jL = jf-1
+            jR = jf
+            aL = index[k, jL]
+            bL = index[k, jL] + n2[k, jL]
+            aR = index[k, jR]
+            bR = index[k, jR] + n2[k, jR]
+
+            x2phL = unwrap(x2ph[aL:bL], x2_max)
+            x2phR = unwrap(x2ph[aR:bR], x2_max)
+            #v1L = v1[aL:bL]
+            #v1R = v1[aR:bR]
+            v1L = v2[aL:bL]
+            v1R = v2[aR:bR]
+            dv1dx2L = dv1dx2[aL:bL]
+            dv1dx2R = dv1dx2[aR:bR]
+
+            x20 = x2phL[0]
+            while x20 > x2phR[-1]:
+                x2phR += x2_max
+            while x20 <= x2phR[0]:
+                x2phR -= x2_max
+            x2mhL = np.roll(x2phL, 1)
+            x2mhL[0] -= x2_max
+            x2mhR = np.roll(x2phR, 1)
+            x2mhR[0] -= x2_max
+
+            iL0 = 0
+            iR0 = np.searchsorted(x2phR, x20)
+            iL = iL0
+            iR = iR0
+            for i in range(n2[k, jL] + n2[k, jR]):
+                x2p = min(x2phL[iL], x2phR[iR])
+                x2m = max(x2mhL[iL], x2mhR[iR])
+                x2i = 0.5*(x2p + x2m)
+                x2L = 0.5*(x2phL[iL] + x2mhL[iL])
+                x2R = 0.5*(x2phR[iR] + x2mhR[iR])
+                vL = v1L[iL] + dv1dx2L[iL]*(x2i-x2L)
+                vR = v1R[iR] + dv1dx2R[iR]*(x2i-x2R)
+
+                dA = getDA1grid(x1f[jf], x2p, x2m, x3f[k+1], x3f[k], opts)
+                h, _, _ = getScaleFactors(x1f[jf], x2i,
+                                          0.5*(x3[aL+iL]+x3[aR+iR]), opts)
+                
+                dVpX1[aL+iL] += 0.5*(vL+vR)*h*dA
+                dVpX1[aR+iR] -= 0.5*(vL+vR)*h*dA
+
+                if x2phL[iL] < x2phR[iR]:
+                    iL += 1
+                    if iL >= n2[k, jL]:
+                        iL = 0
+                        x2phL += x2_max
+                        x2mhL += x2_max
+                else:
+                    iR += 1
+                    if iR >= n2[k, jR]:
+                        iR = 0
+                        x2phR += x2_max
+                        x2mhR += x2_max
+            if iL != iL0 or iR != iR0:
+                print("PROBLEM", aL, bL-aL, iL0, iL,"|", aR, bR-aR, iR0, iR)
+
+    dVrX2 = np.zeros(v1.shape)
+    dVpX1 = np.zeros(v1.shape)
+
+    vortZ = (dVpX1 - dVrX2)/dV
+
+    return vortZ

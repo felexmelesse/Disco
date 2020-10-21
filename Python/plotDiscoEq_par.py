@@ -7,6 +7,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import discopy.util as util
 import discopy.plot as plot
+import discopy.geom as geom
 from itertools import repeat
 from multiprocessing import Pool
 
@@ -66,6 +67,9 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
     if logvars is None:
         logvars = []
 
+    if symlogvars is None:
+        symlogvars = []
+
     for q in range(nq):
         if q in vars or q in logvars or q in symlogvars:
             print("   Plotting...")
@@ -116,6 +120,29 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
                 print("   Saving {0:s}...".format(plotname))
                 fig.savefig(plotname, dpi=300)
                 plt.close(fig)
+
+    if 10 in vars or 10 in logvars or 10 in symlogvars:
+            v1 = prim[:,2]
+            v2 = prim[:,3]
+            v3 = prim[:,4]
+
+            curl = geom.calculateZCurlV(r, phi, z, v1, v2, v3, dat, opts, pars)
+            fig, ax = plt.subplots(1,1, figsize=(12,9))
+            curl = np.sqrt(curl*curl)
+            vmax = np.max(curl)
+            vmin = np.min(curl)
+            slt = vmin * 0.001*(vmax - vmin)
+            vmin = -1.0*np.max(curl)
+
+            plot.plotZSlice(fig, ax, rjph, piph1, r, curl, Z, vartex[q],
+                                pars, opts, vmin=vmin, vmax=vmax, rmax=rmax, 
+                                planets=planetDat, symlog=True, symlthresh=slt, cmap=plt.get_cmap('PRGn') )
+            fig.suptitle(title, fontsize=24)
+            plotname = "plot_eq_{0:s}_symlog_curl.png".format(name, varnames[q])
+
+            print("   Saving {0:s}...".format(plotname))
+            fig.savefig(plotname, dpi=300)
+            plt.close(fig)
 
     
 def getBounds(use_bounds, names, files):
