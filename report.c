@@ -80,7 +80,7 @@ void report( struct domain * theDomain ){
       xMom_pls[j] = thePlanets[j].linXmom;
       yMom_pls[j] = thePlanets[j].linYmom;
 
-      /*
+      
       thePlanets[j].dM = 0.0;
       thePlanets[j].RK_dM = 0.0;
       thePlanets[j].accL = 0.0;
@@ -97,7 +97,7 @@ void report( struct domain * theDomain ){
       thePlanets[j].RK_linXmom = 0.0;
       thePlanets[j].linYmom = 0.0;
       thePlanets[j].RK_linYmom = 0.0;
-      */
+      
 
   }
    for( j=jmin ; j<jmax ; ++j ){
@@ -241,7 +241,7 @@ void report( struct domain * theDomain ){
       //          t,Torque,Power,Fr,rho_min,rhoavg_min,PsiR,PsiI,Mass,Mdot,S_R,
       //          L1_rho,L1_isen,L1_B,Br2,aM,bM);
       //fprintf(rFile,"%le %le %le ",  t,Torque,Torque2);
-      fprintf(rFile,"%le ",  t);
+      fprintf(rFile,"%.7le ",  t);
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", Lg_pls[j]);
       }
