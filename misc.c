@@ -243,13 +243,23 @@ void adjust_RK_cons( struct domain * theDomain , double RK ){
    }
 }
 
-void planet_RK_adjust( struct planet * , double );
+void planet_RK_adjust_kin( struct planet * , double );
 
-void adjust_RK_planets( struct domain * theDomain , double RK ){
+void adjust_RK_planets_kin( struct domain * theDomain , double RK ){
    int Npl = theDomain->Npl;
    int p;
    for( p=0 ; p<Npl ; ++p ){
-      planet_RK_adjust( theDomain->thePlanets+p , RK );
+      planet_RK_adjust_kin( theDomain->thePlanets+p , RK );
+   }
+}
+
+void planet_RK_adjust_aux( struct planet * , double );
+
+void adjust_RK_planets_aux( struct domain * theDomain , double RK ){
+   int Npl = theDomain->Npl;
+   int p;
+   for( p=0 ; p<Npl ; ++p ){
+      planet_RK_adjust_aux( theDomain->thePlanets+p , RK );
    }
 }
 

@@ -24,11 +24,12 @@ void initial( double * prim , double * x ){
 
    double omega2 = fmax( (omega02 - omegaP2), 0.0 );
    double omega = sqrt(omega2);
+
    double cs2 = 1.0/(R*Mach*Mach);
    double visc = nu;
    if (alpha_flag == 1) visc = nu*cs2/omega;
    double rho = 1.0;
-   if (nu > 0.0) rho = rho/nu;
+   //if (nu > 0.0) rho = rho/nu;
    double Pp = rho*cs2;
 
    double X = 0.0; 

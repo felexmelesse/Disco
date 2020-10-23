@@ -123,15 +123,18 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
 
           dx = gx-px;
           dy = gy-py;
-          mag = dx*dx + dy*dy + z*z;
+          mag = dx*dx + dy*dy;
           mag = sqrt(mag);
 
-          gmag3 = dx*dx + dy*dy + z*z + thePlanets[pi].eps*thePlanets[pi].eps;
+          gmag3 = dx*dx + dy*dy + thePlanets[pi].eps*thePlanets[pi].eps;
           gmag3 = gmag3*sqrt(gmag3);
 
           //the part tÌhat depends on sinkType
           double arg = 0.0;
-          if(sinkType == 2){	//exponential
+          if(sinkType == 3){	//constant
+            if (mag <= sinkPar3) arg = 1.0;
+          }
+          else if(sinkType == 2){	//exponential
             eps = sinkPar3;
             eps = pow(eps, sinkPar4);
             epsfactor = sinkPar5;
@@ -154,7 +157,6 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
           rate = sinkPar1*thePlanets[pi].omega;
           surfdiff = rho*rate*arg;
 
-          thePlanets[pi].dM += surfdiff*dV*dt;
 
           double delta = fmin(sinkPar2, 1.0);
           delta = fmax(0.0, sinkPar2);
@@ -194,6 +196,8 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
           cons[SZZ] -= vz*acc_factor;
           double v2 = vg_p*vg_p + vg_r*vg_r + vz*vz;
           cons[TAU] -= acc_factor*(0.5*v2 + prim[PPP]/(rho*(gamma_law-1.0)));
+
+          thePlanets[pi].dM += acc_factor;
           thePlanets[pi].kin += 0.5*v2*acc_factor;
           thePlanets[pi].therm += prim[PPP]*acc_factor/(rho*(gamma_law-1.0));
 

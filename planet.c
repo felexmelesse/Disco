@@ -211,12 +211,15 @@ void planet_RK_copy( struct planet * pl ){
 
 }
 
-void planet_RK_adjust( struct planet * pl , double RK ){
+void planet_RK_adjust_kin( struct planet * pl , double RK ){
    pl->r     = (1.-RK)*pl->r     + RK*pl->RK_r;
    pl->phi   = (1.-RK)*pl->phi   + RK*pl->RK_phi;
    pl->M     = (1.-RK)*pl->M     + RK*pl->RK_M;
    pl->omega = (1.-RK)*pl->omega + RK*pl->RK_omega;
    pl->vr    = (1.-RK)*pl->vr    + RK*pl->RK_vr;
+}
+
+void planet_RK_adjust_aux( struct planet * pl , double RK ){
    pl->dM    = (1.-RK)*pl->dM    + RK*pl->RK_dM;
    pl->accL  = (1.-RK)*pl->accL  + RK*pl->RK_accL;
    pl->Ls    = (1.-RK)*pl->Ls    + RK*pl->RK_Ls;

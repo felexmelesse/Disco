@@ -80,6 +80,7 @@ void report( struct domain * theDomain ){
       xMom_pls[j] = thePlanets[j].linXmom;
       yMom_pls[j] = thePlanets[j].linYmom;
 
+      /*
       thePlanets[j].dM = 0.0;
       thePlanets[j].RK_dM = 0.0;
       thePlanets[j].accL = 0.0;
@@ -96,6 +97,7 @@ void report( struct domain * theDomain ){
       thePlanets[j].RK_linXmom = 0.0;
       thePlanets[j].linYmom = 0.0;
       thePlanets[j].RK_linYmom = 0.0;
+      */
 
   }
    for( j=jmin ; j<jmax ; ++j ){
@@ -220,12 +222,12 @@ void report( struct domain * theDomain ){
 //   MPI_Allreduce( MPI_IN_PLACE , P_cut  , 10 , MPI_DOUBLE , MPI_SUM , grid_comm );
 #endif
 
-   L1_isen /= Vol;
-   L1_rho  /= Vol;
-   L1_P    /= Vol;
-   L1_B    /= Vol;
-   Mdot /= Vol;
-   S_R /= S_0;
+   //L1_isen /= Vol;
+   //L1_rho  /= Vol;
+   //L1_P    /= Vol;
+   //L1_B    /= Vol;
+   //Mdot /= Vol;
+   //S_R /= S_0;
 
    //double aM = BrBp/PdV;
    //double bM = PdV/B2;
@@ -246,6 +248,7 @@ void report( struct domain * theDomain ){
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", M_acc[j]);
       }
+      
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", La_pls[j]);
       }
@@ -264,6 +267,7 @@ void report( struct domain * theDomain ){
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", yMom_pls[j]);
       }
+      
       fprintf(rFile,"\n");
 
       //fprintf(rFile,"%e %e %e ",t,Torque,Power);
