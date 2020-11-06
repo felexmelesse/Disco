@@ -821,6 +821,8 @@ def calculateDivV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
 
             iL0 = 0
             iR0 = np.searchsorted(x2phR, x20)
+            if iR0 >= n2[k, jR]:
+              iR0 = 0
             iL = iL0
             iR = iR0
             for i in range(n2[k, jL] + n2[k, jR]):
@@ -835,7 +837,7 @@ def calculateDivV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
                 dA = getDA1grid(x1f[jf], x2p, x2m, x3f[k+1], x3f[k], opts)
                 h, _, _ = getScaleFactors(x1f[jf], x2i,
                                           0.5*(x3[aL+iL]+x3[aR+iR]), opts)
-                
+
                 divV[aL+iL] += 0.5*(vL+vR)*h*dA
                 divV[aR+iR] -= 0.5*(vL+vR)*h*dA
 
@@ -883,8 +885,12 @@ def calculateDivV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
             x2mhR = np.roll(x2phR, 1)
             x2mhR[0] -= x2_max
 
-            iL = 0
-            iR = np.searchsorted(x2phR, x20)
+            iL0 = 0
+            iR0 = np.searchsorted(x2phR, x20)
+            #if iR0 >= n2[k, jR]:
+            #  iR0 = 0
+            iL = iL0
+            iR = iR0
             for i in range(n2[kL, j] + n2[kR, j]):
                 x2p = min(x2phL[iL], x2phR[iR])
                 x2m = max(x2mhL[iL], x2mhR[iR])
@@ -914,7 +920,7 @@ def calculateDivV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
 
     return divV
 
-def calculateZCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
+def calculateCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
 
     index = dat[8]
     n1 = index.shape[1]
@@ -927,16 +933,13 @@ def calculateZCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
 
     if dV is None:
         dV = getDV(dat, opts, pars)
-    
     dv1dx2 = calculateGradX2(x2, v1, dat, pars)
     dv2dx2 = calculateGradX2(x2, v2, dat, pars)
     dv3dx2 = calculateGradX2(x2, v3, dat, pars)
 
-    dVrX2 = np.zeros(v1.shape)
-    dVpX1 = np.zeros(v1.shape)
+    vortZ = np.zeros(v1.shape)
 
     # x2 part
-   
     print("x2 div")
 
     for k in range(n3):
@@ -947,17 +950,20 @@ def calculateZCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
             dAph = getDA2grid(x1f[j+1], x1f[j], x2ph[a:b], x3f[k+1], x3f[k],
                               opts)
 
-            #v = v2[a:b] 
-            v = v1[a:b] 
+            #v = v2[a:b]
+            v = v1[a:b]
             vR = np.roll(v, -1)
             vph = 0.5*(v+vR)
 
-            _, hph, _ = getScaleFactors(x1[a:b], x2ph[a:b], x3[a:b], opts)
+            #_, hph, _ = getScaleFactors(x1[a:b], x2ph[a:b], x3[a:b], opts)
+            hph, _, _ = getScaleFactors(x1[a:b], x2ph[a:b], x3[a:b], opts)
 
             fph = vph*hph*dAph
             fmh = np.roll(fph, 1)
 
-            dVrX2[a:b] += fph-fmh
+            #divV[a:b] += fph-fmh
+            vortZ[a:b] -= fph-fmh
+
 
     # x1 part
 
@@ -976,15 +982,17 @@ def calculateZCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
             x2phR = unwrap(x2ph[aR:bR], x2_max)
             #v1L = v1[aL:bL]
             #v1R = v1[aR:bR]
-            v1L = v2[aL:bL]
-            v1R = v2[aR:bR]
-            dv1dx2L = dv1dx2[aL:bL]
-            dv1dx2R = dv1dx2[aR:bR]
+            v2L = v2[aL:bL]
+            v2R = v2[aR:bR]
+            #dv1dx2L = dv1dx2[aL:bL]
+            #dv1dx2R = dv1dx2[aR:bR]
+            dv2dx2L = dv2dx2[aL:bL]
+            dv2dx2R = dv2dx2[aR:bR]
 
             x20 = x2phL[0]
             while x20 > x2phR[-1]:
                 x2phR += x2_max
-            while x20 <= x2phR[0]:
+            while x20 <= x2phR[-1] - x2_max:
                 x2phR -= x2_max
             x2mhL = np.roll(x2phL, 1)
             x2mhL[0] -= x2_max
@@ -993,6 +1001,11 @@ def calculateZCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
 
             iL0 = 0
             iR0 = np.searchsorted(x2phR, x20)
+            printmore = 0
+            #if iR0 >= n2[k, jR]:
+            #  iR0 -= 1
+            #  print(x20, x2phR.min(), x2phR.max(), np.diff(x2phR).mean())
+            #  #printmore = 1
             iL = iL0
             iR = iR0
             for i in range(n2[k, jL] + n2[k, jR]):
@@ -1001,16 +1014,21 @@ def calculateZCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
                 x2i = 0.5*(x2p + x2m)
                 x2L = 0.5*(x2phL[iL] + x2mhL[iL])
                 x2R = 0.5*(x2phR[iR] + x2mhR[iR])
-                vL = v1L[iL] + dv1dx2L[iL]*(x2i-x2L)
-                vR = v1R[iR] + dv1dx2R[iR]*(x2i-x2R)
+                #vL = v1L[iL] + dv1dx2L[iL]*(x2i-x2L)
+                #vR = v1R[iR] + dv1dx2R[iR]*(x2i-x2R)
+                vL = v2L[iL] + dv2dx2L[iL]*(x2i-x2L)
+                vR = v2R[iR] + dv2dx2R[iR]*(x2i-x2R)
 
                 dA = getDA1grid(x1f[jf], x2p, x2m, x3f[k+1], x3f[k], opts)
-                h, _, _ = getScaleFactors(x1f[jf], x2i,
-                                          0.5*(x3[aL+iL]+x3[aR+iR]), opts)
-                
-                dVpX1[aL+iL] += 0.5*(vL+vR)*h*dA
-                dVpX1[aR+iR] -= 0.5*(vL+vR)*h*dA
+                #h, _, _ = getScaleFactors(x1f[jf], x2i, 0.5*(x3[aL+iL]+x3[aR+iR]), opts)
+                _, h, _ = getScaleFactors(x1f[jf], x2i, 0.5*(x3[aL+iL]+x3[aR+iR]), opts)
+                #divV[aL+iL] += 0.5*(vL+vR)*h*dA
+                #divV[aR+iR] -= 0.5*(vL+vR)*h*dA
+                vortZ[aL+iL] += 0.5*(vL+vR)*h*dA
+                vortZ[aR+iR] -= 0.5*(vL+vR)*h*dA
 
+                if printmore == 1:
+                  print(iL, iR)
                 if x2phL[iL] < x2phR[iR]:
                     iL += 1
                     if iL >= n2[k, jL]:
@@ -1026,9 +1044,6 @@ def calculateZCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
             if iL != iL0 or iR != iR0:
                 print("PROBLEM", aL, bL-aL, iL0, iL,"|", aR, bR-aR, iR0, iR)
 
-    dVrX2 = np.zeros(v1.shape)
-    dVpX1 = np.zeros(v1.shape)
-
-    vortZ = (dVpX1 - dVrX2)/dV
+    vortZ /= dV
 
     return vortZ
