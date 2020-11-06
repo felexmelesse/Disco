@@ -14,6 +14,7 @@ def analyzeSingle(filename):
     pars = util.loadPars(filename)
     print("Loading " + filename)
     t, x1, x2, x3, prim, dat = util.loadCheckpoint(filename)
+    name = filename.split('/')[-1].split('.')[0].split('_')[-1]
 
     R = np.unique(x1)
 
@@ -50,7 +51,8 @@ def analyzeSingle(filename):
     ax.set_aspect('equal')
     print("Saving") 
     #fig.savefig('bl_deltaRho.png')
-    fig.savefig('bl_rho.png')
+    plotname = "plot_BL_{0:s}_{1:s}.png".format(name, 'rho')
+    fig.savefig(plotname, dpi = 400)
     plt.close(fig)
 
     print("Plotting vr")
@@ -69,7 +71,9 @@ def analyzeSingle(filename):
 
     ax.set_aspect('equal')
     print("Saving") 
-    fig.savefig('bl_rVr.png')
+    plotname = "plot_BL_{0:s}_{1:s}.png".format(name, 'vr')
+    fig.savefig(plotname, dpi = 400)
+    #fig.savefig('bl_rVr.png')
     plt.close(fig)
 
 
@@ -88,7 +92,9 @@ def analyzeSingle(filename):
                     r"$(\nabla\times v)_z$", pars, opts, symlog=True, symlthresh=0.001*maxDiv, vmin=minDiv, vmax=maxDiv, cmap='RdBu')
     ax.set_aspect('equal')
     print("Saving") 
-    fig.savefig('bl_vorticity.png', dpi = 1200)
+    plotname = "plot_BL_{0:s}_{1:s}.png".format(name, 'vorticity')
+    fig.savefig(plotname, dpi = 400)
+    #fig.savefig('bl_vorticity.png', dpi = 1200)
     plt.close(fig)
 
 
