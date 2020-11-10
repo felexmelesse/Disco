@@ -1001,11 +1001,7 @@ def calculateCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
 
             iL0 = 0
             iR0 = np.searchsorted(x2phR, x20)
-            printmore = 0
-            #if iR0 >= n2[k, jR]:
-            #  iR0 -= 1
-            #  print(x20, x2phR.min(), x2phR.max(), np.diff(x2phR).mean())
-            #  #printmore = 1
+
             iL = iL0
             iR = iR0
             for i in range(n2[k, jL] + n2[k, jR]):
@@ -1014,21 +1010,14 @@ def calculateCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
                 x2i = 0.5*(x2p + x2m)
                 x2L = 0.5*(x2phL[iL] + x2mhL[iL])
                 x2R = 0.5*(x2phR[iR] + x2mhR[iR])
-                #vL = v1L[iL] + dv1dx2L[iL]*(x2i-x2L)
-                #vR = v1R[iR] + dv1dx2R[iR]*(x2i-x2R)
                 vL = v2L[iL] + dv2dx2L[iL]*(x2i-x2L)
                 vR = v2R[iR] + dv2dx2R[iR]*(x2i-x2R)
 
                 dA = getDA1grid(x1f[jf], x2p, x2m, x3f[k+1], x3f[k], opts)
-                #h, _, _ = getScaleFactors(x1f[jf], x2i, 0.5*(x3[aL+iL]+x3[aR+iR]), opts)
                 _, h, _ = getScaleFactors(x1f[jf], x2i, 0.5*(x3[aL+iL]+x3[aR+iR]), opts)
-                #divV[aL+iL] += 0.5*(vL+vR)*h*dA
-                #divV[aR+iR] -= 0.5*(vL+vR)*h*dA
                 vortZ[aL+iL] += 0.5*(vL+vR)*h*dA
                 vortZ[aR+iR] -= 0.5*(vL+vR)*h*dA
 
-                if printmore == 1:
-                  print(iL, iR)
                 if x2phL[iL] < x2phR[iR]:
                     iL += 1
                     if iL >= n2[k, jL]:
@@ -1043,7 +1032,6 @@ def calculateCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
                         x2mhR += x2_max
             if iL != iL0 or iR != iR0:
                 print("PROBLEM", aL, bL-aL, iL0, iL,"|", aR, bR-aR, iR0, iR)
-
     vortZ /= dV
 
     return vortZ
