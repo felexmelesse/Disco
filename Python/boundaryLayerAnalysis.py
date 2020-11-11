@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import discopy.util as util
 import discopy.geom as geom
 import discopy.plot as plot
-
+#import time
 
 def analyzeSingle(filename):
 
@@ -35,9 +35,9 @@ def analyzeSingle(filename):
     vx, vy, vz = geom.getVXYZ(x1, x2, x3, v1, v2, v3, opts)
 
     print("Plotting") 
-    fig, ax = plt.subplots(1, 1)
-
     dphi = 2.0*(piph-x2)
+
+    fig, ax = plt.subplots(1, 1)
 
     #for j, rr in enumerate(R):
     #  ind = (rr == x1)
@@ -66,19 +66,21 @@ def analyzeSingle(filename):
     #plot.plotZSlice(fig, ax, rjph, piph, x1, v1, x3.mean(), r"$v_r$",
     #                pars, opts, symlog=True, symlthresh = slt, vmax = v1ext, vmin = -1*v1ext, cmap=plt.get_cmap('PRGn') )
 
-    plot.plotZSlice(fig, ax, rjph, piph, x1, vrp, x3.mean(), r"$r\sqrt{(\Sigma)}v_r$",
+    plot.plotZSlice(fig, ax, rjph, piph, x1, vrp, x3.mean(), r"$r\sqrt{\Sigma}v_r$",
                     pars, opts, symlog=True, symlthresh=slt, vmax = v1ext, vmin = -1*v1ext, cmap=plt.get_cmap('PRGn') )
 
     ax.set_aspect('equal')
     print("Saving") 
     plotname = "plot_BL_{0:s}_{1:s}.png".format(name, 'vr')
     fig.savefig(plotname, dpi = 400)
-    #fig.savefig('bl_rVr.png')
     plt.close(fig)
 
-
     print("Calculating div")
+    #start = time.time()
     divV = geom.calculateCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars)
+    #end = time.time()
+
+    #print(start-end)
 
     interior = (x1 > pars['R_Min']) & (x1 < pars['R_Max'])
     minDiv = divV[interior].min()
@@ -86,13 +88,13 @@ def analyzeSingle(filename):
     if np.abs(maxDiv) < np.abs(minDiv): maxDiv = -1.0*minDiv
     else : minDiv = -1 * maxDiv
 
-    print("Plotting") 
+    print("Plotting")
     fig, ax = plt.subplots(1, 1)
-    plot.plotZSlice(fig, ax, rjph, piph, x1, divV, x3.mean(),
-                    r"$(\nabla\times v)_z$", pars, opts, symlog=True, symlthresh=0.001*maxDiv, vmin=minDiv, vmax=maxDiv, cmap='RdBu')
+    plot.plotZSlice(fig, ax, rjph, piph, x1, divV, x3.mean(), r"$(\nabla\times v)_z$", pars, opts, symlog=True, symlthresh=0.001*maxDiv, vmin=minDiv, vmax=maxDiv, cmap='RdBu')
     ax.set_aspect('equal')
-    print("Saving") 
+    print("Saving")
     plotname = "plot_BL_{0:s}_{1:s}.png".format(name, 'vorticity')
+    #plotname = "testvort.png"
     fig.savefig(plotname, dpi = 400)
     #fig.savefig('bl_vorticity.png', dpi = 1200)
     plt.close(fig)

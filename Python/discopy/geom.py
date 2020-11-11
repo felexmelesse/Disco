@@ -970,7 +970,9 @@ def calculateCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
     print("x1 div")
 
     for k in range(n3):
+        #for jf in range(1, 3):
         for jf in range(1, n1):
+            #print(jf)
             jL = jf-1
             jR = jf
             aL = index[k, jL]
@@ -1002,6 +1004,46 @@ def calculateCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
             iL0 = 0
             iR0 = np.searchsorted(x2phR, x20)
 
+            #start changing things here
+
+            maxL = n2[k, jL]
+            maxR = n2[k, jR]
+
+            #not vectorized, but apparently not a bottleneck
+            iL = [iL0]
+            iR = [iR0]
+            diffL = np.zeros(maxL+maxR)
+            diffR = np.zeros(maxL+maxR)
+            for i in range( maxL + maxR-1):
+              if x2phL[iL[i]]+diffL[i] < x2phR[iR[i]]+diffR[i]:
+                iR.append(iR[-1])
+                iL.append((iL[-1]+1)%maxL)
+              else:
+                iR.append((iR[-1]+1)%maxR)
+                iL.append(iL[-1])
+              if x2phL[iL[-2]]>x2phL[iL[-1]]: diffL[i+1:]+=x2_max
+              if x2phR[iR[-2]]>x2phR[iR[-1]]: diffR[i+1:]+=x2_max
+
+            x2p = np.minimum(x2phL[iL]+diffL, x2phR[iR]+diffR)
+            x2m = np.maximum(x2mhL[iL]+diffL, x2mhR[iR]+diffR)
+
+            x2i = 0.5*(x2p + x2m)
+
+            x2L = 0.5*(x2phL[iL] + x2mhL[iL])+diffL
+            x2R = 0.5*(x2phR[iR] + x2mhR[iR])+diffR
+
+            vL = v2L[iL] + dv2dx2L[iL]*(x2i-x2L)
+            vR = v2R[iR] + dv2dx2R[iR]*(x2i-x2R)
+
+            dA = getDA1grid(x1f[jf], x2p, x2m, x3f[k+1], x3f[k], opts)
+            _, h, _ = getScaleFactors(x1f[jf], x2i, 0.0, opts)
+
+            np.add.at(vortZ, aL+iL, 0.5*(vL+vR)*h*dA)
+            np.subtract.at(vortZ, aR+iR, 0.5*(vL+vR)*h*dA)
+
+
+            '''
+            #old version. VERY slow, especially for large N
             iL = iL0
             iR = iR0
             for i in range(n2[k, jL] + n2[k, jR]):
@@ -1032,6 +1074,7 @@ def calculateCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
                         x2mhR += x2_max
             if iL != iL0 or iR != iR0:
                 print("PROBLEM", aL, bL-aL, iL0, iL,"|", aR, bR-aR, iR0, iR)
+            '''
     vortZ /= dV
 
     return vortZ
