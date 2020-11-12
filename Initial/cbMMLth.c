@@ -11,6 +11,7 @@ static double xi = 0.0;
 static double rin = 0.0;
 static double redge = 0.0;
 static double rswitch = 0.0;
+static double epsfl = 0.0;
 
 double get_cs2(double *);
 
@@ -28,18 +29,18 @@ void setICparams( struct domain * theDomain )
     redge = theDomain->theParList.initPar3;
     rswitch = theDomain->theParList.rmax;
     rswitch = rswitch*0.5;
+    epsfl = theDomain->theParList.Density_Floor;
 }
 
 void initial(double *prim, double *x)
 {
-    double epsfl = 0.000025;
     double r = x[0];
     double R = r + 0.05;
     double phi = x[1];
 
     double cs2 = get_cs2(x);
 
-    double rho, efact, ztfact1, ztfact, fth, dfth;
+    double rho, efact, fth, dfth;
 
     //double om = 1.0;
     double om = pow(R,-1.5);
@@ -81,25 +82,17 @@ void initial(double *prim, double *x)
       dphitot += thePlanets[np].M*(r - thePlanets[np].r*cos(phi - thePlanets[np].phi))/(denom*sqdenom);
     }
 
-    double sig0 = 1.0;
+    double sig0 = 1.0/(3.0*M_PI*nu);
     efact = exp(-pow((R/redge),-xi));
-
-    //double rho, efact, ztfact1, ztfact, fth, dfth;
-
-    //ztfact1 = 1.0 - sqrt(rin/(R));
-    ztfact1 = 1.0;
+    
     fth = 0.5*(1.0 + tanh(r - rswitch));
     dfth = cosh(r - rswitch);
     dfth = 0.5/(dfth*dfth);
-    ztfact = ztfact1*(1.0 - fth) + fth;
-    //ztfact = fmax(ztfact, epsfl);
-    ztfact = 1.0;
 
-    rho = sig0*ztfact*efact + epsfl;
-    //double drho = efact*(0.5*sqrt(rin)/(R*sqrt(R)))*(1.0 - fth);
-    double drho = ztfact*(xi*redge*redge/(R*R*R))*efact;
+    rho = sig0*efact + epsfl;
+    double drho = (xi*redge*redge/(R*R*R))*efact;
  
-    double v = -1.5*nu/(R*ztfact);
+    double v = -1.5*nu/(R);
     double P = -rho*phitot/(Mach*Mach);
 
     double multom = 1.0 + 0.75*massq/(R*R*(1.0 + massq)*(1.0 + massq));
