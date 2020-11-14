@@ -18,7 +18,7 @@
 #include <OpenGL/gl.h>	// Header File For The OpenGL32 Library
 #include <OpenGL/glu.h>	// Header File For The GLu32 Library
 #else
-#include <glut.h>    // Header File For The GLUT Library 
+#include <GL/glut.h>    // Header File For The GLUT Library 
 #include <GL/gl.h>	// Header File For The OpenGL32 Library
 #include <GL/glu.h>	// Header File For The GLu32 Library
 #endif
@@ -271,7 +271,11 @@ void readPatch( char * file , char * group , char * dset , void * data , hid_t t
 int window; 
 
 // Here are the fonts: 
-void ** glutFonts[7] = { 
+#ifdef OSX
+void * glutFonts[7] = { 
+#else
+void * glutFonts[7] = { 
+#endif
     GLUT_BITMAP_9_BY_15, 
     GLUT_BITMAP_8_BY_13, 
     GLUT_BITMAP_TIMES_ROMAN_10, 
@@ -282,7 +286,12 @@ void ** glutFonts[7] = {
 }; 
 
 // This function prints some text wherever you want it. 
+#ifdef OSX
 void glutPrint(float x, float y, float z , void ** font, char* text, float r, float g, float b, float a) 
+#else
+void glutPrint(float x, float y, float z , void * font, char* text, float r, float g, float b, float a) 
+#endif
+
 { 
     if(!text || !strlen(text)) return; 
     int blending = 0; 
@@ -389,7 +398,6 @@ void draw1dRadialData(double RotationAngleX, double RotationAngleY,
     /*
     glColor3f(0.5,0.5,0.5);
     glBegin( GL_LINE_STRIP );
-
     for( j=0 ; j<Nr ; ++j )
     {
         //if(logscale) val = log(getval(theZones[i],q))/log(10.);
@@ -944,14 +952,12 @@ void drawSpiral(double RotationAngleX, double RotationAngleY,
     double phi0 = ((double)k-.5)/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
     double x0 = 1.+e*cos(phi0);
     double y0 = e*sin(phi0);
-
     double phi = atan2(y0,x0);
     double r   = sqrt(x0*x0+y0*y0);
     //         double phi = (double)k/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
     //         double r   = 2./(1.+sin(phi));//1.0;//((double)k+0.5)/(double)Nr*(Rmax-Rmin) + Rmin;
     //         if( r<1. ) phi = -phi;
     r /= rescale;
-
     glVertex3f( r*cos(phi)-xoff , r*sin(phi)-yoff , camdist + .0011 );
     if( k%2==1 ){
     glEnd();
