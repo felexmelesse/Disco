@@ -85,19 +85,15 @@ void initial(double *prim, double *x)
     double sig0 = 1.0/(3.0*M_PI*nu);
     efact = exp(-pow((R/redge),-xi));
     
-    fth = 0.5*(1.0 + tanh(r - rswitch));
-    dfth = cosh(r - rswitch);
-    dfth = 0.5/(dfth*dfth);
-
     rho = sig0*efact + epsfl;
-    double drho = (xi*redge*redge/(R*R*R))*efact;
+    double drho = sig0*efact*xi*pow((R/redge),-xi)/R;
  
     double v = -1.5*nu/(R);
     double P = -rho*phitot/(Mach*Mach);
 
     double multom = 1.0 + 0.75*massq/(R*R*(1.0 + massq)*(1.0 + massq));
     double addom = rho*dphitot + phitot*drho;
-    addom *= -1.0/(Mach*Mach*R*rho);
+    addom *= 1.0/(Mach*Mach*r*rho);
     om = sqrt(fabs(om*om*multom + addom));
 
     prim[RHO] = rho;
