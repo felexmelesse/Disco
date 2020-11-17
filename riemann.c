@@ -234,6 +234,8 @@ void solve_riemann(const double *primL, const double *primR,
       Ustr[q] = 0.0;
    }
 
+   double r = x[0];
+
    if( riemann_solver == _HLL_ || riemann_solver == _HLLC_ || riemann_solver == _HLLC_DAMPCENTER_ ){
       double Sl,Sr,Ss;
       double Bpack[5];
