@@ -60,7 +60,7 @@ double mesh_om( const double *x)
         omega = pow(r,-1.5);
     else if(meshOmChoice == 3)
     {
-        double n = 8.0;
+        double n = 4.0;
         omega = 1./pow( pow( r , 1.5*n ) + 1. , 1./n );
     }
     else
