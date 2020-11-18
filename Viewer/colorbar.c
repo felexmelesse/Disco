@@ -145,6 +145,22 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
       if (bbb < 0.0) bbb = 0.0;
       if (bbb > 1.0) bbb = 1.0;
    }else if(COLORBAR == 8){
+      // inferno
+      double v6, v7, v8, v9;
+      v6 = v3*v3;
+      v7 = v3*v4;
+      v8 = v4*v4;
+      v9 = v4*v5;
+      rrr = 353.03327105*v9 + -1470.88275954*v8 + 2518.04284713*v7 + -2253.31553816*v6 + 1093.49189644*v5 + -254.27368291*v4 + 5.51981471*v3 + 9.33740110*v2 + 0.03763654*val + 0.00228385;
+      ggg = -558.70563289*v9 + 2429.27311490*v8 + -4344.49539941*v7 + 4094.43416755*v6 + -2155.38216084*v5 + 609.75414705*v4 + -74.45594078*v3 + -0.22560533*v2 + 0.80290083*val + -0.00815033;
+      bbb = 434.51062082*v9 + -1934.52177132*v8 + 3379.24756989*v7 + -2881.66653015*v6 + 1156.34385196*v5 + -99.43855605*v4 + -70.96109647*v3 + 15.80548478*v2 + 1.31196143*val + 0.01188670;
+      if (rrr < 0.0) rrr = 0.0;
+      if (rrr > 1.0) rrr = 1.0;
+      if (ggg < 0.0) ggg = 0.0;
+      if (ggg > 1.0) ggg = 1.0;
+      if (bbb < 0.0) bbb = 0.0;
+      if (bbb > 1.0) bbb = 1.0;
+   }else if(COLORBAR == 9){
       // viridis
       rrr = -11.80729026*v5 + 25.27758373*v4 -14.85075402*v3  + 2.2290938*v2 -0.14187082*val + 0.2800557;
       ggg = 0.121926730*v5 -1.52661275*v4 + 2.53827574*v3 -1.83476402*v2 + 1.60267540*val -0.00126998147;
@@ -156,7 +172,7 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
       if (bbb < 0.0) bbb = 0.0;
       if (bbb > 1.0) bbb = 1.0;
 
-   }else if(COLORBAR == 9){
+   }else if(COLORBAR == 10){
       // fearless idea
       double v6, v7, v8, v9, v10, v11, v12, v13, v14;
       v6 = v3*v3;
@@ -179,7 +195,7 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
       if (ggg > 1.0) ggg = 1.0;
       if (bbb < 0.0) bbb = 0.0;
       if (bbb > 1.0) bbb = 1.0;
-   }else if(COLORBAR == 10){
+   }else if(COLORBAR == 11){
       // Red-Blue
       rrr = 10.20752512*v5 -17.16433678*v4 + 8.88247458*v3 -5.20403454*v2 + 2.94959219*val + 0.41422865;
       ggg = -11.5674236*v5 + 40.4428654*v4 -49.2169767*v3 +21.4518256*v2 -.941994363*val + 0.0307091725;
@@ -190,7 +206,7 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
       if (ggg > 1.0) ggg = 1.0;
       if (bbb < 0.0) bbb = 0.0;
       if (bbb > 1.0) bbb = 1.0;
-    }else if(COLORBAR == 11){
+    }else if(COLORBAR == 12){
       // Purple-Green
       double v6, v7;
       v6 = v3*v3;
