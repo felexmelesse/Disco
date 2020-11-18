@@ -15,7 +15,9 @@
 #include <stdlib.h>
 #include <math.h>
 
-void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR ){
+void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR, int flipCM ){
+
+   if (flipCM) val = 1.0 - val;
 
    double rrr,ggg,bbb;
    double v5, v4, v3, v2;
@@ -149,10 +151,6 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
       ggg = val;
       bbb = val;
    }else if(COLORBAR == 6){
-      rrr = 1.-val;
-      ggg = 1.-val;
-      bbb = 1.-val;
-   }else if(COLORBAR == 7){
       // magma
       rrr = 5.2687848*v5 - 11.44778744*v4  + 6.13567269*v3 -0.01964937*v2 + 1.0698287*val -0.02223323;
       ggg = -5.54509553*v5 + 11.4659551*v4 - 6.76338190*v3 + 1.63850072*v2 + 0.178140470*val + .0105032349;
@@ -163,7 +161,7 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
       if (ggg > 1.0) ggg = 1.0;
       if (bbb < 0.0) bbb = 0.0;
       if (bbb > 1.0) bbb = 1.0;
-   }else if(COLORBAR == 8){
+   }else if(COLORBAR == 7){
       // inferno
       double v6, v7, v8, v9;
       v6 = v3*v3;
@@ -179,7 +177,7 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
       if (ggg > 1.0) ggg = 1.0;
       if (bbb < 0.0) bbb = 0.0;
       if (bbb > 1.0) bbb = 1.0;
-   }else if(COLORBAR == 9){
+   }else if(COLORBAR == 8){
       // viridis
       rrr = -11.80729026*v5 + 25.27758373*v4 -14.85075402*v3  + 2.2290938*v2 -0.14187082*val + 0.2800557;
       ggg = 0.121926730*v5 -1.52661275*v4 + 2.53827574*v3 -1.83476402*v2 + 1.60267540*val -0.00126998147;
@@ -191,7 +189,7 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
       if (bbb < 0.0) bbb = 0.0;
       if (bbb > 1.0) bbb = 1.0;
 
-   }else if(COLORBAR == 10){
+   }else if(COLORBAR == 9){
       // fearless idea
       double v6, v7, v8, v9, v10, v11, v12, v13, v14;
       v6 = v3*v3;
@@ -214,7 +212,7 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
       if (ggg > 1.0) ggg = 1.0;
       if (bbb < 0.0) bbb = 0.0;
       if (bbb > 1.0) bbb = 1.0;
-   }else if(COLORBAR == 11){
+   }else if(COLORBAR == 10){
       // Red-Blue
       rrr = 10.20752512*v5 -17.16433678*v4 + 8.88247458*v3 -5.20403454*v2 + 2.94959219*val + 0.41422865;
       ggg = -11.5674236*v5 + 40.4428654*v4 -49.2169767*v3 +21.4518256*v2 -.941994363*val + 0.0307091725;
@@ -225,7 +223,7 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
       if (ggg > 1.0) ggg = 1.0;
       if (bbb < 0.0) bbb = 0.0;
       if (bbb > 1.0) bbb = 1.0;
-    }else if(COLORBAR == 12){
+    }else if(COLORBAR == 11){
       // Purple-Green
       double v6, v7;
       v6 = v3*v3;
@@ -233,6 +231,31 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
       rrr = -3.15151489*v7 + -26.44357655*v6 + 111.55029200*v5 + -141.32019992*v4 + 72.90100974*v3 + -17.05941751*v2 + 3.29985392*val + 0.23189982;
       ggg = -37.98507357*v7 + 129.97007419*v6 + -174.03829563*v5 + 121.99570095*v4 + -53.84964418*v3 + 13.33984287*v2 + 0.82045038*val + 0.00567647;
       bbb = -51.85314990*v7 + 134.68646793*v6 + -103.62306658*v5 + 6.59218715*v4 + 19.59112571*v3 + -8.49746250*v2 + 2.91776116*val + 0.27960782;
+      if (rrr < 0.0) rrr = 0.0;
+      if (rrr > 1.0) rrr = 1.0;
+      if (ggg < 0.0) ggg = 0.0;
+      if (ggg > 1.0) ggg = 1.0;
+      if (bbb < 0.0) bbb = 0.0;
+      if (bbb > 1.0) bbb = 1.0;
+    }else if(COLORBAR == 12){
+      // guppy
+      double v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16;
+      v6 = v3*v3;
+      v7 = v3*v4;
+      v8 = v4*v4;
+      v9 = v4*v5;
+      v10 = v5*v5;
+      v11 = v5*v6;
+      v12 = v6*v6;
+      v13 = v6*v7;
+      v14 = v7*v7;
+      v15 = v8*v7;
+      v16 = v8*v8;
+
+      rrr = -3067126.76643379*v16 + 24622265.32095284*v15 + -89130771.20926264*v14 + 192111082.30937585*v13 + -274231885.87663841*v12 + 272862341.91015255*v11 + -194043533.95972201*v10 + 99569842.14994080*v9 + -36824538.56354333*v8 + 9729299.12794232*v7 + -1812106.18203382*v6 + 234861.70701486*v5 + -20901.49563911*v4 + 1211.35649828*v3 + -41.58660470*v2 + 0.89438120*val + 0.97956401;
+      ggg = -10517082.38583856*v16 + 87047807.62181015*v15 + -327972736.26700097*v14 + 744503202.70641804*v13 + -1135679129.24779272*v12 + 1229154966.20802569*v11 + -971224679.51213253*v10 + 567653291.42150569*v9 + -245815936.73267964*v8 + 78172870.50701274*v7 + -17885403.19253988*v6 + 2840803.15527263*v5 + -295906.17727198*v4 + 18541.37601298*v3 + -615.38858502*v2 + 6.15936034*val + 0.54293898;
+      bbb = -5573898.85812062*v16 + 45771900.73080226*v15 + -169801863.96895686*v14 + 375802465.22953385*v13 + -551868892.74845827*v12 + 565692810.97862196*v11 + -414440291.11071002*v10 + 218360544.76585907*v9 + -82018304.06856446*v8 + 21391756.45539873*v7 + -3668346.69348824*v6 + 367048.48543912*v5 + -14468.98035416*v4 + -515.55162327*v3 + 59.31573513*v2 + -3.54972488*val + 0.31618151;
+
       if (rrr < 0.0) rrr = 0.0;
       if (rrr > 1.0) rrr = 1.0;
       if (ggg < 0.0) ggg = 0.0;

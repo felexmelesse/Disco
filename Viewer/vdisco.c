@@ -46,6 +46,7 @@ int FullScreenMode=0;
 int dim3d = 0;
 int t_off = 0;
 int p_off = 0;
+int flipCM = 0;
 int cmap = 7;
 int draw_1d = 0;
 int draw_bar = 0;
@@ -94,7 +95,7 @@ char **filenameList = NULL;
 int nfiles = 0;
 int currentFile = 0;
 
-void get_rgb( double , float * , float * , float * , int );
+void get_rgb( double , float * , float * , float * , int, int );
 void loadSliceZ(char *filename, int k);
 void loadSlicePhi(char *filename);
 void loadDiagnostics(char *filename, int k);
@@ -689,7 +690,7 @@ void drawZSlice(double camdist, double xoff, double yoff, double zoff, int q,
             //if( uMax < u ) uMax = u;
 
             float rrr,ggg,bbb;
-            get_rgb( val , &rrr , &ggg , &bbb , cmap );
+            get_rgb( val , &rrr , &ggg , &bbb , cmap, flipCM );
 
             if( (!dim3d || (sin(phi)>0 || cos(phi+.25)<0.0)) && dim3d !=2 )
             {
@@ -753,7 +754,7 @@ void drawPhiSlice(double camdist, double xoff, double yoff, double zoff, int q,
             if( val < 0.0 ) 
                 val = 0.0;
             float rrr,ggg,bbb;
-            get_rgb( val , &rrr , &ggg , &bbb , cmap );
+            get_rgb( val , &rrr , &ggg , &bbb , cmap, flipCM );
             if( !draw_border_now )
             { 
                 glColor3f( rrr , ggg , bbb );
@@ -829,7 +830,7 @@ void drawColorBar(double RotationAngleX, double RotationAngleY,
         double y = (double)k*dy - .5*hb;
         double val = (double)k/(double)Nb;
         float rrr,ggg,bbb;
-        get_rgb( val , &rrr , &ggg , &bbb , cmap );
+        get_rgb( val , &rrr , &ggg , &bbb , cmap, flipCM );
         glLineWidth(0.0f);
         glColor3f( rrr , ggg , bbb );
         glBegin(GL_POLYGON);
@@ -1102,6 +1103,7 @@ void keyPressed(unsigned char key, int x, int y)
    }
    if( key >= (int)'0' && key < (int)'1'+Nq ) valq = (int)key-(int)'1';
    if( key == 'b' ) draw_bar = !draw_bar;
+   if( key == 'B' ) flipCM = !flipCM;
    if( key == 'd' ) {++dim3d; if(dim3d==3) dim3d=0;}
    if( key == 'f' ){
        floors = (floors+1)%3;
