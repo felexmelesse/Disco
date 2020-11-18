@@ -272,7 +272,7 @@ int window;
 
 // Here are the fonts: 
 #ifdef OSX
-void * glutFonts[7] = { 
+void ** glutFonts[7] = { 
 #else
 void * glutFonts[7] = { 
 #endif
