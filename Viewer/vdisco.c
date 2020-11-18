@@ -30,7 +30,7 @@
 #define VAL_FLOOR -1   //0.95//0 //-8e-3//-3e-2 //(-HUGE_VAL)  //.96
 #define VAL_CEIL  1 //4.5e-3 //1.05//5.25e-21 //5.25e-9 //8e-3//3e-2 //5.24e-5 //(HUGE_VAL)  //1.04
 #define FIXMAXMIN 1
-#define COLORMAX 7
+#define COLORMAX 12
 #define CAM_BACKUP  1.5
 #define ZRORDER 1 // 1: checkpoints organized with faster index r (default,new)
                   // 0: checkpoints organized with slower index r (old)
@@ -46,7 +46,7 @@ int FullScreenMode=0;
 int dim3d = 0;
 int t_off = 0;
 int p_off = 0;
-int cmap = 4;
+int cmap = 7;
 int draw_1d = 0;
 int draw_bar = 0;
 int draw_t   = 0;
@@ -398,7 +398,6 @@ void draw1dRadialData(double RotationAngleX, double RotationAngleY,
     /*
     glColor3f(0.5,0.5,0.5);
     glBegin( GL_LINE_STRIP );
-
     for( j=0 ; j<Nr ; ++j )
     {
         //if(logscale) val = log(getval(theZones[i],q))/log(10.);
@@ -953,14 +952,12 @@ void drawSpiral(double RotationAngleX, double RotationAngleY,
     double phi0 = ((double)k-.5)/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
     double x0 = 1.+e*cos(phi0);
     double y0 = e*sin(phi0);
-
     double phi = atan2(y0,x0);
     double r   = sqrt(x0*x0+y0*y0);
     //         double phi = (double)k/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
     //         double r   = 2./(1.+sin(phi));//1.0;//((double)k+0.5)/(double)Nr*(Rmax-Rmin) + Rmin;
     //         if( r<1. ) phi = -phi;
     r /= rescale;
-
     glVertex3f( r*cos(phi)-xoff , r*sin(phi)-yoff , camdist + .0011 );
     if( k%2==1 ){
     glEnd();
