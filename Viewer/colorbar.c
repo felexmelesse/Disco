@@ -18,6 +18,11 @@
 void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR ){
    
    double rrr,ggg,bbb;
+   double v5, v4, v3, v2;
+   v2 = val*val;
+   v3 = val*v2;
+   v4 = v2*v2;
+   v5 = v3*v2;
 
    if( COLORBAR == 0 ){
       double nexp = 8.0;
@@ -128,6 +133,39 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
       rrr = 1.-val;
       ggg = 1.-val;
       bbb = 1.-val;
+   }else if(COLORBAR == 7){
+      // Red-Blue
+      rrr = 10.20752512*v5 -17.16433678*v4 + 8.88247458*v3 -5.20403454*v2 + 2.94959219*val + 0.41422865;
+      ggg = -11.5674236*v5 + 40.4428654*v4 -49.2169767*v3 +21.4518256*v2 -.941994363*val + 0.0307091725;
+      bbb = -8.89193203*v5 + 32.18016432*v4 -42.5403857*v3 + 21.78773187*v2 - 2.3075258*val + 0.19384687;
+      if (rrr < 0.0) rrr = 0.0;
+      if (rrr > 1.0) rrr = 1.0;
+      if (ggg < 0.0) ggg = 0.0;
+      if (ggg > 1.0) ggg = 1.0;
+      if (bbb < 0.0) bbb = 0.0;
+      if (bbb > 1.0) bbb = 1.0;
+   }else if(COLORBAR == 8){
+      // magma
+      rrr = 5.2687848*v5 - 11.44778744*v4  + 6.13567269*v3 -0.01964937*v2 + 1.0698287*val -0.02223323;
+      ggg = -5.54509553*v5 + 11.4659551*v4 - 6.76338190*v3 + 1.63850072*v2 + 0.178140470*val + .0105032349;
+      bbb = -12.8819794*v5 + 32.9740674*v4 -24.7317822*v3 + 3.19023254*v2 + 2.21260079*val -0.00661976479;
+      if (rrr < 0.0) rrr = 0.0;
+      if (rrr > 1.0) rrr = 1.0;
+      if (ggg < 0.0) ggg = 0.0;
+      if (ggg > 1.0) ggg = 1.0;
+      if (bbb < 0.0) bbb = 0.0;
+      if (bbb > 1.0) bbb = 1.0;
+   }else if(COLORBAR == 9){
+      // viridis
+      rrr = -11.80729026*v5 + 25.27758373*v4 -14.85075402*v3  + 2.2290938*v2 -0.14187082*val + 0.2800557;
+      ggg = 0.121926730*v5 -1.52661275*v4 + 2.53827574*v3 -1.83476402*v2 + 1.60267540*val -0.00126998147;
+      bbb = 13.69761657*v5 -33.28507238*v4 +  28.69652089*v3 -11.89994842*v2 + 2.58966906*val + 0.30238385;
+      if (rrr < 0.0) rrr = 0.0;
+      if (rrr > 1.0) rrr = 1.0;
+      if (ggg < 0.0) ggg = 0.0;
+      if (ggg > 1.0) ggg = 1.0;
+      if (bbb < 0.0) bbb = 0.0;
+      if (bbb > 1.0) bbb = 1.0;
    }else{
       rrr = 1.0;
       ggg = 1.0;
@@ -139,4 +177,3 @@ void get_rgb( double val , float * rp , float * gp , float * bp , int COLORBAR )
    *bp = bbb;
 
 }
-
