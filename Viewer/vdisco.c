@@ -389,7 +389,7 @@ void makePalette(int pal[])
     {
         float val = (i-2)/253.0;
         float rrr, ggg, bbb;
-        get_rgb(val, &rrr, &ggg, &bbb, cmap);
+        get_rgb(val, &rrr, &ggg, &bbb, cmap, flipCM);
         pal[3*i+0] = 255*rrr;
         pal[3*i+1] = 255*ggg;
         pal[3*i+2] = 255*bbb;
