@@ -48,7 +48,8 @@ int FullScreenMode=0;
 int dim3d = 0;
 int t_off = 0;
 int p_off = 0;
-int cmap = 7;
+int flipCM = 0;
+int cmap = 6;
 int draw_1d = 0;
 int draw_bar = 0;
 int draw_t   = 0;
@@ -98,7 +99,7 @@ char **filenameList = NULL;
 int nfiles = 0;
 int currentFile = 0;
 
-void get_rgb( double , float * , float * , float * , int );
+void get_rgb( double , float * , float * , float * , int, int );
 void loadSliceZ(char *filename, int k);
 void loadSlicePhi(char *filename);
 void loadDiagnostics(char *filename, int k);
@@ -276,7 +277,7 @@ int window;
 
 // Here are the fonts: 
 #ifdef OSX
-void ** glutFonts[7] = { 
+void * glutFonts[7] = { 
 #else
 void * glutFonts[7] = { 
 #endif
@@ -802,7 +803,7 @@ void drawZSlice(double camdist, double xoff, double yoff, double zoff, int q,
             //if( uMax < u ) uMax = u;
 
             float rrr,ggg,bbb;
-            get_rgb( val , &rrr , &ggg , &bbb , cmap );
+            get_rgb( val , &rrr , &ggg , &bbb , cmap, flipCM );
 
             if( (!dim3d || (sin(phi)>0 || cos(phi+.25)<0.0)) && dim3d !=2 )
             {
@@ -866,7 +867,7 @@ void drawPhiSlice(double camdist, double xoff, double yoff, double zoff, int q,
             if( val < 0.0 ) 
                 val = 0.0;
             float rrr,ggg,bbb;
-            get_rgb( val , &rrr , &ggg , &bbb , cmap );
+            get_rgb( val , &rrr , &ggg , &bbb , cmap, flipCM );
             if( !draw_border_now )
             { 
                 glColor3f( rrr , ggg , bbb );
@@ -942,7 +943,7 @@ void drawColorBar(double RotationAngleX, double RotationAngleY,
         double y = (double)k*dy - .5*hb;
         double val = (double)k/(double)Nb;
         float rrr,ggg,bbb;
-        get_rgb( val , &rrr , &ggg , &bbb , cmap );
+        get_rgb( val , &rrr , &ggg , &bbb , cmap, flipCM );
         glLineWidth(0.0f);
         glColor3f( rrr , ggg , bbb );
         glBegin(GL_POLYGON);
@@ -1096,18 +1097,19 @@ void drawHelp(double RotationAngleX, double RotationAngleY,
                     double RotationAngleZ, double camdist, double xoff,
                     double yoff, double zoff)
 {
-    int NLines = 9;
+    int NLines = 10;
     double dy = -.04;
     char help[NLines][256];
     sprintf(help[0],"Help Display:");
     sprintf(help[1],"b - Toggle Colorbar");
-    sprintf(help[2],"c - Change Colormap");
-    sprintf(help[3],"f - Toggle Max/Min Floors");
-    sprintf(help[4],"p - Toggle Planet Data");
-    sprintf(help[5],"1-9 - Choose Primitive Variable to Display");
-    sprintf(help[6],"wasd - Move Camera");
-    sprintf(help[7],"z/x - Zoom in/out");
-    sprintf(help[8],"h - Toggle Help Screen");
+    sprintf(help[2],"B - Flip Colormap");
+    sprintf(help[3],"[ / ] - Change Colormap");
+    sprintf(help[4],"f - Toggle Max/Min Floors");
+    sprintf(help[5],"p - Toggle Planet Data");
+    sprintf(help[6],"1-9 - Choose Primitive Variable to Display");
+    sprintf(help[7],"arrow keys - Move Camera");
+    sprintf(help[8],"z/x - Zoom in/out");
+    sprintf(help[9],"h - Toggle Help Screen");
     int i;
     for( i=0 ; i<NLines ; ++i )
     {
@@ -1223,6 +1225,7 @@ void keyPressed(unsigned char key, int x, int y)
    }
    if( key >= (int)'0' && key < (int)'1'+Nq ) valq = (int)key-(int)'1';
    if( key == 'b' ) draw_bar = !draw_bar;
+   if( key == 'B' ) flipCM = !flipCM;
    if( key == 'd' ) {++dim3d; if(dim3d==3) dim3d=0;}
    if( key == 'f' ){
        floors = (floors+1)%3;
