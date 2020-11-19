@@ -24,13 +24,14 @@ endif
 INCL = -I$(GLUT)/include -I$(HDF5)/include
 LIBS += -lhdf5 -lm
 
-CC = g++
+CC = gcc
 
 default: $(EXE)
 
-$(EXE): $(EXE).c
+$(EXE): $(EXE).c colorbar.c gifer.c gifer.h
 	$(CC) -c colorbar.c
-	$(CC) $(CFLAGS) -O3 -Wall -o $@ $< colorbar.o $(INCL) $(LIBS)
+	$(CC) -c gifer.c
+	$(CC) $(CFLAGS) -O3 -Wall -o $@ $< colorbar.o gifer.o $(INCL) $(LIBS)
 
 clean:
 	rm -f *.o $(EXE)

@@ -9,9 +9,11 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <fstream>
+//#include <fstream>
 
 #include <hdf5.h>
+
+#include "gifer.h"
 
 #ifdef OSX
 #include <GLUT/glut.h>    // Header File For The GLUT Library 
@@ -27,8 +29,8 @@
 /* ASCII code for the escape key. */
 #define ESCAPE 27
 
-#define VAL_FLOOR -1   //0.95//0 //-8e-3//-3e-2 //(-HUGE_VAL)  //.96
-#define VAL_CEIL  1 //4.5e-3 //1.05//5.25e-21 //5.25e-9 //8e-3//3e-2 //5.24e-5 //(HUGE_VAL)  //1.04
+#define VAL_FLOOR 1.0 - 1.0e-10 //1 //0.95//0 //-8e-3//-3e-2 //(-HUGE_VAL) //.96
+#define VAL_CEIL  1.0 + 1.0e-10 //-1 //4.5e-3 //1.05//5.25e-21 //5.25e-9 //8e-3//3e-2 //5.24e-5 //(HUGE_VAL)  //1.04
 #define FIXMAXMIN 1
 #define COLORMAX 13
 #define CAM_BACKUP  1.5
@@ -62,6 +64,8 @@ int help_screen=0;
 int print_vals=0;
 int fix_zero=0;
 int geometry = 0;
+
+int first_frame = 1;
 
 double val_floor = VAL_FLOOR;
 double val_ceil = VAL_CEIL;
@@ -326,6 +330,10 @@ void ReSizeGLScene(int Width, int Height)
   if (Height==0)				// Prevent A Divide By Zero If The Window Is Too Small
     Height=1;
 
+#ifdef OSX
+  //glutReshapeWindow(Width, Height);
+#endif
+
   glViewport(0, 0, Width, Height);		// Reset The Current Viewport And Perspective Transformation
 
   glMatrixMode(GL_PROJECTION);
@@ -333,8 +341,12 @@ void ReSizeGLScene(int Width, int Height)
 
   gluPerspective(45.0f,(GLfloat)Width/(GLfloat)Height,0.1f,100.0f);
   glMatrixMode(GL_MODELVIEW);
+
+  WindowHeight = Height;
+  WindowWidth = Width;
 }
 
+/*
 void TakeScreenshot(const char *useless){
    int dimx = WindowWidth;
    int dimy = WindowHeight;
@@ -359,6 +371,107 @@ void TakeScreenshot(const char *useless){
    }    
    fp.close();
    printf("done!\n");
+}
+*/
+
+void makePalette(int pal[])
+{
+    pal[0] = 0;
+    pal[1] = 0;
+    pal[2] = 0;
+    pal[3] = 127;
+    pal[4] = 127;
+    pal[5] = 127;
+
+    int i;
+    for(i=2; i<256; i++)
+    {
+        float val = (i-2)/253.0;
+        float rrr, ggg, bbb;
+        get_rgb(val, &rrr, &ggg, &bbb, cmap);
+        pal[3*i+0] = 255*rrr;
+        pal[3*i+1] = 255*ggg;
+        pal[3*i+2] = 255*bbb;
+    }
+}
+
+void gifify()
+{
+    int palette[3*256];
+    makePalette(palette);
+
+    int dimx = glutGet(GLUT_WINDOW_WIDTH); //WindowWidth;
+    int dimy = glutGet(GLUT_WINDOW_HEIGHT); //WindowHeight;
+
+    float pixels[3*dimx*dimy];
+    glReadBuffer(GL_BACK);
+    glPixelStorei(GL_PACK_ALIGNMENT,1);
+    glReadPixels(0, 0, dimx, dimy, GL_RGB, GL_FLOAT, pixels);
+
+    float bgcolor[4];
+    glGetFloatv(GL_COLOR_CLEAR_VALUE, bgcolor);
+
+    int i, j;
+
+    /*
+    FILE *f = fopen("out.txt", "w");
+    for(i=0; i<256; i++)
+        fprintf(f, "%03d %03d %03d\n", palette[3*i], palette[3*i+1],
+                palette[3*i+2]);
+    fprintf(f, "background  |  %.9f %.9f %.9f\n",
+            bgcolor[0], bgcolor[1], bgcolor[2]);
+    for(i=0; i<dimx; i++)
+        for(j=0; j<dimy; j++)
+        {
+            fprintf(f, "%03d %03d  |  %.9f %.9f %.9f\n", i, j,
+                    pixels[3*(dimy*i+j)], pixels[3*(dimy*i+j)+1],
+                    pixels[3*(dimy*i+j)+2]);
+        }
+    fclose(f);
+    */
+
+    char gifname[1024 + 5];
+    strcpy(gifname, filename);
+
+    char *dot = strrchr(gifname, '.');
+    if(dot != NULL)
+        *dot = '\0';
+    strcat(gifname, ".gif" );
+
+    int gifstream[dimx*dimy];
+    for(i=0; i<dimx*dimy; i++)
+    {
+        float rrr = pixels[3*i];
+        float ggg = pixels[3*i+1];
+        float bbb = pixels[3*i+2];
+
+        if(rrr == 0.0f && ggg == 0.0f && bbb == 0.0f)
+            gifstream[i] = 0;
+        else if(fabs(rrr - bgcolor[0]) < 1.0e-7
+                && fabs(ggg - bgcolor[1]) < 1.0e-7
+                && fabs(bbb - bgcolor[2]) < 1.0e-7)
+            gifstream[i] = 1;
+        else
+        {
+            int ri = 255*rrr;
+            for(j=2; j<254; j++)
+                if((ri >= palette[3*j] && ri < palette[3*(j+1)])
+                   || (ri <= palette[3*j] && ri > palette[3*(j+1)]))
+                {
+                    gifstream[i] = j;
+                    break;
+                }
+            if(j == 254)
+                gifstream[i] = 255;
+        }
+
+        //gifstream[i] = i%256;
+    }
+
+
+    printf("Saving %s\n", gifname);
+    makeGIF(dimx, dimy, palette, 256, 1, 1, gifstream, gifname);
+
 }
 
 void draw1dBackground(double RotationAngleX, double RotationAngleY,
@@ -847,7 +960,7 @@ void drawColorBar(double RotationAngleX, double RotationAngleY,
         double y = (double)k*hb/(double)(Nv-1) - .5*hb;
         double val = ((double)k/(double)(Nv-1))*(maxval-minval) + minval;
         char valname[256];
-        sprintf(valname,"%+.6e",val);
+        sprintf(valname,"%+.16e",val);
         glLineWidth(1.0f);
         glColor3f(0.0,0.0,0.0);
         glBegin(GL_LINE_LOOP);
@@ -1011,6 +1124,13 @@ void DrawGLScene(){
    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
    glLoadIdentity();
 
+   if(first_frame)
+   {
+       ReSizeGLScene(WindowWidth, WindowHeight);
+       first_frame = 0;
+   }
+
+
    double RotationAngleX = 0.0;
    double RotationAngleY = 0.0;
    double RotationAngleZ = 0.0;
@@ -1076,8 +1196,9 @@ void DrawGLScene(){
 
    if( CommandMode )
    {
-      TakeScreenshot("out.ppm");
-      exit(1);
+      //TakeScreenshot("out.ppm");
+      gifify();
+      exit(0);
    }
 
    glutSwapBuffers();
@@ -1206,6 +1327,10 @@ void keyPressed(unsigned char key, int x, int y)
    {
        val_ceil = maxval;
        val_floor = minval;
+   }
+   if(key == 'o')
+   {
+       gifify();
    }
 
    glutPostRedisplay();
