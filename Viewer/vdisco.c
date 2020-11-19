@@ -47,7 +47,7 @@ int dim3d = 0;
 int t_off = 0;
 int p_off = 0;
 int flipCM = 0;
-int cmap = 7;
+int cmap = 6;
 int draw_1d = 0;
 int draw_bar = 0;
 int draw_t   = 0;
@@ -984,18 +984,19 @@ void drawHelp(double RotationAngleX, double RotationAngleY,
                     double RotationAngleZ, double camdist, double xoff,
                     double yoff, double zoff)
 {
-    int NLines = 9;
+    int NLines = 10;
     double dy = -.04;
     char help[NLines][256];
     sprintf(help[0],"Help Display:");
     sprintf(help[1],"b - Toggle Colorbar");
-    sprintf(help[2],"c - Change Colormap");
-    sprintf(help[3],"f - Toggle Max/Min Floors");
-    sprintf(help[4],"p - Toggle Planet Data");
-    sprintf(help[5],"1-9 - Choose Primitive Variable to Display");
-    sprintf(help[6],"wasd - Move Camera");
-    sprintf(help[7],"z/x - Zoom in/out");
-    sprintf(help[8],"h - Toggle Help Screen");
+    sprintf(help[2],"B - Flip Colormap");
+    sprintf(help[3],"[ / ] - Change Colormap");
+    sprintf(help[4],"f - Toggle Max/Min Floors");
+    sprintf(help[5],"p - Toggle Planet Data");
+    sprintf(help[6],"1-9 - Choose Primitive Variable to Display");
+    sprintf(help[7],"arrow keys - Move Camera");
+    sprintf(help[8],"z/x - Zoom in/out");
+    sprintf(help[9],"h - Toggle Help Screen");
     int i;
     for( i=0 ; i<NLines ; ++i )
     {
