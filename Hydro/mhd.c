@@ -274,6 +274,10 @@ void visc_flux(const double * prim, const double * gradr, const double * gradp,
                const double * gradz, double * flux,
                const double * x, const double * n){}
 
+void visc_source(const double * prim, const double * gradr, const double *gradp,
+                 const double * gradz, double * cons, const double *xp,
+                 const double *xm, double dVdt){}
+
 void prim_to_E(const double *prim, double *E, const double *x)
 {
     double r = x[0];
