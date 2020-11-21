@@ -104,6 +104,7 @@ void loadSliceZ(char *filename, int k);
 void loadSlicePhi(char *filename);
 void loadDiagnostics(char *filename, int k);
 void loadFile(int fileIndex, int zslice);
+void DrawGLScene();
 
 double getval( double * thisZone , int q ){
    if( q!=-1 ) return( thisZone[q] );
@@ -404,13 +405,28 @@ void gifify()
     int dimx = glutGet(GLUT_WINDOW_WIDTH); //WindowWidth;
     int dimy = glutGet(GLUT_WINDOW_HEIGHT); //WindowHeight;
 
-    float pixels[3*dimx*dimy];
+    float *pixels = (float *)malloc(3*dimx*dimy * sizeof(float));
+    float *pixels_bw = (float *)malloc(dimx*dimy * sizeof(float));
+
     glReadBuffer(GL_BACK);
     glPixelStorei(GL_PACK_ALIGNMENT,1);
     glReadPixels(0, 0, dimx, dimy, GL_RGB, GL_FLOAT, pixels);
 
     float bgcolor[4];
     glGetFloatv(GL_COLOR_CLEAR_VALUE, bgcolor);
+
+    int old_cmap = cmap;
+    cmap = 5;  // black-to-white, rrr = ggg = bbb = val
+    DrawGLScene();
+    DrawGLScene();
+
+    glReadBuffer(GL_BACK);
+    glPixelStorei(GL_PACK_ALIGNMENT,1);
+    glReadPixels(0, 0, dimx, dimy, GL_RED, GL_FLOAT, pixels_bw);
+   
+    cmap = old_cmap;
+    DrawGLScene();
+    
 
     int i, j;
 
@@ -434,44 +450,41 @@ void gifify()
     char gifname[1024 + 5];
     strcpy(gifname, filename);
 
-    char *dot = strrchr(gifname, '.');
-    if(dot != NULL)
-        *dot = '\0';
+    char *dot_ptr = strrchr(gifname, '.');
+    if(dot_ptr != NULL)
+        *dot_ptr = '\0';
     strcat(gifname, ".gif" );
 
-    int gifstream[dimx*dimy];
-    for(i=0; i<dimx*dimy; i++)
-    {
-        float rrr = pixels[3*i];
-        float ggg = pixels[3*i+1];
-        float bbb = pixels[3*i+2];
-
-        if(rrr == 0.0f && ggg == 0.0f && bbb == 0.0f)
-            gifstream[i] = 0;
-        else if(fabs(rrr - bgcolor[0]) < 1.0e-7
-                && fabs(ggg - bgcolor[1]) < 1.0e-7
-                && fabs(bbb - bgcolor[2]) < 1.0e-7)
-            gifstream[i] = 1;
-        else
+    int *gifstream = (int *)malloc(dimx*dimy * sizeof(int));;
+   
+    for(j=0; j<dimy; j++)
+        for(i=0; i<dimx; i++)
         {
-            int ri = 255*rrr;
-            for(j=2; j<254; j++)
-                if((ri >= palette[3*j] && ri < palette[3*(j+1)])
-                   || (ri <= palette[3*j] && ri > palette[3*(j+1)]))
-                {
-                    gifstream[i] = j;
-                    break;
-                }
-            if(j == 254)
-                gifstream[i] = 255;
+            int pixIdx = dimx*j + i;
+            int gifIdx = dimx*(dimy-j-1) + i;
+            float rrr = pixels[3*pixIdx];
+            float ggg = pixels[3*pixIdx+1];
+            float bbb = pixels[3*pixIdx+2];
+
+            if(rrr == 0.0f && ggg == 0.0f && bbb == 0.0f)
+                gifstream[gifIdx] = 0;
+            else if(fabs(rrr - bgcolor[0]) < 1.0e-7
+                    && fabs(ggg - bgcolor[1]) < 1.0e-7
+                    && fabs(bbb - bgcolor[2]) < 1.0e-7)
+                gifstream[gifIdx] = 1;
+            else
+                gifstream[gifIdx] = (int)(253 * pixels_bw[pixIdx]) + 2;
+
+            //gifstream[i] = i%256;
         }
 
-        //gifstream[i] = i%256;
-    }
-
+    free(pixels);
+    free(pixels_bw);
 
     printf("Saving %s\n", gifname);
     makeGIF(dimx, dimy, palette, 256, 1, 1, gifstream, gifname);
+
+    free(gifstream);
 
 }
 
