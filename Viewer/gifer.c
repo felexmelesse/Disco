@@ -144,67 +144,10 @@ void print_buffer_bits(uint32_t buffer)
     print_code_bits(buffer, 8);
 }
 
-
-void makeGIF(int width, int height, int *palette, int Nc, int idx_bg,
-             int idx_tp, int *data, const char *filename)
+void writeFrame(uint16_t w, uint16_t h, int *data, int idx_tp,
+                uint16_t gct_size_code, size_t gctsize, uint16_t delaytime,
+                FILE *f)
 {
-    if(width >= 65536 || height >= 65536)
-    {
-        printf("Image too big or small for GIF\n");
-        return;
-    }
-    if(width < 0 || height < 0)
-    {
-        printf("Image dimensions negative\n");
-        return;
-    }
-    if(Nc > 256)
-    {
-        printf("Too many colors for GIF!\n");
-        return;
-    }
-    if(Nc <= 1)
-    {
-        printf("Not enough colors for GIF!\n");
-        return;
-    }
-
-    uint16_t w = (uint16_t) width;
-    uint16_t h = (uint16_t) height;
-    uint16_t gct_size_code = bitlen(Nc-1)-1;
-
-    size_t gctsize = pow2(gct_size_code+1);
-
-    FILE *f = fopen(filename, "wb");
-
-    // Header
-    char hdr[] = "GIF89a";
-    fwrite(hdr, sizeof(char), 6, f);
-
-    // Logical Screen Descriptor
-
-    uint8_t lsd[7];
-    lsd[0] = lo_byte(w);
-    lsd[1] = hi_byte(w);
-    lsd[2] = lo_byte(h);
-    lsd[3] = hi_byte(h);
-    lsd[4] = 0xF0 | gct_size_code;
-    lsd[5] = (idx_bg >= 0 && idx_bg < 256) ? (uint8_t) idx_bg : 0;
-    lsd[6] = 0;
-
-    fwrite(lsd, sizeof(uint8_t), 7, f);
-
-    //Global Color Table
-    int i;
-
-    uint8_t gct[3*gctsize];
-    for(i=0; i<3*Nc; i++)
-        gct[i] = (uint8_t) palette[i];
-    for(i=3*Nc; i<3*gctsize; i++)
-        gct[i] = 0;
-
-    fwrite(gct, sizeof(uint8_t), 3*gctsize, f);
-
     // Graphics Control Extension
     
     int use_tp = (idx_tp >= 0 && idx_tp < 256) ? 1 : 0;
@@ -214,8 +157,8 @@ void makeGIF(int width, int height, int *palette, int Nc, int idx_bg,
     gce[1] = 0xf9;  // graphics extension
     gce[2] = 0x04;  // 4 bytes of data follow
     gce[3] = 0x00 | (use_tp ? 0x01 : 0x00);
-    gce[4] = 0x00;  //Delay Time lo
-    gce[5] = 0x00;  //Delay Time hi
+    gce[4] = lo_byte(delaytime);  //Delay Time lo
+    gce[5] = hi_byte(delaytime);  //Delay Time hi
     gce[6] = use_tp ? (uint8_t) idx_tp : 0;
     gce[7] = 0x00;
 
@@ -255,7 +198,7 @@ void makeGIF(int width, int height, int *palette, int Nc, int idx_bg,
 
     struct node root;
     init_table(&root, gctsize);
-    int npix = width*height;
+    int npix = ((int) w) * ((int) h);
 
     struct node *entry = &root;
     /*
@@ -275,6 +218,8 @@ void makeGIF(int width, int height, int *palette, int Nc, int idx_bg,
     print_buffer_bits(buffer);
     printf("\n");
     */
+
+    int i;
 
     for(i=0; i < npix; i++)
     {
@@ -334,6 +279,104 @@ void makeGIF(int width, int height, int *palette, int Nc, int idx_bg,
     flush_block(block, 256, idx, offset, f);
 
     free_node(&root);
+}
+
+void makeGIF(int width, int height, int Nframes, int *palette, int Nc,
+             int idx_bg, int idx_tp, double framerate, int *data,
+             const char *filename)
+{
+    if(width >= 65536 || height >= 65536)
+    {
+        printf("Image too big or small for GIF\n");
+        return;
+    }
+    if(width < 0 || height < 0)
+    {
+        printf("Image dimensions negative\n");
+        return;
+    }
+    if(Nc > 256)
+    {
+        printf("Too many colors for GIF!\n");
+        return;
+    }
+    if(Nc <= 1)
+    {
+        printf("Not enough colors for GIF!\n");
+        return;
+    }
+
+    uint16_t w = (uint16_t) width;
+    uint16_t h = (uint16_t) height;
+    uint16_t gct_size_code = bitlen(Nc-1)-1;
+
+    size_t gctsize = pow2(gct_size_code+1);
+
+    FILE *f = fopen(filename, "wb");
+
+    // Header
+    char hdr[] = "GIF89a";
+    fwrite(hdr, sizeof(char), 6, f);
+
+    // Logical Screen Descriptor
+
+    uint8_t lsd[7];
+    lsd[0] = lo_byte(w);
+    lsd[1] = hi_byte(w);
+    lsd[2] = lo_byte(h);
+    lsd[3] = hi_byte(h);
+    lsd[4] = 0xF0 | gct_size_code;
+    lsd[5] = (idx_bg >= 0 && idx_bg < 256) ? (uint8_t) idx_bg : 0;
+    lsd[6] = 0;
+
+    fwrite(lsd, sizeof(uint8_t), 7, f);
+
+    //Global Color Table
+    int i;
+
+    uint8_t gct[3*gctsize];
+    for(i=0; i<3*Nc; i++)
+        gct[i] = (uint8_t) palette[i];
+    for(i=3*Nc; i<3*gctsize; i++)
+        gct[i] = 0;
+
+    fwrite(gct, sizeof(uint8_t), 3*gctsize, f);
+
+    //Write the image frames
+    if(Nframes > 1)
+    {
+        // Application Extension
+        uint8_t appext_hdr[3];
+        appext_hdr[0] = 0x21;  // Extension
+        appext_hdr[1] = 0xFF;  // Application Extension
+        appext_hdr[2] = 11u;    // 11 byte application block
+        unsigned char appext_blk[11] = "NETSCAPE2.0";
+        uint8_t appext_subblk[5];
+        appext_subblk[0] = 3u;
+        appext_subblk[1] = 1u;
+        appext_subblk[2] = 0;
+        appext_subblk[3] = 0;
+        appext_subblk[4] = 0;
+        fwrite(appext_hdr, sizeof(uint8_t), 3, f);
+        fwrite(appext_blk, sizeof(unsigned char), 11, f);
+        fwrite(appext_subblk, sizeof(uint8_t), 5, f);
+
+        int i;
+        size_t npix = width * height;
+
+        int delaytime_int = 100.0 / framerate;
+        uint16_t delaytime;
+        if(delaytime_int <= (uint16_t) 0xFFFF)
+            delaytime = (uint16_t) delaytime_int;
+        else
+            delaytime = (uint16_t) 0xFFFF;
+
+        for(i=0; i<Nframes; i++)
+            writeFrame(w, h, data + npix*i, idx_tp, gct_size_code, gctsize, 
+                       delaytime, f);
+    }
+    else
+        writeFrame(w, h, data, idx_tp, gct_size_code, gctsize, 0, f);
 
     //trailer
     

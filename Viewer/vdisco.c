@@ -397,14 +397,8 @@ void makePalette(int pal[])
     }
 }
 
-void gifify()
+void calcGIFpixels(int dimx, int dimy, int *gifstream)
 {
-    int palette[3*256];
-    makePalette(palette);
-
-    int dimx = glutGet(GLUT_WINDOW_WIDTH); //WindowWidth;
-    int dimy = glutGet(GLUT_WINDOW_HEIGHT); //WindowHeight;
-
     float *pixels = (float *)malloc(3*dimx*dimy * sizeof(float));
     float *pixels_bw = (float *)malloc(dimx*dimy * sizeof(float));
 
@@ -426,37 +420,9 @@ void gifify()
    
     cmap = old_cmap;
     DrawGLScene();
-    
 
     int i, j;
 
-    /*
-    FILE *f = fopen("out.txt", "w");
-    for(i=0; i<256; i++)
-        fprintf(f, "%03d %03d %03d\n", palette[3*i], palette[3*i+1],
-                palette[3*i+2]);
-    fprintf(f, "background  |  %.9f %.9f %.9f\n",
-            bgcolor[0], bgcolor[1], bgcolor[2]);
-    for(i=0; i<dimx; i++)
-        for(j=0; j<dimy; j++)
-        {
-            fprintf(f, "%03d %03d  |  %.9f %.9f %.9f\n", i, j,
-                    pixels[3*(dimy*i+j)], pixels[3*(dimy*i+j)+1],
-                    pixels[3*(dimy*i+j)+2]);
-        }
-    fclose(f);
-    */
-
-    char gifname[1024 + 5];
-    strcpy(gifname, filename);
-
-    char *dot_ptr = strrchr(gifname, '.');
-    if(dot_ptr != NULL)
-        *dot_ptr = '\0';
-    strcat(gifname, ".gif" );
-
-    int *gifstream = (int *)malloc(dimx*dimy * sizeof(int));;
-   
     for(j=0; j<dimy; j++)
         for(i=0; i<dimx; i++)
         {
@@ -474,15 +440,65 @@ void gifify()
                 gifstream[gifIdx] = 1;
             else
                 gifstream[gifIdx] = (int)(253 * pixels_bw[pixIdx]) + 2;
-
-            //gifstream[i] = i%256;
         }
 
     free(pixels);
     free(pixels_bw);
+}
 
+void gifify()
+{
+    int palette[3*256];
+    makePalette(palette);
+
+    int dimx = glutGet(GLUT_WINDOW_WIDTH); //WindowWidth;
+    int dimy = glutGet(GLUT_WINDOW_HEIGHT); //WindowHeight;
+
+    char gifname[1024 + 5];
+    strcpy(gifname, filename);
+
+    char *dot_ptr = strrchr(gifname, '.');
+    if(dot_ptr != NULL)
+        *dot_ptr = '\0';
+    strcat(gifname, ".gif" );
+
+    int *gifstream = (int *)malloc(dimx*dimy * sizeof(int));;
+
+    calcGIFpixels(dimx, dimy, gifstream);
+   
     printf("Saving %s\n", gifname);
-    makeGIF(dimx, dimy, palette, 256, 1, 1, gifstream, gifname);
+    makeGIF(dimx, dimy, 1, palette, 256, 1, 1, 1.0, gifstream, gifname);
+
+    free(gifstream);
+
+}
+
+void gifify_all()
+{
+    int palette[3*256];
+    makePalette(palette);
+
+    int dimx = glutGet(GLUT_WINDOW_WIDTH); //WindowWidth;
+    int dimy = glutGet(GLUT_WINDOW_HEIGHT); //WindowHeight;
+
+    char gifname[] = "disco_run.gif";
+
+    int *gifstream = (int *)malloc(nfiles * dimx*dimy * sizeof(int));
+    int i;
+
+    int old_file = currentFile;
+    for(i=0; i<nfiles; i++)
+    {
+        currentFile = i;
+        loadFile(currentFile, KK);
+        DrawGLScene();
+        calcGIFpixels(dimx, dimy, gifstream + dimx*dimy*i);
+    }
+    currentFile = old_file;
+    loadFile(currentFile, KK);
+   
+    printf("Saving %s\n", gifname);
+    makeGIF(dimx, dimy, nfiles, palette, 256, 1, 1, 10.0, gifstream, gifname);
 
     free(gifstream);
 
@@ -1347,6 +1363,10 @@ void keyPressed(unsigned char key, int x, int y)
    if(key == 'o')
    {
        gifify();
+   }
+   if(key == 'O')
+   {
+       gifify_all();
    }
 
    glutPostRedisplay();

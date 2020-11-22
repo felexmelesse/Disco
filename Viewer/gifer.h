@@ -26,7 +26,11 @@ void flush_block(uint8_t *block, uint32_t blocksize, uint16_t idx,
 void print_code_bits(uint8_t code, uint8_t codesize);
 void print_buffer_bits(uint32_t buffer);
 
-void makeGIF(int width, int height, int *palette, int Nc, int idx_bg,
-             int idx_tp, int *data, const char *filename);
+void writeFrame(uint16_t w, uint16_t h, int *data, int idx_tp,
+                uint16_t gct_size_code, size_t gctsize, uint16_t delaytime,
+                FILE *f);
+void makeGIF(int width, int height, int Nframes, int *palette, int Nc,
+             int idx_bg, int idx_tp, double framerate, int *data,
+             const char *filename);
 
 #endif
