@@ -202,7 +202,7 @@ void setupCells( struct domain * theDomain ){
             }
             if(noiseType != 0)
                 addNoise(c->prim, x);
-            prim2cons( c->prim , c->cons , x , dV );
+            prim2cons( c->prim , c->cons , x , dV, xp, xm);
             c->real = 1;
          }    
       }    
@@ -233,7 +233,7 @@ void setupCells( struct domain * theDomain ){
             double dV = get_dV( xp , xm );
             double phi = c->piph-.5*c->dphi;
             double x[3] = {r, phi, z};
-            cons2prim( c->cons , c->prim , x , dV );
+            cons2prim( c->cons , c->prim , x , dV, xp, xm);
          }
       }
    }

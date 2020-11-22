@@ -812,7 +812,7 @@ def calculateDivV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
             x20 = x2phL[0]
             while x20 > x2phR[-1]:
                 x2phR += x2_max
-            while x20 <= x2phR[0]:
+            while x20 <= x2phR[-1]-x2_max:
                 x2phR -= x2_max
             x2mhL = np.roll(x2phL, 1)
             x2mhL[0] -= x2_max
@@ -821,8 +821,11 @@ def calculateDivV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
 
             iL0 = 0
             iR0 = np.searchsorted(x2phR, x20)
+            if iR0 >= n2[k, jR]:
+                iR0 = 0
             iL = iL0
             iR = iR0
+
             for i in range(n2[k, jL] + n2[k, jR]):
                 x2p = min(x2phL[iL], x2phR[iR])
                 x2m = max(x2mhL[iL], x2mhR[iR])

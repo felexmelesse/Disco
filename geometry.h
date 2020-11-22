@@ -27,6 +27,9 @@ void get_vec_from_xyz(const double *x, const double *vxyz, double *v);
 
 void geom_grad(const double *prim, double *grad,
                const double *xp,const double *xm, double PLM, int dim, int LR);
+void geom_interpolate(const double *prim, const double *gradp,
+                      const double *gradT, const double *x,
+                      double dphi, double dxT, double * primI, int dim);
 
 void get_centroid_arr(const double *xp, const double *xm, double *x);
 void get_vec_contravariant(const double *x, double *v, double *vc);

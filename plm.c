@@ -20,6 +20,7 @@ void plm_phi( struct domain * theDomain ){
    int * Np = theDomain->Np;
    double PLM = theDomain->theParList.PLM;
    int i,j,k,q;
+
    for( k=0 ; k<Nz ; ++k ){
       for( j=0 ; j<Nr ; ++j ){
          int jk = j+Nr*k;

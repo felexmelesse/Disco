@@ -7,14 +7,15 @@ enum{_HLL_,_HLLC_,_HLLD_};
 static int mesh_motion = 0;
 static int riemann_solver = 0;
 static int visc_flag = 0;
-static int use_B_fields = 1;
-
+static int use_B_fields = 0;
+static int Cartesian_Interp = 0;
 
 void setRiemannParams( struct domain * theDomain ){
    mesh_motion = theDomain->theParList.Mesh_Motion;
    riemann_solver = theDomain->theParList.Riemann_Solver;
    visc_flag = theDomain->theParList.visc_flag;
    use_B_fields = set_B_flag();
+   Cartesian_Interp = theDomain->theParList.Cartesian_Interp;
 
    if( !use_B_fields && riemann_solver == _HLLD_ && theDomain->rank==0 ){
       printf("Ya dun goofed.\nRiemann Solver = HLLD,\nHydro does not include magnetic fields.\n");
@@ -33,10 +34,12 @@ void solve_riemann( const double * , const double * ,
                     double *, double * , 
                     const double * , const double * , const double *,
                     const double * , const double * , const double *,
-                    const double * , const double * , double , double , int ,
+                    const double * , const double * , const double *,
+                    const double *, double , double , int ,
                     double * , double * , double * , double * );
 
-void riemann_phi( struct cell * cL , struct cell * cR, double * x , double dAdt ){
+void riemann_phi( struct cell * cL , struct cell * cR, double * x ,
+                const double *xp, const double *xm, double dAdt ){
 
    double primL[NUM_Q];
    double primR[NUM_Q];
@@ -48,6 +51,18 @@ void riemann_phi( struct cell * cL , struct cell * cR, double * x , double dAdt 
       primR[q] = cR->prim[q] - .5*cR->gradp[q]*cR->dphi;
       gradp[q] = (cR->prim[q] - cL->prim[q]) / (0.5*(cR->dphi + cL->dphi));
    }
+
+   if(Cartesian_Interp)
+   {
+
+       double xL[3] = {x[0], cL->piph - 0.5*cL->dphi, x[2]};
+       double xR[3] = {x[0], cR->piph - 0.5*cR->dphi, x[2]};
+       geom_interpolate(cL->prim, cL->gradp, NULL, xL,  0.5*cL->dphi, 0.0,
+                        primL, 0);
+       geom_interpolate(cR->prim, cR->gradp, NULL, xR, -0.5*cR->dphi, 0.0,
+                        primR, 0);
+   }
+
 
    double n[3] = {0.0,1.0,0.0};
    double hn = get_scale_factor(x, 0);
@@ -62,7 +77,8 @@ void riemann_phi( struct cell * cL , struct cell * cR, double * x , double dAdt 
    solve_riemann(primL , primR , cL->cons , cR->cons ,
                  cL->gradr, gradp, cL->gradz,
                  cR->gradr, gradp, cR->gradz,
-                 x , n , hn*cL->wiph , dAdt , 0 , &Ez , &Br , &Er , &Bz );
+                 x , n , xp, xm, hn*cL->wiph , dAdt , 0 ,
+                 &Ez , &Br , &Er , &Bz );
    /*
    solve_riemann(primL , primR , cL->cons , cR->cons ,
                  cL->gradr, cL->gradp, cL->gradz,
@@ -111,7 +127,8 @@ void riemann_phi( struct cell * cL , struct cell * cR, double * x , double dAdt 
    }
 }
 
-void riemann_trans( struct face * F , double dt , int dim ){
+void riemann_trans( struct face * F , double dt , int dim , double rp,
+                    double rm, double zp, double zm){
 
    struct cell * cL = F->L;
    struct cell * cR = F->R;
@@ -119,6 +136,10 @@ void riemann_trans( struct face * F , double dt , int dim ){
    double dxL       = F->dxL;
    double dxR       = F->dxR;
    double phi       = F->cm[1];
+   double dphi      = F->dphi;
+
+   double xp[3] = {rp, phi+0.5*dphi, zp};
+   double xm[3] = {rm, phi-0.5*dphi, zm};
 
    double primL[NUM_Q];
    double primR[NUM_Q];
@@ -127,7 +148,7 @@ void riemann_trans( struct face * F , double dt , int dim ){
    double phiL = cL->piph - .5*cL->dphi;
    double phiR = cR->piph - .5*cR->dphi;
    double dpL = get_signed_dp(phi,phiL);
-   double dpR = get_signed_dp(phiR,phi);
+   double dpR = get_signed_dp(phi,phiR);
       
    double *gradL = dim==1 ? cL->gradr : cL->gradz;
    double *gradR = dim==1 ? cR->gradr : cR->gradz;
@@ -135,9 +156,29 @@ void riemann_trans( struct face * F , double dt , int dim ){
    int q;
    for( q=0 ; q<NUM_Q ; ++q ){
       primL[q] = cL->prim[q] + gradL[q]*dxL + cL->gradp[q]*dpL;
-      primR[q] = cR->prim[q] - gradR[q]*dxR - cR->gradp[q]*dpR;
+      primR[q] = cR->prim[q] - gradR[q]*dxR + cR->gradp[q]*dpR;
       grad[q] = ((cR->prim[q] - cR->gradp[q]*dpR)
                   - (cL->prim[q] + cL->gradp[q]*dpL)) / (dxL+dxR);
+   }
+
+   if(Cartesian_Interp)
+   {
+       double xL[3] = {F->cm[0], phiL, F->cm[2]};
+       double xR[3] = {F->cm[0], phiR, F->cm[2]};
+       if(dim == 1)
+       {
+           xL[0] -= dxL;
+           xR[0] += dxR;
+       }
+       else
+       {
+           xL[2] -= dxL;
+           xR[2] += dxR;
+       }
+       geom_interpolate(cL->prim, cL->gradp, gradL, xL, dpL,  dxL,
+                        primL, dim);
+       geom_interpolate(cR->prim, cR->gradp, gradR, xR, dpR, -dxR,
+                        primR, dim);
    }
    
    double n[3] = {0.0,0.0,0.0};
@@ -162,12 +203,14 @@ void riemann_trans( struct face * F , double dt , int dim ){
       solve_riemann(primL , primR , cL->cons , cR->cons ,
                     grad, cL->gradp, cL->gradz,
                     grad, cR->gradp, cR->gradz,
-                    F->cm , n , 0.0 , dAdt , dim , &Erz , &Brz , &Ephi, NULL );
+                    F->cm , n , xp, xm, 0.0 , dAdt , dim ,
+                    &Erz , &Brz , &Ephi, NULL );
    else
       solve_riemann(primL , primR , cL->cons , cR->cons ,
                     cL->gradr, cL->gradp, grad,
                     cR->gradr, cR->gradp, grad,
-                    F->cm , n , 0.0 , dAdt , dim , &Erz , &Brz , &Ephi, NULL );
+                    F->cm , n , xp, xm, 0.0 , dAdt , dim ,
+                    &Erz , &Brz , &Ephi, NULL );
  
    double fracL = F->dphi / cL->dphi;
    double fracR = F->dphi / cR->dphi;
@@ -219,7 +262,9 @@ void solve_riemann(const double *primL, const double *primR,
                    const double *gradLz,
                    const double *gradRr, const double *gradRp, 
                    const double *gradRz,
-                   const double *x, const double *n, double w, double dAdt, 
+                   const double *x, const double *n, 
+                   const double *xp, const double *xm,
+                   double w, double dAdt, 
                    int dim,
                    double *E1_riemann, double *B1_riemann,
                    double *E2_riemann, double *B2_riemann)
@@ -240,12 +285,12 @@ void solve_riemann(const double *primL, const double *primR,
       vel( primL , primR , &Sl , &Sr , &Ss , n , x , Bpack );
 
       if( w < Sl ){
-         flux( primL , Flux , x , n );
-         prim2cons( primL , Ustr , x , 1.0 );
+         flux( primL , Flux , x , n , xp , xm);
+         prim2cons( primL , Ustr , x , 1.0, NULL, NULL);
 
       }else if( w > Sr ){
-         flux( primR , Flux , x , n );
-         prim2cons( primR , Ustr , x , 1.0 );
+         flux( primR , Flux , x , n , xp , xm);
+         prim2cons( primR , Ustr , x , 1.0, NULL, NULL);
 
       }else{
          if( riemann_solver == _HLL_ ){
@@ -257,10 +302,10 @@ void solve_riemann(const double *primL, const double *primR,
             double aL =  Sr;
             double aR = -Sl;
  
-            prim2cons( primL , Ul , x , 1.0 );
-            prim2cons( primR , Ur , x , 1.0 );
-            flux( primL , Fl , x , n );
-            flux( primR , Fr , x , n );
+            prim2cons( primL , Ul , x , 1.0 , NULL, NULL);
+            prim2cons( primR , Ur , x , 1.0 , NULL, NULL);
+            flux( primL , Fl , x , n , xp , xm);
+            flux( primR , Fr , x , n , xp , xm);
 
             for( q=0 ; q<NUM_Q ; ++q ){
                Flux[q] = ( aL*Fl[q] + aR*Fr[q] + aL*aR*( Ul[q] - Ur[q] ) )/( aL + aR );
@@ -270,17 +315,17 @@ void solve_riemann(const double *primL, const double *primR,
             double Uk[NUM_Q];
             double Fk[NUM_Q];
             if( w < Ss ){
-               prim2cons( primL , Uk , x , 1.0 );
+               prim2cons( primL , Uk , x , 1.0, NULL, NULL);
                getUstar( primL , Ustr , x , Sl , Ss , n , Bpack ); 
-               flux( primL , Fk , x , n ); 
+               flux( primL , Fk , x , n , xp , xm); 
 
                for( q=0 ; q<NUM_Q ; ++q ){
                   Flux[q] = Fk[q] + Sl*( Ustr[q] - Uk[q] );
                }    
             }else{
-               prim2cons( primR , Uk , x , 1.0 );
+               prim2cons( primR , Uk , x , 1.0, NULL, NULL);
                getUstar( primR , Ustr , x , Sr , Ss , n , Bpack ); 
-               flux( primR , Fk , x , n ); 
+               flux( primR , Fk , x , n , xp , xm); 
 
                for( q=0 ; q<NUM_Q ; ++q ){
                   Flux[q] = Fk[q] + Sr*( Ustr[q] - Uk[q] );

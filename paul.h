@@ -69,6 +69,7 @@ struct param_list{
    int Absorb_BC, Initial_Regrid, visc_flag, include_atmos;
 
    double CFL, PLM, maxDT;
+   int Cartesian_Interp;
    double Density_Floor, Pressure_Floor;
 
    int Exact_Mesh_Omega;

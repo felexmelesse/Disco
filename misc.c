@@ -318,7 +318,7 @@ void calc_prim( struct domain * theDomain ){
             double xm[3] = {rm, phim, zm};
             double dV = get_dV( xp , xm );
             double x[3] = {r, 0.5*(phim+phip), z};
-            cons2prim( c->cons , c->prim , x , dV );
+            cons2prim( c->cons , c->prim , x , dV, xp, xm );
          }
       }
    }
@@ -357,13 +357,14 @@ void calc_cons( struct domain * theDomain ){
             double xm[3] = {rm, phim, zm};
             double dV = get_dV( xp , xm );
             double x[3] = {r, 0.5*(phim+phip), z};
-            prim2cons( c->prim , c->cons , x , dV );
+            prim2cons( c->prim , c->cons , x , dV , xp, xm);
          }
       }
    }
 }
 
-void riemann_phi( struct cell * , struct cell * , double * , double );
+void riemann_phi( struct cell * , struct cell * , double * , const double *,
+                 const double *, double );
 
 void phi_flux( struct domain * theDomain , double dt ){
 
@@ -418,7 +419,7 @@ void phi_flux( struct domain * theDomain , double dt ){
             double xm[3] = {rm, phi, zm};
             double dA = get_dA(xp,xm,0); 
             double x[3] = {r, phi, z};
-            riemann_phi( &(cp[i]) , &(cp[ip]) , x , dA*dt );
+            riemann_phi( &(cp[i]) , &(cp[ip]) , x , xp, xm, dA*dt );
          }
       }
    }
@@ -426,7 +427,8 @@ void phi_flux( struct domain * theDomain , double dt ){
 }
 
 void buildfaces( struct domain * , int , int );
-void riemann_trans( struct face * , double , int );
+void riemann_trans( struct face * , double , int , double, double, double,
+                   double);
 
 void trans_flux( struct domain * theDomain , double dt , int dim ){
 
@@ -492,13 +494,29 @@ void trans_flux( struct domain * theDomain , double dt , int dim ){
 
     int j, k;
     for(k=kmin; k<kmax; k++)
+    {
+        double zm, zp;
+        if(dim == 1)
+            zm = theDomain->z_kph[k-1];
+        else
+            zm = theDomain->z_kph[k];
+        zp = theDomain->z_kph[k];
+
         for(j=jmin; j<jmax; j++)
         {
+            double rm, rp;
+            if(dim == 1)
+                rm = theDomain->r_jph[j];
+            else
+                rm = theDomain->r_jph[j-1];
+            rp = theDomain->r_jph[j];
+
             int JK = j + Nfr*k;
             int f;
             for(f=fI[JK]; f<fI[JK+1]; f++)
-                riemann_trans(theFaces + f, dt, dim);
+                riemann_trans(theFaces + f, dt, dim, rp, rm, zp, zm);
         }
+    }
 
    /*
    int f;
@@ -564,7 +582,7 @@ void add_source( struct domain * theDomain , double dt ){
             double xp[3] = {r_jph[j]  ,phip,z_kph[k]  };
             double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
             double dV = get_dV(xp,xm);
-            source( c->prim , c->cons , xp , xm , dV*dt );
+            source( c->prim , c->cons , xp , xm , dV*dt);
             for( p=0 ; p<Npl ; ++p ){
                planet_src( thePlanets+p , c->prim , c->cons , xp , xm , dV*dt );
             }
@@ -658,7 +676,7 @@ void AMRsweep( struct domain * theDomain , struct cell ** swptr , int jk ){
       double r  = get_centroid( xp[0] , xm[0], 1 );
       double dV = get_dV( xp , xm );
       double x[3] = {r, 0.5*(phim+phip), 0.5*(z_kph[k-1]+z_kph[k])};
-      cons2prim( sweep[iS].cons , sweep[iS].prim , x , dV );
+      cons2prim( sweep[iS].cons , sweep[iS].prim , x , dV, xp, xm );
       //Shift Memory
       int blocksize = Np[jk]-iSp-1;
       if( iSp != Np[jk]-1 ) memmove( sweep+iSp , sweep+iSp+1 , blocksize*sizeof(struct cell) );
@@ -698,7 +716,7 @@ void AMRsweep( struct domain * theDomain , struct cell ** swptr , int jk ){
       double dV = get_dV( xp , xm );
       double r  = get_centroid( xp[0] , xm[0], 1 );
       double x[3] = {r, 0.5*(xp[1]+xm[1]), 0.5*(xp[2]+xm[2])};
-      cons2prim( sweep[iL].cons , sweep[iL].prim , x , dV );
+      cons2prim( sweep[iL].cons , sweep[iL].prim , x , dV, xp, xm);
 
       xp[1] = phip;
       xm[1] = phi0;
@@ -706,7 +724,7 @@ void AMRsweep( struct domain * theDomain , struct cell ** swptr , int jk ){
       r  = get_centroid( xp[0] , xm[0], 1 );
       x[0] = r;
       x[1] = 0.5*(xp[1]+xm[1]);
-      cons2prim( sweep[iL+1].cons , sweep[iL+1].prim , x , dV );
+      cons2prim( sweep[iL+1].cons , sweep[iL+1].prim , x , dV , xp, xm);
 
    }
 }

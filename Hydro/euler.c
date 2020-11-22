@@ -12,6 +12,7 @@ static int include_viscosity = 0;
 static int isothermal = 0;
 static int alpha_flag = 0;
 static int polar_sources = 0;
+static int Cartesian_Interp = 0;
 
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
@@ -21,6 +22,7 @@ void setHydroParams( struct domain * theDomain ){
    explicit_viscosity = theDomain->theParList.viscosity;
    include_viscosity = theDomain->theParList.visc_flag;
    alpha_flag = theDomain->theParList.alpha_flag;
+   Cartesian_Interp = theDomain->theParList.Cartesian_Interp;
    if(theDomain->theParList.NoBC_Rmin == 1)
        polar_sources = 1;
 }
@@ -34,7 +36,7 @@ double get_omega( const double * prim , const double * x ){
 }
 
 void prim2cons(const double * prim, double * cons, const double * x,
-               double dV){
+               double dV, const double * xp, const double *xm){
 
    double r = x[0];
    double rho = prim[RHO];
@@ -49,10 +51,17 @@ void prim2cons(const double * prim, double * cons, const double * x,
 
    double rhoe = Pp/(gamma_law - 1.);
 
+   double cart_adjust = 1.0;
+   if(xp != NULL && xm != NULL && Cartesian_Interp)
+   {
+      double dphi = xp[1] - xm[1];
+      cart_adjust = 2*sin(0.5*dphi) / dphi;
+   }
+
    cons[DDD] = rho*dV;
    cons[TAU] = (.5*rho*v2 + rhoe )*dV;
-   cons[SRR] = rho*vr*dV;
-   cons[LLL] = r*rho*vp*dV;
+   cons[SRR] = rho*vr*dV * cart_adjust;
+   cons[LLL] = r*rho*vp*dV * cart_adjust;
    cons[SZZ] = rho*vz*dV;
 
    int q;
@@ -99,13 +108,21 @@ void getUstar( const double * prim , double * Ustar , const double * x ,
 
 }
 
-void cons2prim( const double * cons , double * prim , const double * x , double dV ){
+void cons2prim( const double * cons , double * prim , const double * x , double dV,
+               const double *xp, const double *xm){
    
    double r = x[0];
+   double cart_adjust = 1.0;
+   if(xp != NULL && xm != NULL && Cartesian_Interp)
+   {
+      double dphi = xp[1] - xm[1];
+      cart_adjust = 2*sin(0.5*dphi) / dphi;
+   }
+
    double rho = cons[DDD]/dV;
    if( rho < RHO_FLOOR )   rho = RHO_FLOOR;
-   double Sr  = cons[SRR]/dV;
-   double Sp  = cons[LLL]/dV/r;
+   double Sr  = cons[SRR]/(dV * cart_adjust);
+   double Sp  = cons[LLL]/(dV * r * cart_adjust);
    double Sz  = cons[SZZ]/dV;
    double E   = cons[TAU]/dV;
    double om  = get_om( x );
@@ -138,37 +155,62 @@ void cons2prim( const double * cons , double * prim , const double * x , double 
 
 }
 
-void flux( const double * prim , double * flux , const double * x , const double * n ){
-  
-   double r = x[0];
-   double rho = prim[RHO];
-   double Pp  = prim[PPP];
-   double vr  = prim[URR];
-   double vp  = prim[UPP]*r;
-   double vz  = prim[UZZ];
-   double om  = get_om( x );
+void flux(const double * prim, double * flux, const double * x,
+          const double * n, const double *xp, const double *xm)
+{
+    double r = x[0];
+    double rho = prim[RHO];
+    double Pp  = prim[PPP];
+    double vr  = prim[URR];
+    double vp  = prim[UPP]*r;
+    double vz  = prim[UZZ];
+    double om  = get_om( x );
 
-   double vn = vr*n[0] + vp*n[1] + vz*n[2];
-   double wn = om*r*n[1];
-   double vp_off = vp - om*r;
+    double vn = vr*n[0] + vp*n[1] + vz*n[2];
+    double wn = om*r*n[1];
+    double vp_off = vp - om*r;
 
-   double rhoe = Pp/(gamma_law - 1.);
-   double v2 = vr*vr + vp_off*vp_off + vz*vz;
+    double rhoe = Pp/(gamma_law - 1.);
+    double v2 = vr*vr + vp_off*vp_off + vz*vz;
 
-   flux[DDD] = rho*vn;
-   flux[SRR] = rho*vr*vn + Pp*n[0];
-   flux[LLL] = r*(rho*vp*vn + Pp*n[1]);
-   flux[SZZ] = rho*vz*vn + Pp*n[2];
-   flux[TAU] = ( .5*rho*v2 + rhoe + Pp )*vn - Pp*wn;
+    int q;
+    if(xp != NULL && xm != NULL && Cartesian_Interp)
+    {
+        double r1 = 0.5*(xp[0] + xm[0]);
+        double dphi = xp[1] - xm[1];
+        double scalar_fac = dphi > 0.0 ? 2 * sin(0.5*dphi) / dphi : 1.0;
+        double vector_fac = dphi > 0.0 ? sin(dphi) / dphi : 1.0;
+        double rad_fac_1 = 0.5*(1 + vector_fac);
+        double rad_fac_0 = 0.5*(1 - vector_fac);
+        double scal_fac_n = scalar_fac * n[0] + n[1] + n[2];
+        
+        flux[DDD] = rho*vn * scal_fac_n;
+        flux[SRR] = (rad_fac_1 * rho*vr*vr + rad_fac_0 * rho*vp*vp + Pp) * n[0]
+                    + (rho * vr * vp)*n[1]
+                    + (rho*vr*vz * scalar_fac) * n[2];
+        flux[LLL] = r*rho*vr*vp * vector_fac * n[0]
+                    + r1*(rho*vp*vp + Pp) * n[1]
+                    + r*rho*vp*vz * vector_fac * n[2];
+        flux[SZZ] = rho*vz*vr * vector_fac * n[0]
+                    + rho*vz*vp * n[1]
+                    + (rho*vz*vz + Pp) * n[2];
+        flux[TAU] = ((0.5*rho*v2 + rhoe + Pp)*vn - Pp*wn) * scal_fac_n;
+    }
+    else
+    {
+        flux[DDD] = rho*vn;
+        flux[SRR] = rho*vr*vn + Pp*n[0];
+        flux[LLL] = r*(rho*vp*vn + Pp*n[1]);
+        flux[SZZ] = rho*vz*vn + Pp*n[2];
+        flux[TAU] = ( .5*rho*v2 + rhoe + Pp )*vn - Pp*wn;
 
-   int q;
-   for( q=NUM_C ; q<NUM_Q ; ++q ){
-      flux[q] = prim[q]*flux[DDD];
-   }
-   
+    }
+    for( q=NUM_C ; q<NUM_Q ; ++q )
+        flux[q] = prim[q]*flux[DDD];
 }
 
-void source( const double * prim , double * cons , const double * xp , const double * xm , double dVdt ){
+void source( const double * prim , double * cons , const double * xp , const double * xm , double dVdt)
+{
    
    double rp = xp[0];
    double rm = xm[0];
@@ -198,6 +240,16 @@ void source( const double * prim , double * cons , const double * xp , const dou
       double adjust[3];
       geom_polar_vec_adjust(xp, xm, adjust);
       centrifugal *= adjust[0];
+   }
+   if(Cartesian_Interp)
+   {
+        double dphi = xp[1] - xm[1];
+        //double scalar_fac = 2 * sin(0.5*dphi) / dphi;
+        double vector_fac = sin(dphi) / dphi;
+        double rad_fac_1 = 0.5*(1 + vector_fac);
+        double rad_fac_0 = 0.5*(1 - vector_fac);
+        double vp = r * omega;
+        centrifugal = (rho*vr*vr * rad_fac_0 + rho*vp*vp * rad_fac_1) / r_1;
    }
 
    double press_bal   = Pp/r_1;

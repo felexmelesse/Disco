@@ -9,11 +9,13 @@ int set_B_flag();
 double get_omega(const double *prim, const double *x);
 
 void prim2cons(const double *prim, double *cons, const double *x,
-               double dV);
+               double dV, const double *xp, const double *xm);
 void getUstar(const double *prim, double *Ustar, const double *x,
               double Sk, double Ss, const double *n, const double *Bpack);
-void cons2prim(const double *cons, double *prim, const double *x, double dV);
-void flux(const double *prim, double *flux, const double * x, const double * n);
+void cons2prim(const double *cons, double *prim, const double *x, double dV,
+               const double *xp, const double *xm);
+void flux(const double *prim, double *flux, const double * x, const double * n,
+          const double *xp, const double *xm);
 void source(const double * prim , double * cons ,
             const double * xp , const double * xm , double dVdt);
 void visc_flux(const double * prim, const double * gradr, const double * gradp,
