@@ -381,9 +381,9 @@ void makePalette(int pal[])
     pal[0] = 0;
     pal[1] = 0;
     pal[2] = 0;
-    pal[3] = 127;
-    pal[4] = 127;
-    pal[5] = 127;
+    pal[3] = 220;
+    pal[4] = 220;
+    pal[5] = 220;
 
     int i;
     for(i=2; i<256; i++)
@@ -467,7 +467,7 @@ void gifify()
     calcGIFpixels(dimx, dimy, gifstream);
    
     printf("Saving %s\n", gifname);
-    makeGIF(dimx, dimy, 1, palette, 256, 1, 1, 1.0, gifstream, gifname);
+    makeGIF(dimx, dimy, 1, palette, 256, 1, -1, 1.0, gifstream, gifname);
 
     free(gifstream);
 
@@ -498,7 +498,7 @@ void gifify_all()
     loadFile(currentFile, KK);
    
     printf("Saving %s\n", gifname);
-    makeGIF(dimx, dimy, nfiles, palette, 256, 1, 1, 10.0, gifstream, gifname);
+    makeGIF(dimx, dimy, nfiles, palette, 256, 1, -1, 10.0, gifstream, gifname);
 
     free(gifstream);
 

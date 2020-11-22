@@ -156,7 +156,7 @@ void writeFrame(uint16_t w, uint16_t h, int *data, int idx_tp,
     gce[0] = 0x21;  // extension block
     gce[1] = 0xf9;  // graphics extension
     gce[2] = 0x04;  // 4 bytes of data follow
-    gce[3] = 0x00 | (use_tp ? 0x01 : 0x00);
+    gce[3] = 0x00 | (use_tp ? 0x01 : 0x00) | 0x08;
     gce[4] = lo_byte(delaytime);  //Delay Time lo
     gce[5] = hi_byte(delaytime);  //Delay Time hi
     gce[6] = use_tp ? (uint8_t) idx_tp : 0;
