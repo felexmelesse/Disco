@@ -20,7 +20,7 @@ void initial( double * prim , double * x ){
    double R = sqrt(r*r + eps*eps);
 
    double omega02 = 1.0/pow(R,3.);
-   double omegaP2 = (1.5/(Mach*Mach*R*R*R));
+   double omegaP2 = (1./(Mach*Mach*R*R*R));
 
    double omega2 = fmax( (omega02 - omegaP2), 0.0 );
    double omega = sqrt(omega2);
