@@ -28,6 +28,7 @@ static double visc = 0.0;
 static double Mach = 1.0;
 
 void planetaryForce( struct planet * , double , double , double , double * , double * , double * , int );
+double phigrav( double , double , double , int);
 
 void setSinkParams(struct domain *theDomain)
 {

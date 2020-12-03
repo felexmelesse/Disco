@@ -52,6 +52,7 @@ double phigrav( double M , double r , double eps , int type)
     }
     else if(type == PLSPLINE)
     {
+        eps = eps*2.8;
         double u = r/eps;
         double val;
         if (u<0.5) val = 16.*u*u/3. - 48.*u*u*u*u/5. + 32.*u*u*u*u*u/5. - 14./5.;
@@ -80,6 +81,7 @@ double fgrav( double M , double r , double eps , int type)
     }
     else if(type == PLSPLINE)
     {
+        eps = eps*2.8;
         double u = r/eps;
         double val;
         if (u<0.5) val = 32.*u/3. - 192.*u*u*u/5. + 32.*u*u*u*u;

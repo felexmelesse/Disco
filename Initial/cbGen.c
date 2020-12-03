@@ -39,7 +39,7 @@ void setICparams( struct domain * theDomain )
 void initial(double *prim, double *x)
 {
     double r = x[0];
-    double R = r + 0.01;
+    double R = pow( pow(r, 20.0) + pow(0.01, 20.0) , 0.05);
 
     double phi = x[1];
 
@@ -81,8 +81,8 @@ void initial(double *prim, double *x)
     double phitot = 0.0;
     double dphitot = 0.0;
     for (np = 0; np<Npl; np++){
-      phitot -= phigrav( thePlanets[np].M, mag , thePlanets[np].eps, type)/mag;
-      dphitot -= fgrav( thePlanets[np].M, mag , thePlanets[np].eps, type)/mag;
+      phitot -= phigrav( thePlanets[np].M, mag , thePlanets[np].eps, thePlanets[np].type)/mag;
+      dphitot -= fgrav( thePlanets[np].M, mag , thePlanets[np].eps, thePlanets[np].type)/mag;
     }
 
     double sig0 = 1.0/(3.0*M_PI*nu);

@@ -22,6 +22,9 @@ static double eps = 0.0;
 static struct planet *thePlanets = NULL;
 
 
+double phigrav( double , double , double , int); //int here is type
+
+
 void setOmegaParams( struct domain * theDomain ){
    meshOmChoice = theDomain->theParList.Exact_Mesh_Omega;
    meshOmPar    = theDomain->theParList.Exact_Mesh_Omega_Par;
@@ -167,8 +170,8 @@ double get_cs2( const double *x ){
         px = thePlanets[pi].r*cosp;
         py = thePlanets[pi].r*sinp;
         pr = (px-gx)*(px-gx) + (py-gy)*(py-gy);
-
-        phip += thePlanets[pi].M/pow( pr + pow(thePlanets[pi].eps,n) , 1./n );
+        //phip += thePlanets[pi].M/pow( pr + pow(thePlanets[pi].eps,n) , 1./n );
+        phip += phigrav( thePlanets[pi].M , sqrt(pr) , thePlanets[pi].eps , thePlanets[pi].type );
       }
       cs2 = phip/(Mach*Mach);        
     }
