@@ -45,6 +45,14 @@ void report( struct domain * theDomain ){
    double Power  = 0.0;
    double Torque = 0.0;
    double Torque2 = 0.0;
+
+   double Torque_c10 = 0.0;
+   double Torque_c075 = 0.0;
+   double Torque_c05 = 0.0;
+   double Torque2_c10 = 0.0;
+   double Torque2_c075 = 0.0;
+   double Torque2_c05 = 0.0;
+
    double Fr=0.0;
    double PsiR = 0.0;
    double PsiI = 0.0;
@@ -143,11 +151,12 @@ void report( struct domain * theDomain ){
             Vol_avg += dV;
             Mass += rho*dV;
 
-            S_R += pow(rho,4.)*r*dV;
-            S_0 += pow(rho,4.)*dV;
+            //S_R += pow(rho,4.)*r*dV;
+            //S_0 += pow(rho,4.)*dV;
 
             if( Npl > 1 ){
-               double fr,fp,fz,fp2;
+               double fr,fp,fz,fp2, t1v, t2v;
+               double rS = thePlanets[0].r;
                double rp = thePlanets[1].r;
                double om = thePlanets[1].omega;
                double vr = thePlanets[1].vr;
@@ -155,19 +164,37 @@ void report( struct domain * theDomain ){
                planetaryForce( thePlanets   , r , phi , 0.0 , &fr , &fp2 , &fz , 1 );
                planetaryForce( thePlanets+1 , r , phi , 0.0 , &fr , &fp  , &fz , 1 );
 
-               //double pp = thePlanets[1].phi;
-               //double cosp = cos(phi);
-               //double sinp = sin(phi);
-               //double dx = r*cosp-rp*cos(pp);
-               //double dy = r*sinp-rp*sin(pp);
-               //double script_r = sqrt(dx*dx+dy*dy);
+               double pp = thePlanets[1].phi;
+               double cosp = cos(phi);
+               double sinp = sin(phi);
+               double dx = r*cosp-rp*cos(pp);
+               double dy = r*sinp-rp*sin(pp);
+               double script_r = sqrt(dx*dx+dy*dy);
                //double rH = pow( thePlanets[1].M/3. , 1./3. );
+               //Power  -= (rho-1.0)*( rp*om*fp + vr*fr )*dV;
+               //Torque -= (rho-1.0)*rp*fp*dV;
+               //Torque2 -= (rho-1.0)*rS*fp2*dV;
+               //Torque2 -= (rho-1.0)*rp*fp2*dV;
+               double eps = 0.5*(thePlanets[0].eps + thePlanets[1].eps);
 
-               Torque -= (rho-1.0)*rp*fp*dV;
-               Power  -= (rho-1.0)*( rp*om*fp + vr*fr )*dV;
-               Torque2 -= (rho-1.0)*rp*fp2*dV;
-               Fr -= (rho-1.0)*fr*dV;
+               t1v = (rho-1.0)*rp*fp*dV;
+               t2v = (rho-1.0)*rS*fp2*dV;
+               Torque -= t1v;
+               Torque2 -= t2v;
+               if (script_r >= eps){
+                 Torque_c10 -= t1v;
+                 Torque2_c10 -= t2v;
+               }
+               if (script_r >= 0.75*eps){
+                 Torque_c075 -= t1v;
+                 Torque2_c075 -= t2v;
+               }
+               if (script_r >= 0.5*eps){
+                 Torque_c05 = 0.0;
+                 Torque2_c05 = 0.0;
+               }
 
+               //Fr -= (rho-1.0)*fr*dV;
 /*
                int n_cut;
                for( n_cut=0 ; n_cut<10 ; ++n_cut ){
@@ -208,6 +235,18 @@ void report( struct domain * theDomain ){
    //MPI_Allreduce( MPI_IN_PLACE , &S_R     , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    //MPI_Allreduce( MPI_IN_PLACE , &S_0     , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    //MPI_Allreduce( MPI_IN_PLACE , &Mdot    , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+
+
+   MPI_Allreduce( MPI_IN_PLACE , &Mass    , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   MPI_Allreduce( MPI_IN_PLACE , &Torque  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   MPI_Allreduce( MPI_IN_PLACE , &Torque2 , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+
+   MPI_Allreduce( MPI_IN_PLACE , &Torque_c10  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   MPI_Allreduce( MPI_IN_PLACE , &Torque2_c10 , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   MPI_Allreduce( MPI_IN_PLACE , &Torque_c075  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   MPI_Allreduce( MPI_IN_PLACE , &Torque2_c075 , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   MPI_Allreduce( MPI_IN_PLACE , &Torque_c05  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   MPI_Allreduce( MPI_IN_PLACE , &Torque2_c05 , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
 
    MPI_Allreduce( MPI_IN_PLACE , M_acc  , Npl , MPI_DOUBLE , MPI_SUM , grid_comm );
    MPI_Allreduce( MPI_IN_PLACE , La_pls  , Npl , MPI_DOUBLE , MPI_SUM , grid_comm );
@@ -267,7 +306,7 @@ void report( struct domain * theDomain ){
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", yMom_pls[j]);
       }
-      
+      fprintf(rFile,"%le %le %le %le %le %le %le %le %le ", Mass, Torque, Torque2, Torque_c10, Torque2_c10, Torque_c075, Torque2_c075, Torque_c05, Torque2_c05);
       fprintf(rFile,"\n");
 
       //fprintf(rFile,"%e %e %e ",t,Torque,Power);

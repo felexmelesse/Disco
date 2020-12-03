@@ -27,6 +27,8 @@ static struct planet *thePlanets = NULL;
 static double visc = 0.0;
 static double Mach = 1.0;
 
+void planetaryForce( struct planet * , double , double , double , double * , double * , double * , int );
+
 void setSinkParams(struct domain *theDomain)
 {
     sinkType = theDomain->theParList.sinkType;
@@ -112,8 +114,9 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
       double gx = r*cosg;
       double gy = r*sing;
 
-      double px, py, dx, dy, mag, eps, gmag3, epsfactor;
+      double px, py, dx, dy, mag, eps, epsfactor;
       double rate, surfdiff;
+      //double gmag3
       int pi;
       for (pi=0; pi<Npl; pi++){
           double cosp = cos(thePlanets[pi].phi);
@@ -126,8 +129,8 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
           mag = dx*dx + dy*dy;
           mag = sqrt(mag);
 
-          gmag3 = dx*dx + dy*dy + thePlanets[pi].eps*thePlanets[pi].eps;
-          gmag3 = gmag3*sqrt(gmag3);
+          //gmag3 = dx*dx + dy*dy + thePlanets[pi].eps*thePlanets[pi].eps;
+          //gmag3 = gmag3*sqrt(gmag3);
 
           //the part tÌhat depends on sinkType
           double arg = 0.0;
@@ -146,7 +149,6 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
             eps = sinkPar3;
             double pwrM = sinkPar4;
             double pwrN = sinkPar5;
-
             arg = 1.0 - pow((mag/eps),pwrM);
             arg = pow(arg, pwrN);
             if (mag >= eps){
@@ -191,6 +193,11 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
           thePlanets[pi].accL += vg_p*r*acc_factor;
 
           cons[DDD] -= acc_factor;
+          if (delta == 0.0) {
+            // should already be true, but floating point errors might mess this up
+            vg_r = vr;
+            vg_p = vp;
+          }
           cons[SRR] -= vg_r*acc_factor;
           cons[LLL] -= r*vg_p*acc_factor;
           cons[SZZ] -= vz*acc_factor;
@@ -204,9 +211,13 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
           thePlanets[pi].linXmom += acc_factor*vxg;
           thePlanets[pi].linYmom += acc_factor*vyg;
 
-          //not actually a sink, just accounting. This should really be named Lgrav or something.
-          thePlanets[pi].gravL += thePlanets[pi].M*rho*dV*dt*(dy*px - dx*py)/gmag3;
-
+          //not actually a sink, just torque accounting
+          //thePlanets[pi].gravL += thePlanets[pi].M*rho*dV*dt*(dy*px - dx*py)/gmag3;
+          double fr,fp,fz, rho0;
+          rho0 = 1.0/(3.0*M_PI*visc);
+          planetaryForce( thePlanets + pi, thePlanets[pi].r, thePlanets[pi].phi,  0.0, &fr, &fp, &fz, 1);
+          thePlanets[pi].gravL -= (rho-rho0)*thePlanets[pi].r*fp*dV*dt;
+          //Torque -= (rho-1.0)*rp*fp*dV;
       }
     }
 }
