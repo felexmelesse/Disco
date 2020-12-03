@@ -18,7 +18,8 @@ void setGravParams( struct domain * theDomain ){
    }
    if(strcmp(GEOMETRY, "spherical") == 0)
    {
-       if(theDomain->theParList.NoBC_Rmin == 1)
+       //if(theDomain->theParList.NoBC_Rmin == 1)
+       if(theDomain->theParList.NoBC_Rmin == 0)
        {
            polar_sources_r = 1;
            polar_sources_p = 1;
@@ -49,6 +50,15 @@ double phigrav( double M , double r , double eps , int type)
         return M*r; // M is gravitational acceleration
                     // only makes sense if grav2D is on
     }
+    else if(type == PLSPLINE)
+    {
+        double u = r/eps;
+        double val;
+        if (u<0.5) val = 16.*u*u/3. - 48.*u*u*u*u/5. + 32.*u*u*u*u*u/5. - 14./5.;
+        else if (u < 1.0) val = 1./(15.*u) + 32.*u*u/3. - 16.*u*u*u + 48.*u*u*u*u/5. - 32.*pow(u, 5.0)/15. - 3.2;
+        else val = -1./u ;
+        return -1*M*val/eps;
+    }
     return 0.0;
 }
 
@@ -67,6 +77,15 @@ double fgrav( double M , double r , double eps , int type)
     {
         return M; // M is gravitational acceleration
                   // only makes sense if grav2D is on
+    }
+    else if(type == PLSPLINE)
+    {
+        double u = r/eps;
+        double val;
+        if (u<0.5) val = 32.*u/3. - 192.*u*u*u/5. + 32.*u*u*u*u;
+        else if (u < 1.0) val = -1./(15.*u*u) + 64.*u/3. - 48.*u*u + 192.*u*u*u/5. - 32*u*u*u*u/3.;
+        else val = 1./u/u;
+        return M*val/eps/eps;
     }
     return 0.0;
     
