@@ -246,7 +246,23 @@ void visc_source(const double * prim, const double * gradr, const double *gradp,
                  const double * gradz, double * cons, const double *xp,
                  const double *xm, double dVdt)
 {
-    /* Silence is Golden. */
+
+   double rp = xp[0];
+   double rm = xm[0];
+   double rho = prim[RHO];
+   double r_1  = .5*(rp+rm);
+   double vr  = prim[URR];
+
+   if( include_viscosity ){
+      double nu = explicit_viscosity;
+      if( alpha_flag ){
+         double alpha = explicit_viscosity;
+         double c = sqrt( gamma_law*prim[PPP]/prim[RHO] );
+         double h = c*pow( r_1 , 1.5 );
+         nu = alpha*c*h;
+      }
+      cons[SRR] += -dVdt*nu*rho*vr/(r_1*r_1);
+   }
 }
 
 void flux_to_E( const double * Flux , const double * Ustr , const double * x, 
