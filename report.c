@@ -42,7 +42,7 @@ void report( struct domain * theDomain ){
    double L1_B    = 0.0;
    double Br2     = 0.0;
    double B2      = 0.0;
-   double Power  = 0.0;
+   //double Power  = 0.0;
    double Torque = 0.0;
    double Torque2 = 0.0;
 
@@ -53,7 +53,7 @@ void report( struct domain * theDomain ){
    double Torque2_c075 = 0.0;
    double Torque2_c05 = 0.0;
 
-   double Fr=0.0;
+   //double Fr=0.0;
    double PsiR = 0.0;
    double PsiI = 0.0;
    double Vol = 0.0;
@@ -75,8 +75,8 @@ void report( struct domain * theDomain ){
    xMom_pls = calloc(Npl, sizeof(double) );
    yMom_pls = calloc(Npl, sizeof(double) );
 
-   double S_R = 0.0;
-   double S_0 = 0.0;
+   //double S_R = 0.0;
+   //double S_0 = 0.0;
 
    for( j=0; j<Npl; ++j){
       M_acc[j] = thePlanets[j].dM;
@@ -158,8 +158,8 @@ void report( struct domain * theDomain ){
                double fr,fp,fz,fp2, t1v, t2v;
                double rS = thePlanets[0].r;
                double rp = thePlanets[1].r;
-               double om = thePlanets[1].omega;
-               double vr = thePlanets[1].vr;
+               //double om = thePlanets[1].omega;
+               //double vr = thePlanets[1].vr;
                //double mp = thePlanets[1].M;
                planetaryForce( thePlanets   , r , phi , 0.0 , &fr , &fp2 , &fz , 1 );
                planetaryForce( thePlanets+1 , r , phi , 0.0 , &fr , &fp  , &fz , 1 );
@@ -175,23 +175,28 @@ void report( struct domain * theDomain ){
                //Torque -= (rho-1.0)*rp*fp*dV;
                //Torque2 -= (rho-1.0)*rS*fp2*dV;
                //Torque2 -= (rho-1.0)*rp*fp2*dV;
-               double eps = 0.5*(thePlanets[0].eps + thePlanets[1].eps);
 
                t1v = (rho-1.0)*rp*fp*dV;
                t2v = (rho-1.0)*rS*fp2*dV;
                Torque -= t1v;
                Torque2 -= t2v;
-               if (script_r >= eps){
+               if (script_r >= thePlanets[1].eps){
                  Torque_c10 -= t1v;
+               }
+               if (script_r >= thePlanets[0].eps){
                  Torque2_c10 -= t2v;
                }
-               if (script_r >= 0.75*eps){
+               if (script_r >= 0.75*thePlanets[1].eps){
                  Torque_c075 -= t1v;
+               }
+               if (script_r >= 0.75*thePlanets[0].eps){
                  Torque2_c075 -= t2v;
                }
-               if (script_r >= 0.5*eps){
-                 Torque_c05 = 0.0;
-                 Torque2_c05 = 0.0;
+               if (script_r >= 0.5*thePlanets[1].eps){
+                 Torque_c05 = -t1v;
+               }
+               if (script_r >= 0.5*thePlanets[0].eps){
+                 Torque2_c05 -= t2v;
                }
 
                //Fr -= (rho-1.0)*fr*dV;
