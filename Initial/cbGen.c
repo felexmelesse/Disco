@@ -17,7 +17,7 @@ double get_cs2(double *);
 
 //N.B. actuall -phi and -f
 double phigrav( double , double , double , int); //int here is type
-double fgrav( double , double , double , type);
+double fgrav( double , double , double , int);
 
 void setICparams( struct domain * theDomain )
 {
@@ -53,15 +53,17 @@ void initial(double *prim, double *x)
     int np;
     double alpha = visc;
     double nu = visc;
+
+    double cosp, sinp, px, py, dx, dy, gx, gy, mag;
+    gx = r*cos(phi);
+    gy = r*sin(phi);
+
     if (alpha_flag == 1){
       if (Npl < 2){
           nu = alpha*cs2/sqrt(om);
       }
       else{
         double omtot = 0;
-        double cosp, sinp, px, py, dx, dy, gx, gy, mag;
-        gx = r*cos(phi);
-        gy = r*sin(phi);
         for(np = 0; np<Npl; np++){
           cosp = cos(thePlanets[np].phi);
           sinp = sin(thePlanets[np].phi);
@@ -71,7 +73,7 @@ void initial(double *prim, double *x)
           dy = gy-py;
           //mag = dx*dx + dy*dy + thePlanets[np].eps*thePlanets[np].eps;
           mag = sqrt(dx*dx + dy*dy);
-          omtot +=  fgrav( thePlanets[np].M, mag , thePlanets[np].eps, type)/mag;
+          omtot +=  fgrav( thePlanets[np].M, mag , thePlanets[np].eps, thePlanets[np].type)/mag;
         }  	
         nu = alpha*cs2/sqrt(omtot);
         om = sqrt(omtot);
@@ -81,8 +83,15 @@ void initial(double *prim, double *x)
     double phitot = 0.0;
     double dphitot = 0.0;
     for (np = 0; np<Npl; np++){
-      phitot -= phigrav( thePlanets[np].M, mag , thePlanets[np].eps, thePlanets[np].type)/mag;
-      dphitot -= fgrav( thePlanets[np].M, mag , thePlanets[np].eps, thePlanets[np].type)/mag;
+      cosp = cos(thePlanets[np].phi);
+      sinp = sin(thePlanets[np].phi);
+      px = thePlanets[np].r*cosp;
+      py = thePlanets[np].r*sinp;
+      dx = gx-px;
+      dy = gy-py;
+      mag = sqrt(dx*dx + dy*dy);
+      phitot -= phigrav( thePlanets[np].M, mag , thePlanets[np].eps, thePlanets[np].type);
+      dphitot += fgrav( thePlanets[np].M, mag , thePlanets[np].eps, thePlanets[np].type);
     }
 
     double sig0 = 1.0/(3.0*M_PI*nu);
