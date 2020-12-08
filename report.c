@@ -193,7 +193,7 @@ void report( struct domain * theDomain ){
                  Torque2_c075 -= t2v;
                }
                if (script_r >= 0.5*thePlanets[1].eps){
-                 Torque_c05 = -t1v;
+                 Torque_c05 -= t1v;
                }
                if (script_r >= 0.5*thePlanets[0].eps){
                  Torque2_c05 -= t2v;
@@ -311,7 +311,7 @@ void report( struct domain * theDomain ){
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", yMom_pls[j]);
       }
-      fprintf(rFile,"%le %le %le %le %le %le %le %le %le ", Mass, Torque, Torque2, Torque_c10, Torque2_c10, Torque_c075, Torque2_c075, Torque_c05, Torque2_c05);
+      fprintf(rFile,"%le %le %le %le %le %le %le %le %le ", Mass, Torque_c10, Torque2_c10, Torque_c075, Torque2_c075, Torque_c05, Torque2_c05, Torque, Torque2);
       fprintf(rFile,"\n");
 
       //fprintf(rFile,"%e %e %e ",t,Torque,Power);
