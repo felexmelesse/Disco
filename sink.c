@@ -216,7 +216,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
           //thePlanets[pi].gravL += thePlanets[pi].M*rho*dV*dt*(dy*px - dx*py)/gmag3;
           double fr,fp,fz, rho0;
           rho0 = 1.0/(3.0*M_PI*visc);
-          planetaryForce( thePlanets + pi, thePlanets[pi].r, thePlanets[pi].phi,  0.0, &fr, &fp, &fz, 1);
+          planetaryForce( thePlanets + pi, r, phi,  0.0, &fr, &fp, &fz, 1);
           thePlanets[pi].gravL -= (rho-rho0)*thePlanets[pi].r*fp*dV*dt;
           //Torque -= (rho-1.0)*rp*fp*dV;
       }
