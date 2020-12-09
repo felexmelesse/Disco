@@ -20,7 +20,6 @@ void report( struct domain * theDomain ){
 #endif
 
    double gamma_law = theDomain->theParList.Adiabatic_Index;
-
    struct planet * thePlanets = theDomain->thePlanets;
    int Npl = theDomain->Npl;
 
@@ -180,22 +179,25 @@ void report( struct domain * theDomain ){
                t2v = (rho-1.0)*rS*fp2*dV;
                Torque -= t1v;
                Torque2 -= t2v;
-               if (script_r >= thePlanets[1].eps){
+
+               double soft = theDomain->theParList.sinkPar3;
+
+               if (script_r >= soft){
                  Torque_c10 -= t1v;
                }
-               if (script_r >= thePlanets[0].eps){
+               if (script_r >= soft){
                  Torque2_c10 -= t2v;
                }
-               if (script_r >= 0.75*thePlanets[1].eps){
+               if (script_r >= 0.75*soft){
                  Torque_c075 -= t1v;
                }
-               if (script_r >= 0.75*thePlanets[0].eps){
+               if (script_r >= 0.75*soft){
                  Torque2_c075 -= t2v;
                }
-               if (script_r >= 0.5*thePlanets[1].eps){
+               if (script_r >= 0.5*soft){
                  Torque_c05 -= t1v;
                }
-               if (script_r >= 0.5*thePlanets[0].eps){
+               if (script_r >= 0.5*soft){
                  Torque2_c05 -= t2v;
                }
 
