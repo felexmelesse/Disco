@@ -45,13 +45,6 @@ void report( struct domain * theDomain ){
    double Torque = 0.0;
    double Torque2 = 0.0;
 
-   double Torque_c10 = 0.0;
-   double Torque_c075 = 0.0;
-   double Torque_c05 = 0.0;
-   double Torque2_c10 = 0.0;
-   double Torque2_c075 = 0.0;
-   double Torque2_c05 = 0.0;
-
    //double Fr=0.0;
    double PsiR = 0.0;
    double PsiI = 0.0;
@@ -73,6 +66,11 @@ void report( struct domain * theDomain ){
    therm_pls = calloc(Npl, sizeof(double) );
    xMom_pls = calloc(Npl, sizeof(double) );
    yMom_pls = calloc(Npl, sizeof(double) );
+
+
+   double * Torque1_cut, *Torque2_cut;
+   Torque1_cut = calloc(5, sizeof(double));
+   Torque2_cut = calloc(5, sizeof(double));
 
    //double S_R = 0.0;
    //double S_0 = 0.0;
@@ -182,25 +180,13 @@ void report( struct domain * theDomain ){
 
                double soft = theDomain->theParList.sinkPar3;
 
-               if (script_r >= soft){
-                 Torque_c10 -= t1v;
+               int n_cut;
+               double r_cut;
+               for (n_cut=0; n_cut<5; ++n_cut) {
+                 r_cut = (double)(n_cut + 1.)*soft;
+                 Torque1_cut[n_cut] -= t1v;
+                 Torque2_cut[n_cut] -= t2v;
                }
-               if (script_r >= soft){
-                 Torque2_c10 -= t2v;
-               }
-               if (script_r >= 0.75*soft){
-                 Torque_c075 -= t1v;
-               }
-               if (script_r >= 0.75*soft){
-                 Torque2_c075 -= t2v;
-               }
-               if (script_r >= 0.5*soft){
-                 Torque_c05 -= t1v;
-               }
-               if (script_r >= 0.5*soft){
-                 Torque2_c05 -= t2v;
-               }
-
                //Fr -= (rho-1.0)*fr*dV;
 /*
                int n_cut;
@@ -248,12 +234,10 @@ void report( struct domain * theDomain ){
    MPI_Allreduce( MPI_IN_PLACE , &Torque  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
    MPI_Allreduce( MPI_IN_PLACE , &Torque2 , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
 
-   MPI_Allreduce( MPI_IN_PLACE , &Torque_c10  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
-   MPI_Allreduce( MPI_IN_PLACE , &Torque2_c10 , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
-   MPI_Allreduce( MPI_IN_PLACE , &Torque_c075  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
-   MPI_Allreduce( MPI_IN_PLACE , &Torque2_c075 , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
-   MPI_Allreduce( MPI_IN_PLACE , &Torque_c05  , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
-   MPI_Allreduce( MPI_IN_PLACE , &Torque2_c05 , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
+
+   MPI_Allreduce( MPI_IN_PLACE , &Torque1_cut , 5 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   MPI_Allreduce( MPI_IN_PLACE , &Torque2_cut , 5 , MPI_DOUBLE , MPI_SUM , grid_comm );
+
 
    MPI_Allreduce( MPI_IN_PLACE , M_acc  , Npl , MPI_DOUBLE , MPI_SUM , grid_comm );
    MPI_Allreduce( MPI_IN_PLACE , La_pls  , Npl , MPI_DOUBLE , MPI_SUM , grid_comm );
@@ -313,7 +297,11 @@ void report( struct domain * theDomain ){
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", yMom_pls[j]);
       }
-      fprintf(rFile,"%le %le %le %le %le %le %le %le %le ", Mass, Torque_c10, Torque2_c10, Torque_c075, Torque2_c075, Torque_c05, Torque2_c05, Torque, Torque2);
+      //fprintf(rFile,"%le %le %le %le %le %le %le %le %le ", Mass, Torque_c10, Torque2_c10, Torque_c075, Torque2_c075, Torque_c05, Torque2_c05, Torque, Torque2);
+      fprintf(rFile, "%le ", Mass, Torque, Torque2);
+      for (j=0; j<5; ++j){
+        fprintf(rFile, "%le ", Torque1_cut[j], Torque2_cut[j]);
+      }
       fprintf(rFile,"\n");
 
       //fprintf(rFile,"%e %e %e ",t,Torque,Power);
@@ -329,4 +317,6 @@ void report( struct domain * theDomain ){
    free(Lg_pls);
    free(xMom_pls);
    free(yMom_pls);
+   free(Torque1_cut);
+   free(Torque2_cut);
 }
