@@ -184,8 +184,10 @@ void report( struct domain * theDomain ){
                double r_cut;
                for (n_cut=0; n_cut<5; ++n_cut) {
                  r_cut = (double)(n_cut + 1.)*soft;
-                 Torque1_cut[n_cut] -= t1v;
-                 Torque2_cut[n_cut] -= t2v;
+                 if (script_r > r_cut) {
+                   Torque1_cut[n_cut] -= t1v;
+                   Torque2_cut[n_cut] -= t2v;
+                 }
                }
                //Fr -= (rho-1.0)*fr*dV;
 /*
@@ -298,9 +300,9 @@ void report( struct domain * theDomain ){
          fprintf(rFile,"%le ", yMom_pls[j]);
       }
       //fprintf(rFile,"%le %le %le %le %le %le %le %le %le ", Mass, Torque_c10, Torque2_c10, Torque_c075, Torque2_c075, Torque_c05, Torque2_c05, Torque, Torque2);
-      fprintf(rFile, "%le ", Mass, Torque, Torque2);
+      fprintf(rFile, "%le %le %le", Mass, Torque, Torque2);
       for (j=0; j<5; ++j){
-        fprintf(rFile, "%le ", Torque1_cut[j], Torque2_cut[j]);
+        fprintf(rFile, "%le %le", Torque1_cut[j], Torque2_cut[j]);
       }
       fprintf(rFile,"\n");
 
