@@ -237,8 +237,8 @@ void report( struct domain * theDomain ){
    MPI_Allreduce( MPI_IN_PLACE , &Torque2 , 1 , MPI_DOUBLE , MPI_SUM , grid_comm );
 
 
-   MPI_Allreduce( MPI_IN_PLACE , &Torque1_cut , 5 , MPI_DOUBLE , MPI_SUM , grid_comm );
-   MPI_Allreduce( MPI_IN_PLACE , &Torque2_cut , 5 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   MPI_Allreduce( MPI_IN_PLACE , Torque1_cut , 5 , MPI_DOUBLE , MPI_SUM , grid_comm );
+   MPI_Allreduce( MPI_IN_PLACE , Torque2_cut , 5 , MPI_DOUBLE , MPI_SUM , grid_comm );
 
 
    MPI_Allreduce( MPI_IN_PLACE , M_acc  , Npl , MPI_DOUBLE , MPI_SUM , grid_comm );
@@ -302,7 +302,7 @@ void report( struct domain * theDomain ){
       //fprintf(rFile,"%le %le %le %le %le %le %le %le %le ", Mass, Torque_c10, Torque2_c10, Torque_c075, Torque2_c075, Torque_c05, Torque2_c05, Torque, Torque2);
       fprintf(rFile, "%le %le %le", Mass, Torque, Torque2);
       for (j=0; j<5; ++j){
-        fprintf(rFile, "%le %le", Torque1_cut[j], Torque2_cut[j]);
+        fprintf(rFile, "%le %le ", Torque1_cut[j], Torque2_cut[j]);
       }
       fprintf(rFile,"\n");
 
