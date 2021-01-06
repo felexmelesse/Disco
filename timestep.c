@@ -31,11 +31,17 @@ void timestep( struct domain * theDomain , double dt ){
       onestep( theDomain , 0.0 ,     dt , 1 , 1 , dt );
       theDomain->t += dt;   
    }
+   if(stepper == 3)
+   {
+      onestep( theDomain ,   0.0,       dt, 1 , 0 , dt )
+      onestep( theDomain ,  0.75,  0.25*dt, 0 , 0 , dt )
+      onestep( theDomain , 1./3., 2.*dt/3., 0 , 1 , dt )
+   }
    else
    {
       onestep( theDomain , 0.0 ,     dt , 1 , 0 , dt );
       // Second RK2 timestep occurs at t^n+1
-      theDomain->t += dt;   
+      theDomain->t += dt;
       onestep( theDomain , 0.5 , 0.5*dt , 0 , 1 , dt );
    }
 
