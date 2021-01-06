@@ -26,7 +26,7 @@ void initializePlanets( struct planet * thePlanets ){
    thePlanets[0].dM = 0.0;
 }
 
-void movePlanets( struct planet * thePlanets , double dt ){
+void movePlanets( struct planet * thePlanets , double t, double dt ){
    //Silence is golden.
 }
 
