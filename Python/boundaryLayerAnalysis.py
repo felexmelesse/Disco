@@ -136,7 +136,7 @@ def plot_routine(f):
 
 def process_images(files, ncpu):
   with Pool(ncpu) as pool:
-    pool.startmap(plot_routine, zip(files))
+    pool.starmap(plot_routine, zip(files))
 
 
 if __name__ == "__main__":
