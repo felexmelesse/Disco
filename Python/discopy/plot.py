@@ -7,7 +7,8 @@ from . import geom
 def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
                vmax=None, noGhost=False, colorbar=True, xlabel=None,
                ylabel=None, log=False, rmax=None, planets=None, cmap=None, 
-               symlog=False, symlthresh=None):
+               symlog=False, symlthresh=None, square=None):
+
 
     phi_max = pars['Phi_Max']
 
@@ -30,10 +31,15 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
         Rs = Rs[:-2]
 
     if rmax is None or rmax <= 0.0:
-        rmax = 0.0
+        rmax = np.max(Rs)
         lim_float = True
     else:
         lim_float = False
+
+    if square is True and xlabel is None:
+      xlabel = r'r'
+    if square is True and ylabel is None:
+      ylabel = r'$\phi$'
 
     if log:
         norm = mpl.colors.LogNorm(vmin, vmax)
@@ -43,8 +49,13 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
         norm = mpl.colors.SymLogNorm(symlthresh, vmin = vmin, vmax = vmax, base=10)
 
     pimh_min = np.inf
+    rfactor = np.sqrt(2.1)
+    if square is True: 
+      rfactor = 1.0
+
 
     for i, R in enumerate(Rs):
+      if R < rmax*np.sqrt(rfactor):
         ind = (r == R)
         imax = np.argmax(piph[ind])
 
@@ -60,9 +71,15 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
         # x = rf[:,None] * np.cos(phif)[None,:]
         # y = rf[:,None] * np.sin(phif)[None,:]
 
-        x, y, z = geom.getXYZ(rf[:,None], phif[None,:], Z.mean(), opts, pars)
+        if square is True:
+          X, Y = np.meshgrid(rf, phif)
 
-        C = ax.pcolormesh(x, y, aq[None,:], 
+          C = ax.pcolormesh(X, Y, aq.reshape((len(aq),1)),
+                cmap=cmap, vmin=vmin, vmax=vmax, norm=norm, shading='flat')
+        else:
+          x, y, z = geom.getXYZ(rf[:,None], phif[None,:], Z.mean(), opts, pars)
+
+          C = ax.pcolormesh(x, y, aq[None,:],
                 cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
 
         if lim_float and rf.max() > rmax:
@@ -76,18 +93,23 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
         xpl = rpl * np.cos(ppl)
         ypl = rpl * np.sin(ppl)
         ax.plot(xpl, ypl, color='grey', ls='', marker='o', mew=0, ms=5)
-        
-    ax.set_aspect('equal')
-    if opts['GEOMETRY'] == 'cylindrical':
-        ax.set_xlim(-rmax, rmax)
-        ax.set_ylim(-rmax, rmax)
-    elif opts['GEOMETRY'] == 'spherical':
-        ax.set_xlim(-rmax, rmax)
-        ax.set_ylim(-rmax, rmax)
+
+    if square is True:
+        ax.set_aspect('auto')
+        ax.set_xlim(Rs.min(), rmax)
+        ax.set_ylim(pimh_min, piph.max())
     else:
+      ax.set_aspect('equal')
+      if opts['GEOMETRY'] == 'cylindrical':
+        ax.set_xlim(-rmax, rmax)
+        ax.set_ylim(-rmax, rmax)
+      elif opts['GEOMETRY'] == 'spherical':
+        ax.set_xlim(-rmax, rmax)
+        ax.set_ylim(-rmax, rmax)
+      else:
         ax.set_xlim(rjph.min(), rjph.max())
         ax.set_ylim(pimh_min, piph.max())
-    
+
     if colorbar:
         cb = fig.colorbar(C, ax=ax)
         cb.set_label(label, fontsize=24)

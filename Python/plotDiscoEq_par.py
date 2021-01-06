@@ -11,9 +11,14 @@ import discopy.geom as geom
 from itertools import repeat
 from multiprocessing import Pool
 
+try:
+  import cmocean as cmo
+  symcmap = plt.get_cmap('cmo.balance')
+except ModuleNotFoundError:
+  symcmap = plt.get_cmap('RdBu')
+
 def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
                     bounds=None, rmax=None, planets=False, k=None, symlogvars=None, slt=None):
-    
     print("Loading {0:s}...".format(file))
 
     t, r, phi, z, prim, dat = util.loadCheckpoint(file)
@@ -113,7 +118,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
 
                 plot.plotZSlice(fig, ax, rjph, piph1, r, prim[:,q], Z, vartex[q],
                                 pars, opts, vmin=vmin, vmax=vmax, rmax=rmax, 
-                                planets=planetDat, symlog=True, symlthresh=slt, cmap=plt.get_cmap('PRGn') )
+                                planets=planetDat, symlog=True, symlthresh=slt, cmap=symcmap )
                 fig.suptitle(title, fontsize=24)
                 plotname = "plot_eq_{0:s}_symlog_{1:s}.png".format(name, varnames[q])
 
@@ -131,12 +136,12 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
             curl = np.sqrt(curl*curl)
             vmax = np.max(curl)
             vmin = np.min(curl)
-            slt = vmin * 0.001*(vmax - vmin)
+            slt = vmin * 0.005*(vmax - vmin)
             vmin = -1.0*np.max(curl)
 
             plot.plotZSlice(fig, ax, rjph, piph1, r, curl, Z, vartex[q],
                                 pars, opts, vmin=vmin, vmax=vmax, rmax=rmax, 
-                                planets=planetDat, symlog=True, symlthresh=slt, cmap=plt.get_cmap('PRGn') )
+                                planets=planetDat, symlog=True, symlthresh=slt, cmap=symcmap )
             fig.suptitle(title, fontsize=24)
             plotname = "plot_eq_{0:s}_symlog_curl.png".format(name, varnames[q])
 
@@ -212,20 +217,13 @@ if __name__ == "__main__":
     planets = args.planets
     noghost = args.noghost
     ncpu = args.ncpu
-    
+
     if ncpu < 1:
-        raise SystemExit("CPU only has one core! Turn off parallel processing flag.")
-    
+      ncpu = 1
+
     files = args.checkpoints
 
     names, texnames, num_c, num_n = util.getVarNames(files[0])
 
     bounds = getBounds(use_bounds, names, files)
-    
-    if ncpu:
-        process_images(files, vars, logvars, bounds, om, rmax, noghost, planets, ncpu, slogvars, slt)
-    else:
-        for f in files:
-                plotCheckpoint(f, vars=vars, logvars=logvars, bounds=bounds, om=om, 
-			rmax=rmax, noGhost=noghost, planets=planets, symlogvars = slogvars, slt = slt)
-
+    process_images(files, vars, logvars, bounds, om, rmax, noghost, planets, ncpu, slogvars, slt)

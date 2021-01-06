@@ -1,3 +1,4 @@
+import os
 import sys
 import math
 import numpy as np
@@ -6,7 +7,17 @@ import matplotlib.pyplot as plt
 import discopy.util as util
 import discopy.geom as geom
 import discopy.plot as plot
-#import time
+import argparse as ag
+from multiprocessing import Pool
+
+try:
+  import cmocean as cmo
+  vrcmap = plt.get_cmap('cmo.delta')
+  vortcmap = plt.get_cmap('cmo.balance_r')
+except ModuleNotFoundError:
+  vrcmap = plt.get_cmap('PRGn')
+  vortcmap = plt.get_cmap('RdBu')
+
 
 def analyzeSingle(filename):
 
@@ -39,16 +50,8 @@ def analyzeSingle(filename):
 
     fig, ax = plt.subplots(1, 1)
 
-    #for j, rr in enumerate(R):
-    #  ind = (rr == x1)
-    #  avgRho = np.sum(rho[ind]*dphi[ind])/np.sum(ind)
-    #  rho[ind] = (rho[ind]-avgRho)/avgRho
-
-    #plot.plotZSlice(fig, ax, rjph, piph, x1, rho, x3.mean(), r"$\rho/\langle\rho\rangle_\phi$",
-    #                pars, opts)
     plot.plotZSlice(fig, ax, rjph, piph, x1, rho, x3.mean(), r"$\rho$",
                     pars, opts, vmax = 1.2)
-    ax.set_aspect('equal')
     print("Saving") 
     #fig.savefig('bl_deltaRho.png')
     plotname = "plot_BL_{0:s}_{1:s}.png".format(name, 'rho')
@@ -61,28 +64,36 @@ def analyzeSingle(filename):
     vrp = v1 * x1 * np.sqrt(rho)
 
     v1ext = np.max([-1*vrp.min(), vrp.max()])
-    slt = 0.001 * v1ext
-
-    #plot.plotZSlice(fig, ax, rjph, piph, x1, v1, x3.mean(), r"$v_r$",
-    #                pars, opts, symlog=True, symlthresh = slt, vmax = v1ext, vmin = -1*v1ext, cmap=plt.get_cmap('PRGn') )
+    slt = 0.005 * v1ext
 
     plot.plotZSlice(fig, ax, rjph, piph, x1, vrp, x3.mean(), r"$r\sqrt{\Sigma}v_r$",
-                    pars, opts, symlog=True, symlthresh=slt, vmax = v1ext, vmin = -1*v1ext, cmap=plt.get_cmap('PRGn') )
+                    pars, opts, symlog=True, symlthresh=slt, vmax = v1ext, vmin = -1*v1ext, cmap=vrcmap )
 
-    ax.set_aspect('equal')
-    print("Saving") 
+    print("Saving")
     plotname = "plot_BL_{0:s}_{1:s}.png".format(name, 'vr')
-    fig.savefig(plotname, dpi = 400)
+    fig.savefig(plotname, dpi = 1000)
+    plt.close(fig)
+
+    #zoom-in
+    fig, ax = plt.subplots(1, 1)
+
+    vrp = v1 * x1 * np.sqrt(rho)
+
+    v1ext = np.max([-1*vrp.min(), vrp.max()])
+    slt = 0.005 * v1ext
+
+    plot.plotZSlice(fig, ax, rjph, piph, x1, vrp, x3.mean(), r"$r\sqrt{\Sigma}v_r$",
+                    pars, opts, symlog=True, symlthresh=slt, vmax = v1ext, vmin = -1*v1ext, cmap=vrcmap, square=True, rmax=1.0+(1.0-np.min(x1)) )
+
+    print("Saving zoom")
+    plotname = "plot_BL_{0:s}_{1:s}.png".format(name, 'vr_zoom')
+    fig.savefig(plotname, dpi = 1000)
     plt.close(fig)
 
     print("Calculating div")
-    #start = time.time()
     divV = geom.calculateCurlV(x1, x2, x3, v1, v2, v3, dat, opts, pars)
-    #end = time.time()
 
-    #print(start-end)
-
-    interior = (x1 > pars['R_Min']) & (x1 < pars['R_Max'])
+    interior = (x1 > pars['R_Min']) & (x1 < pars['R_Max'] - 0.1)
     minDiv = divV[interior].min()
     maxDiv = divV[interior].max()
     if np.abs(maxDiv) < np.abs(minDiv): maxDiv = -1.0*minDiv
@@ -90,15 +101,20 @@ def analyzeSingle(filename):
 
     print("Plotting")
     fig, ax = plt.subplots(1, 1)
-    plot.plotZSlice(fig, ax, rjph, piph, x1, divV, x3.mean(), r"$(\nabla\times v)_z$", pars, opts, symlog=True, symlthresh=0.001*maxDiv, vmin=minDiv, vmax=maxDiv, cmap='RdBu')
-    ax.set_aspect('equal')
+    plot.plotZSlice(fig, ax, rjph, piph, x1, divV, x3.mean(), r"$(\nabla\times v)_z$", pars, opts, symlog=True, symlthresh=0.005*maxDiv, vmin=minDiv, vmax=maxDiv, cmap=vortcmap)
     print("Saving")
     plotname = "plot_BL_{0:s}_{1:s}.png".format(name, 'vorticity')
-    #plotname = "testvort.png"
-    fig.savefig(plotname, dpi = 400)
-    #fig.savefig('bl_vorticity.png', dpi = 1200)
+    fig.savefig(plotname, dpi = 1000)
     plt.close(fig)
 
+    #zoom-in
+    fig, ax = plt.subplots(1, 1)
+    plot.plotZSlice(fig, ax, rjph, piph, x1, divV, x3.mean(), r"$(\nabla\times v)_z$", pars, opts, symlog=True, symlthresh=0.005*maxDiv, vmin=minDiv, vmax=maxDiv, cmap=vortcmap, square=True, rmax=1.0 + (1.0-np.min(x1)))
+
+    print("Saving zoom")
+    plotname = "plot_BL_{0:s}_{1:s}.png".format(name, 'vorticity_zoom')
+    fig.savefig(plotname, dpi = 1000)
+    plt.close(fig)
 
 
     return t, nx
@@ -115,6 +131,13 @@ def analyze(filenames):
         t[i] = dat[0]
         nx[i] = dat[1]
 
+def plot_routine(f):
+  analyzeSingle(f)
+
+def process_images(files, ncpu):
+  with Pool(ncpu) as pool:
+    pool.startmap(plot_routine, zip(files))
+
 
 if __name__ == "__main__":
 
@@ -122,5 +145,17 @@ if __name__ == "__main__":
         print("Need a checkpoint dude!")
         sys.exit()
 
-    filenames = sys.argv[1:]
-    analyze(filenames)
+    parser = ag.ArgumentParser(description="Create 2D plots of Disco variables. Parallelized version.")
+    parser.add_argument('checkpoints', nargs='+',
+                            help="Checkpoint (.h5) files to plot.")
+    parser.add_argument('-n', '--ncpu', type=int, nargs='?', action='store', const= os.cpu_count() - 1, default=False,
+                            help="Turns on parallel processing. If number of cores not given, then it will default to N-1 cores.")
+
+    args = parser.parse_args()
+    files = args.checkpoints
+    ncpu = args.ncpu
+
+    if ncpu < 2:
+      analyze(files)
+    else:
+      process_images(files, ncpu)
