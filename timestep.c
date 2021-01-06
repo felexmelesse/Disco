@@ -33,9 +33,10 @@ void timestep( struct domain * theDomain , double dt ){
    }
    if(stepper == 3)
    {
-      onestep( theDomain ,   0.0,       dt, 1 , 0 , dt )
-      onestep( theDomain ,  0.75,  0.25*dt, 0 , 0 , dt )
-      onestep( theDomain , 1./3., 2.*dt/3., 0 , 1 , dt )
+      onestep( theDomain ,   0.0,       dt, 1 , 0 , dt );
+      onestep( theDomain ,  0.75,  0.25*dt, 0 , 0 , dt );
+      onestep( theDomain , 1./3., 2.*dt/3., 0 , 1 , dt );
+      theDomain->t += dt; //planets won't be in the right place
    }
    else
    {
