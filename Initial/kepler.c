@@ -1,4 +1,5 @@
 #include "../paul.h"
+#include "../omega.h"
 
 static double gam  = 0.0;
 static double nu   = 0.0;
@@ -25,15 +26,15 @@ void initial( double * prim , double * x ){
    double omega2 = fmax( (omega02 - omegaP2), 0.0 );
    double omega = sqrt(omega2);
 
-   double cs2 = 1.0/(R*Mach*Mach);
+   double cs2 = get_cs2(x);
    double visc = nu;
    if (alpha_flag == 1) visc = nu*cs2/omega;
    double rho = 1.0;
    //if (nu > 0.0) rho = rho/nu;
-   double Pp = rho*cs2;
+   double Pp = rho*cs2/gam;
 
-   double X = 0.0; 
-   if( r*cos(x[1]) > 0.0 ) X = 1.0; 
+   double X = 0.0;
+   if( r*cos(x[1]) > 0.0 ) X = 1.0;
 
    prim[RHO] = rho;
    prim[PPP] = Pp;

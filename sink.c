@@ -238,14 +238,14 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dV, doub
     double rho = prim[RHO];
     double gm1 = gamma_law-1.0;
     double beta = coolPar1;
+    double x[3];
+    get_centroid_arr(xp, xm, x);
     double enTarget = get_cs2(x)/(gamma_law*gm1);
     double enCurrent = press/(rho*gm1);
     double omtot = 0.0;
 
     if(coolType == COOL_BETA_RELAX || enCurrent > enTarget)
     {
-      double x[3];
-      get_centroid_arr(xp, xm, x);
       double r = x[0];
       double phi = x[1];
       double z = x[2];
@@ -269,7 +269,7 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dV, doub
         mag = dx*dx + dy*dy;
         mag = sqrt(mag);
         planetaryForce( thePlanets + pi, r, phi, z, &fr, &fp, &fz, 1);
-        omtot += sqsrt(fr*fr + fp*fp + fz*fz)/mag;
+        omtot += sqrt(fr*fr + fp*fp + fz*fz)/mag;
       }
       omtot = sqrt(omtot);
 
@@ -279,7 +279,6 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dV, doub
       //integrate source term over timestep
       double Tm1 = expm1(-dt*beta*omtot);
       cons[TAU] += rho*dV*( enCurrent - enTarget)*Tm1;	//N.B. Tm1 is in [-1 and 0]
-      }
     }
   }
 }
