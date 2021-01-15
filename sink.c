@@ -1,5 +1,6 @@
 #include "paul.h"
 #include "omega.h"
+#include "geometry.h"
 
 static int sinkType = 0;
 static double sinkPar1 = 0.0;
@@ -60,7 +61,6 @@ void setSinkParams(struct domain *theDomain)
     Npl = theDomain->Npl;
 }
 
-double get_centroid( double , double , int);
 
 void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, double dt)
 {
@@ -101,9 +101,12 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
 
 
     if(sinkType != 0){
-      double r = get_centroid(xp[0], xm[0], 1);
-      double phi = get_centroid(xp[1], xm[1], 0);
-      double z = get_centroid(xp[2], xm[2], 2);
+
+      double x[3];
+      get_centroid_arr(xp, xm, x);
+      double r = x[0];
+      double phi = x[1];
+      double z = x[2];
 
       double rho = prim[RHO];
       double vr  = prim[URR];
@@ -156,7 +159,7 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
               arg = 0.0;
             }
           }
-		
+
           rate = sinkPar1*thePlanets[pi].omega;
           surfdiff = rho*rate*arg;
 
@@ -228,54 +231,55 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
 
 void cooling(double *prim, double *cons, double *xp, double *xm, double dV, double dt )
 {
-  if(coolType == 1 || coolType == 2)
+  if(coolType == COOL_BETA || coolType == COOL_BETA_RELAX)
   {
     //Beta-cooling
     double press = prim[PPP];
     double rho = prim[RHO];
     double gm1 = gamma_law-1.0;
     double beta = coolPar1;
-    double enTarget = get_cs2(x)/gm1;
+    double enTarget = get_cs2(x)/(gamma_law*gm1);
     double enCurrent = press/(rho*gm1);
     double omtot = 0.0;
 
-    double r = get_centroid(xp[0], xm[0], 1);
-    double phi = get_centroid(xp[1], xm[1], 0);
-    double z = get_centroid(xp[2], xm[2], 2);
-
-    double cosg = cos(phi);
-    double sing = sin(phi);
-    double gx = r*cosg;
-    double gy = r*sing;
-
-    int pi;
-    double fr,fp,fz, cosp, sinp, px, py, dx, dy, mag;
-    for (pi=0; pi<Npl; pi++)
+    if(coolType == COOL_BETA_RELAX || enCurrent > enTarget)
     {
-      cosp = cos(thePlanets[pi].phi);
-      sinp = sin(thePlanets[pi].phi);
-      px = thePlanets[pi].r*cosp;
-      py = thePlanets[pi].r*sinp;
+      double x[3];
+      get_centroid_arr(xp, xm, x);
+      double r = x[0];
+      double phi = x[1];
+      double z = x[2];
 
-      dx = gx-px;
-      dy = gy-py;
-      mag = dx*dx + dy*dy;
-      mag = sqrt(mag);
-      planetaryForce( thePlanets + pi, r, phi, z, &fr, &fp, &fz, 1);
-      omtot += sqsrt(fr*fr + fp*fp + fz*fz)/mag;
-    }
-    omtot = sqrt(omtot);
+      double cosg = cos(phi);
+      double sing = sin(phi);
+      double gx = r*cosg;
+      double gy = r*sing;
 
-    if (coolType == 1)
-    {
-      //direct implementation of source term
-      cons[TAU] -= rho*(enCurrent - enTarget)*dt*dV*beta/omtot;
-    }
-    else
-    {
+      int pi;
+      double fr,fp,fz, cosp, sinp, px, py, dx, dy, mag;
+      for (pi=0; pi<Npl; pi++)
+      {
+        cosp = cos(thePlanets[pi].phi);
+        sinp = sin(thePlanets[pi].phi);
+        px = thePlanets[pi].r*cosp;
+        py = thePlanets[pi].r*sinp;
+
+        dx = gx-px;
+        dy = gy-py;
+        mag = dx*dx + dy*dy;
+        mag = sqrt(mag);
+        planetaryForce( thePlanets + pi, r, phi, z, &fr, &fp, &fz, 1);
+        omtot += sqsrt(fr*fr + fp*fp + fz*fz)/mag;
+      }
+      omtot = sqrt(omtot);
+
+      ////direct implementation of source term
+      //cons[TAU] += rho*(enCurrent - enTarget)*dt*dV*beta*omtot;
+
       //integrate source term over timestep
-      double T = exp(-dt*beta/omtot);
-      cons[TAU] -= rho*dV*( enCurrent*(T-1.0) + enTarget*(1.0-T) );
+      double Tm1 = expm1(-dt*beta*omtot);
+      cons[TAU] += rho*dV*( enCurrent*Tm1 - enTarget*Tm1);
+      }
     }
   }
 }
