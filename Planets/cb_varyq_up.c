@@ -94,8 +94,8 @@ void movePlanets( struct planet * thePlanets , double t , double dt ){
    thePlanets[0].M = 1.-mu;
    thePlanets[1].M = mu;
 
-   thePlanets[0].M = mu;
-   thePlanets[1].M = 1.-mu;
+   thePlanets[0].r = mu;
+   thePlanets[1].r = 1.-mu;
 
 }
 

@@ -277,7 +277,7 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dV, doub
       //cons[TAU] += rho*(enCurrent - enTarget)*dt*dV*beta*omtot;
 
       //integrate source term over timestep
-      double Tm1 = expm1(-dt*beta*omtot);
+      double Tm1 = expm1(-dt*omtot/beta);
       cons[TAU] += rho*dV*( enCurrent - enTarget)*Tm1;	//N.B. Tm1 is in [-1 and 0]
     }
   }
