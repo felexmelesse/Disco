@@ -55,7 +55,7 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
 
 
     for i, R in enumerate(Rs):
-      if R < rmax*np.sqrt(rfactor):
+      if R < rmax*rfactor:
         ind = (r == R)
         imax = np.argmax(piph[ind])
 
