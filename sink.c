@@ -228,41 +228,54 @@ void sink_src(double *prim, double *cons, double *xp, double *xm, double dV, dou
 
 void cooling(double *prim, double *cons, double *xp, double *xm, double dV, double dt )
 {
-    if(coolType == 1)
-    {
-        double press = prim[PPP];
-     	double r = 0.5*(xp[0]+xm[0]);
-        double gm1 = gamma_law-1.0;
-        double beta = coolPar1;
-        double om = 1.0;
-        if (r > 1.0) om = pow(r,-1.5);
-        cons[TAU] -= (press/gm1)*beta*om*dt*dV;
-        //cons[TAU] -= (press/gm1)*dt*dV;
-        
-    }
-    if(coolType == 2)
-    {
-        double beta = coolPar1;	
-        double press, gm1;
-        double sigma = prim[RHO];
-        press = prim[PPP];
-        gm1 = gamma_law-1.0;
-        //T = press/sigma;
-        double arg = 1.0 + 8*gm1*beta*press*press*press*dt/(sigma*sigma*sigma*sigma*sigma);
-        cons[TAU] += (press/gm1)*dV*(pow(arg, -1./3.) - 1.0);
-    }
-    if(coolType == 3)
-    {
-        //constant H/r, assumes visc -> alpha
-     	//double r = 0.5*(xp[0]+xm[0]);
-        double press, gm1;
-        double sigma = prim[RHO];
-        press = prim[PPP];
-        gm1 = gamma_law-1.0;
+  if(coolType == 1 || coolType == 2)
+  {
+    //Beta-cooling
+    double press = prim[PPP];
+    double rho = prim[RHO];
+    double gm1 = gamma_law-1.0;
+    double beta = coolPar1;
+    double enTarget = get_cs2(x)/gm1;
+    double enCurrent = press/(rho*gm1);
+    double omtot = 0.0;
 
-        //here visc = alpha
-        //double arg = 1.0 + 8*gm1*dt*(sigma/press)*(27./32.)*visc*beta*beta*r*r*pow(omega, 3.0);
-        double arg = 1.0 + (27./8.)*gm1*dt*visc*Mach*Mach*pow(press, 3.0)*pow(sigma, -4.0); //Farris et al. 2015
-        cons[TAU] += (press/gm1)*dV*(pow(arg, -1./3.) - 1.0);
+    double r = get_centroid(xp[0], xm[0], 1);
+    double phi = get_centroid(xp[1], xm[1], 0);
+    double z = get_centroid(xp[2], xm[2], 2);
+
+    double cosg = cos(phi);
+    double sing = sin(phi);
+    double gx = r*cosg;
+    double gy = r*sing;
+
+    int pi;
+    double fr,fp,fz, cosp, sinp, px, py, dx, dy, mag;
+    for (pi=0; pi<Npl; pi++)
+    {
+      cosp = cos(thePlanets[pi].phi);
+      sinp = sin(thePlanets[pi].phi);
+      px = thePlanets[pi].r*cosp;
+      py = thePlanets[pi].r*sinp;
+
+      dx = gx-px;
+      dy = gy-py;
+      mag = dx*dx + dy*dy;
+      mag = sqrt(mag);
+      planetaryForce( thePlanets + pi, r, phi, z, &fr, &fp, &fz, 1);
+      omtot += sqsrt(fr*fr + fp*fp + fz*fz)/mag;
     }
+    omtot = sqrt(omtot);
+
+    if (coolType == 1)
+    {
+      //direct implementation of source term
+      cons[TAU] -= rho*(enCurrent - enTarget)*dt*dV*beta/omtot;
+    }
+    else
+    {
+      //integrate source term over timestep
+      double T = exp(-dt*beta/omtot);
+      cons[TAU] -= rho*dV*( enCurrent*(T-1.0) + enTarget*(1.0-T) );
+    }
+  }
 }
