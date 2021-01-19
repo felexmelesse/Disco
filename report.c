@@ -44,6 +44,8 @@ void report( struct domain * theDomain ){
    //double Power  = 0.0;
    double Torque = 0.0;
    double Torque2 = 0.0;
+   double q = 0.0;
+   if (Npl > 1) q = ( thePlanets[1].M / thePlanets[0].M );
 
    //double Fr=0.0;
    double PsiR = 0.0;
@@ -273,7 +275,7 @@ void report( struct domain * theDomain ){
       //          t,Torque,Power,Fr,rho_min,rhoavg_min,PsiR,PsiI,Mass,Mdot,S_R,
       //          L1_rho,L1_isen,L1_B,Br2,aM,bM);
       //fprintf(rFile,"%le %le %le ",  t,Torque,Torque2);
-      fprintf(rFile,"%.7le ",  t);
+      fprintf(rFile,"%.7le %.7le",  t, q);
       for( j=0; j<Npl; ++j){
          fprintf(rFile,"%le ", Lg_pls[j]);
       }
