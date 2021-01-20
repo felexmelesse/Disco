@@ -71,8 +71,8 @@ double get_om( const double *x ){
 
     else if(enOmChoice == 3)
     {
-        double n = 8.0;
-        om = 1./pow( pow( r , 1.5*n ) + 1. , 1./n )-Omega0;
+        double n = 2.0;
+        om = 1./pow( pow( r , 1.5*n ) + pow(enOmPar, 1.5*n) , 1./n )-Omega0;
     }
 
     else if(enOmChoice == 4)
@@ -96,8 +96,9 @@ double get_om1( const double *x){
 
     else if(enOmChoice == 3)
     {
-        double n = 8.0;
-        om1 = -1.5 * pow(r,-1+1.5*n) / pow( pow(r,1.5*n) + 1. , 1.0+1./n );
+        double n = 2.0;
+        om1 = -1.5 * pow(r,-1+1.5*n) / pow( pow(r,1.5*n)
+                                            + pow(enOmPar, 1.5*n) , 1.0+1./n );
     }
 
     else if(enOmChoice == 4)

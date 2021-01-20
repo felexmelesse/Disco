@@ -19,9 +19,10 @@ def calcShearCart(t, x, pars):
     v0 = pars['Init_Par4']
     vx0 = pars['Init_Par5']
     vy0 = pars['Init_Par6']
+    rho_kappa = pars['Init_Par8']
 
     rho = np.empty(x.shape)
-    rho[:] = rho0
+    rho[:] = rho0 * np.exp(-rho_kappa * x)
 
     if pars['Isothermal']:
         cs2 = 1.0 / pars['Mach_Number']**2
@@ -37,7 +38,7 @@ def calcShearCart(t, x, pars):
     if not visc_flag:
         sig = sig0
 
-    xc = x0 + vx0*t
+    xc = x0 + (vx0 + nu*rho_kappa)*t
 
     vy = v0 * np.exp(-0.5*(x-xc)*(x-xc) / (sig*sig)) * sig0/sig + vy0
 
@@ -217,10 +218,10 @@ def analyze(filenames):
         errP[i] = dat[3]
         errVx[i] = dat[4]
         errVy[i] = dat[5]
-        errVz[i] = dat[5]
-        errVr[i] = dat[6]
-        errVp[i] = dat[7]
-        errVt[i] = dat[7]
+        errVz[i] = dat[6]
+        errVr[i] = dat[7]
+        errVp[i] = dat[8]
+        errVt[i] = dat[9]
 
     makeErrPlot(t, nx, errRho, "shearCart_errRho", r"$L_1(\rho)$")
     makeErrPlot(t, nx, errP, "shearCart_errP", r"$L_1(P)$")

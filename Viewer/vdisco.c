@@ -29,8 +29,8 @@
 /* ASCII code for the escape key. */
 #define ESCAPE 27
 
-#define VAL_FLOOR 1.0 - 1.0e-10 //1 //0.95//0 //-8e-3//-3e-2 //(-HUGE_VAL) //.96
-#define VAL_CEIL  1.0 + 1.0e-10 //-1 //4.5e-3 //1.05//5.25e-21 //5.25e-9 //8e-3//3e-2 //5.24e-5 //(HUGE_VAL)  //1.04
+#define VAL_FLOOR 0.9 // 1.0 - 1.0e-10 //1 //0.95//0 //-8e-3//-3e-2 //(-HUGE_VAL) //.96
+#define VAL_CEIL  2.0 //+ 1.0e-10 //-1 //4.5e-3 //1.05//5.25e-21 //5.25e-9 //8e-3//3e-2 //5.24e-5 //(HUGE_VAL)  //1.04
 #define FIXMAXMIN 1
 #define COLORMAX 13
 #define CAM_BACKUP  1.5

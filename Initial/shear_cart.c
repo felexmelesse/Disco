@@ -10,6 +10,7 @@ static double v0 = 0.0;
 static double vx0 = 0.0;
 static double vy0 = 0.0;
 static double phi0_o_pi = 0.0;
+static double rho_kappa = 0.0;
 static int prof_choice = 0;
 static int isothermal_flag = 0;
 static int visc_flag = 0;
@@ -35,6 +36,7 @@ void setICparams( struct domain * theDomain )
     vx0 = theDomain->theParList.initPar5;
     vy0 = theDomain->theParList.initPar6;
     phi0_o_pi = theDomain->theParList.initPar7;
+    rho_kappa = theDomain->theParList.initPar8;
     t = &(theDomain->t);
 }
 
@@ -50,7 +52,7 @@ void initial(double *prim, double *x)
 
     double rho, vx, vy, P;
 
-    rho = 1.0;
+    rho = exp(-rho_kappa * X);
 
     if(isothermal_flag)
         P = get_cs2(x) * rho / gam;
@@ -62,7 +64,7 @@ void initial(double *prim, double *x)
     if(!visc_flag)
         sig2 = sig0*sig0;
 
-    double xc = x0 + vx0*(*t);
+    double xc = x0 + (vx0 + rho_kappa*nu)*(*t);
 
     vx = vx0;
     vy = v0 * exp(-0.5*(X-xc)*(X-xc) / sig2) * sig0/sqrt(sig2) + vy0;

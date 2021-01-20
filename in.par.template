@@ -60,7 +60,7 @@ Isothermal		    0
 Cs2_Profile         0   //0=Flat,1=FlatDiskMach,2=Visc,3=Sorathia,4=ConstMach
 Cs2_Par             0.0 //unused so far
 Energy_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep, 4=Gaussian
-Energy_Omega_Par    0.0 //unused so far
+Energy_Omega_Par    0.0 //Transition Radius for Rig2Kep
 Use_Viscosity		0
 Viscosity		    0.0
 Use_As_Alpha		0      
