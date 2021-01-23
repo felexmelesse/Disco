@@ -699,6 +699,15 @@ def integrateTrans1(x1, f, dat, opts, pars, dA=None):
     return integral
 
 
+def calculateGrad(x1, x2, x3, f, dat, opts, pars):
+
+    dfdx2 = calculateGradX2(x2, f, dat, pars)
+    dfdx1 = calculateGradX1(x1, x2, f, dat, opts, pars, dfdx2)
+    dfdx3 = calculateGradX3(x2, x3, f, dat, opts, pars, dfdx2)
+
+    return dfdx1, dfdx2, dfdx3
+
+
 def calculateGradX2(x2, f, dat, pars):
 
     index = dat[8]
@@ -709,6 +718,9 @@ def calculateGradX2(x2, f, dat, pars):
     
     dfdx2 = np.empty(f.shape)
 
+    multiD = True if len(f.shape) > 1 else False
+    extraDims = (len(f.shape)-1) * (1,)
+
     for k in range(n3):
         for j in range(n1):
             a = index[k, j]
@@ -716,6 +728,8 @@ def calculateGradX2(x2, f, dat, pars):
 
             fjk = f[a:b]
             x2jk = x2[a:b]
+            if multiD:
+                x2jk = x2jk.reshape(x2jk.shape+extraDims)
 
             x2jkR = np.roll(x2jk, -1)
             x2jkL = np.roll(x2jk, 1)
@@ -724,9 +738,262 @@ def calculateGradX2(x2, f, dat, pars):
             dx2[dx2 < 0] += x2_max
             dx2[dx2 > x2_max] -= x2_max
 
-            dfdx2[a:b] = (np.roll(fjk, -1) - np.roll(fjk, 1)) / dx2
+            dfdx2[a:b] = (np.roll(fjk, -1, axis=0)
+                          - np.roll(fjk, 1, axis=0)) / dx2
 
     return dfdx2
+
+
+def calculateGradX1(x1, x2, f, dat, opts, pars, dfdx2=None):
+
+    index = dat[8]
+    n1 = index.shape[1]
+    n2 = dat[7]
+    n3 = index.shape[0]
+    x2_max = pars['Phi_Max']
+    x1f = dat[0]
+    x3f = dat[1]
+    x2ph = dat[3]
+    
+    dfdx1 = np.zeros(f.shape)
+
+    if n1 <= 1:
+        return dfdx1
+
+    dAtot = np.zeros(f.shape)
+    if dfdx2 is None:
+        dfdx2 = calculateGradX2(x2, f, dat, pars)
+    
+    multiD = True if len(f.shape) > 1 else False
+    extraDims = (len(f.shape)-1) * (1,)
+
+    for k in range(n3):
+        for jf in range(1, n1):
+            jL = jf-1
+            jR = jf
+            aL = index[k, jL]
+            bL = index[k, jL] + n2[k, jL]
+            aR = index[k, jR]
+            bR = index[k, jR] + n2[k, jR]
+
+            x2phL = unwrap(x2ph[aL:bL], x2_max)
+            x2phR = unwrap(x2ph[aR:bR], x2_max)
+            fL = f[aL:bL]
+            fR = f[aR:bR]
+            dfdx2L = dfdx2[aL:bL]
+            dfdx2R = dfdx2[aR:bR]
+            x1L = x1[aL:bL]
+            x1R = x1[aR:bR]
+
+            x20 = x2phL[0]
+            while x20 > x2phR[-1]:
+                x2phR += x2_max
+            while x20 <= x2phR[-1]-x2_max:
+                x2phR -= x2_max
+            x2mhL = np.roll(x2phL, 1)
+            x2mhL[0] -= x2_max
+            x2mhR = np.roll(x2phR, 1)
+            x2mhR[0] -= x2_max
+
+            iL0 = 0
+            iR0 = np.searchsorted(x2phR, x20)
+            if iR0 >= n2[k, jR]:
+                iR0 = 0
+            # iL = iL0
+            # iR = iR0
+
+            n2f = n2[k, jL] + n2[k, jR]
+
+            iL = np.empty(n2f, dtype=int)
+            iR = np.empty(n2f, dtype=int)
+
+            iLi = iL0
+            iRi = iR0
+
+            adjLi = 0.0
+            adjRi = 0.0
+
+            for i in range(n2f):
+                iL[i] = iLi
+                iR[i] = iRi
+                if x2phL[iLi]+adjLi < x2phR[iRi]+adjRi:
+                    iLi += 1
+                    if iLi >= n2[k, jL]:
+                        iLi = 0
+                        adjLi += x2_max
+                else:
+                    iRi += 1
+                    if iRi >= n2[k, jR]:
+                        iRi = 0
+                        adjRi += x2_max
+
+            x2p = np.minimum(unwrap(x2phL[iL], x2_max),
+                             unwrap(x2phR[iR], x2_max))
+            x2m = np.maximum(unwrap(x2mhL[iL], x2_max),
+                             unwrap(x2mhR[iR], x2_max))
+            
+
+            x2i = 0.5*(x2p + x2m)
+            x2L = unwrap(x2[aL:bL][iL], x2_max)
+            x2R = unwrap(x2[aR:bR][iR], x2_max)
+
+            dx2L = x2i-x2L
+            dx2L[dx2L > 0.5*x2_max] -= x2_max
+            dx2L[dx2L < -0.5*x2_max] += x2_max
+            dx2R = x2i-x2R
+            dx2R[dx2R > 0.5*x2_max] -= x2_max
+            dx2R[dx2R < -0.5*x2_max] += x2_max
+
+            dAi = getDA1grid(x1f[jf], x2p, x2m, x3f[k+1], x3f[k], opts)
+            dx1i = x1R[iR] - x1L[iL]
+            if multiD:
+                dx2L = dx2L.reshape(dx2L.shape + extraDims)
+                dx2R = dx2R.reshape(dx2R.shape + extraDims)
+                dx1i = dx1i.reshape(dx1i.shape + extraDims)
+                dAi = dAi.reshape(dAi.shape + extraDims)
+
+            fLi = fL[iL] + dfdx2L[iL] * dx2L
+            fRi = fR[iR] + dfdx2R[iR] * dx2R
+
+            dfdxi = (fRi - fLi) / dx1i
+
+            np.add.at(dfdx1, aL+iL, dfdxi * dAi)
+            np.add.at(dAtot, aL+iL, dAi)
+            np.add.at(dfdx1, aR+iR, dfdxi * dAi)
+            np.add.at(dAtot, aR+iR, dAi)
+
+            if (x2p <= x2m).any():
+                print("PROBLEM", k, jf)
+            
+    dfdx1 /= dAtot
+
+    return dfdx1
+
+
+def calculateGradX3(x2, x3, f, dat, opts, pars, dfdx2=None):
+
+    index = dat[8]
+    n1 = index.shape[1]
+    n2 = dat[7]
+    n3 = index.shape[0]
+    x2_max = pars['Phi_Max']
+    x1f = dat[0]
+    x3f = dat[1]
+    x2ph = dat[3]
+    
+    dfdx3 = np.zeros(f.shape)
+
+    if n3 <= 1:
+        return dfdx3
+
+    dAtot = np.zeros(f.shape)
+    if dfdx2 is None:
+        dfdx2 = calculateGradX2(x2, f, dat, pars)
+    
+    multiD = True if len(f.shape) > 1 else False
+    extraDims = (len(f.shape)-1) * (1,)
+
+    for kf in range(1, n3):
+        for j in range(n1):
+            kL = kf-1
+            kR = kf
+            aL = index[kL, j]
+            bL = index[kL, j] + n2[kL, j]
+            aR = index[kR, j]
+            bR = index[kR, j] + n2[kR, j]
+
+            x2phL = unwrap(x2ph[aL:bL], x2_max)
+            x2phR = unwrap(x2ph[aR:bR], x2_max)
+            fL = f[aL:bL]
+            fR = f[aR:bR]
+            dfdx2L = dfdx2[aL:bL]
+            dfdx2R = dfdx2[aR:bR]
+            x3L = x3[aL:bL]
+            x3R = x3[aR:bR]
+
+            x20 = x2phL[0]
+            while x20 > x2phR[-1]:
+                x2phR += x2_max
+            while x20 <= x2phR[-1]-x2_max:
+                x2phR -= x2_max
+            x2mhL = np.roll(x2phL, 1)
+            x2mhL[0] -= x2_max
+            x2mhR = np.roll(x2phR, 1)
+            x2mhR[0] -= x2_max
+
+            iL0 = 0
+            iR0 = np.searchsorted(x2phR, x20)
+            if iR0 >= n2[k, jR]:
+                iR0 = 0
+            # iL = iL0
+            # iR = iR0
+
+            n2f = n2[kL, j] + n2[kR, j]
+
+            iL = np.empty(n2f, dtype=int)
+            iR = np.empty(n2f, dtype=int)
+
+            iLi = iL0
+            iRi = iR0
+
+            adjLi = 0.0
+            adjRi = 0.0
+
+            for i in range(n2f):
+                iL[i] = iLi
+                iR[i] = iRi
+                if x2phL[iLi]+adjLi < x2phR[iRi]+adjRi:
+                    iLi += 1
+                    if iLi >= n2[k, jL]:
+                        iLi = 0
+                        adjLi += x2_max
+                else:
+                    iRi += 1
+                    if iRi >= n2[k, jR]:
+                        iRi = 0
+                        adjRi += x2_max
+
+            x2p = np.minimum(unwrap(x2phL[iL], x2_max),
+                             unwrap(x2phR[iR], x2_max))
+            x2m = np.maximum(unwrap(x2mhL[iL], x2_max),
+                             unwrap(x2mhR[iR], x2_max))
+            
+
+            x2i = 0.5*(x2p + x2m)
+            x2L = unwrap(x2[aL:bL][iL], x2_max)
+            x2R = unwrap(x2[aR:bR][iR], x2_max)
+
+            dx2L = x2i-x2L
+            dx2L[dx2L > 0.5*x2_max] -= x2_max
+            dx2L[dx2L < -0.5*x2_max] += x2_max
+            dx2R = x2i-x2R
+            dx2R[dx2R > 0.5*x2_max] -= x2_max
+            dx2R[dx2R < -0.5*x2_max] += x2_max
+
+            dAi = getDA3grid(x1f[j+1], x1f[j], x2p, x2m, x3f[kf], opts)
+            dx3i = x3R[iR] - x3L[iL]
+            if multiD:
+                dx2L = dx2L.reshape(dx2L.shape + extraDims)
+                dx2R = dx2R.reshape(dx2R.shape + extraDims)
+                dx3i = dx3i.reshape(dx3i.shape + extraDims)
+                dAi = dAi.reshape(dAi.shape + extraDims)
+
+            fLi = fL[iL] + dfdx2L[iL] * dx2L
+            fRi = fR[iR] + dfdx2R[iR] * dx2R
+
+            dfdxi = (fRi - fLi) / dx3i
+
+            np.add.at(dfdx3, aL+iL, dfdxi * dAi)
+            np.add.at(dAtot, aL+iL, dAi)
+            np.add.at(dfdx3, aR+iR, dfdxi * dAi)
+            np.add.at(dAtot, aR+iR, dAi)
+
+            if (x2p <= x2m).any():
+                print("PROBLEM", k, jf)
+    
+    dfdx3 /= dAtot
+
+    return dfdx3
 
 
 def unwrap(x, maxval):
@@ -916,3 +1183,4 @@ def calculateDivV(x1, x2, x3, v1, v2, v3, dat, opts, pars, dV=None):
     divV /= dV
 
     return divV
+
