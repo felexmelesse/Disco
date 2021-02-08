@@ -89,7 +89,7 @@ void initial(double *prim, double *x)
     double drho = sig0*efact*xi*pow((R/redge),-xi)/R;
  
     double v = -1.5*nu/(R);
-    double P = -rho*cs2/gam;
+    double P = rho*cs2/gam;
 
     double multom = 1.0 + 0.75*massq/(R*R*(1.0 + massq)*(1.0 + massq));
     double addom = rho*dphitot + phitot*drho;
