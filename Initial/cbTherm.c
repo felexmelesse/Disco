@@ -1,4 +1,4 @@
-#include "../paul.h"
+ #include "../paul.h"
 
 static double gam = 0.0;
 static double visc = 0.0;
@@ -93,7 +93,7 @@ void initial(double *prim, double *x)
 
     double multom = 1.0 + 0.75*massq/(R*R*(1.0 + massq)*(1.0 + massq));
     double addom = rho*dphitot + phitot*drho;
-    addom *= 1.0/(Mach*Mach*r*rho*gam);
+    addom *= 1.0*cs2/(gam*rho);
     om = sqrt(fabs(om*om*multom + addom));
 
     prim[RHO] = rho;
