@@ -1,15 +1,18 @@
 
 #include "../paul.h"
+#include "../omega.h"
 
 static double gam  = 0.0;
 static double nu   = 0.0;
 static double Mach = 0.0;
 static double eps = 0.0;
+static int isothermal_flag = 0;
 
 void setICparams( struct domain * theDomain ){
    gam  = theDomain->theParList.Adiabatic_Index;
    nu   = theDomain->theParList.viscosity;
    Mach = theDomain->theParList.Disk_Mach;
+   isothermal_flag = theDomain->theParList.isothermal_flag;
    eps = 0.1;
 }
 
@@ -19,6 +22,8 @@ void initial( double * prim , double * x ){
 
    double rho = 1.0;
    double Pp = rho/Mach/Mach;
+   if(isothermal_flag)
+       Pp = rho * get_cs2(x);
    double omega02 = 1.0/pow(r,3.);
    double omegaP2 = 0.0;
 

@@ -49,6 +49,10 @@ double phigrav( double M , double r , double eps , int type)
         return M*r; // M is gravitational acceleration
                     // only makes sense if grav2D is on
     }
+    else if(type == PLQUAD)
+    {
+        return 0.5*M*r*r;
+    }
 
     return 0.0;
 }
@@ -68,6 +72,10 @@ double fgrav( double M , double r , double eps , int type)
     {
         return M; // M is gravitational acceleration
                   // only makes sense if grav2D is on
+    }
+    else if(type == PLQUAD)
+    {
+        return M * r;
     }
     return 0.0;
     
