@@ -22,12 +22,16 @@ enum{PROF_TOT, PROF_DT, PROF_TIMESTEP, PROF_OUTPUT, PROF_RECON, PROF_FLUX,
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#include <omp.h>
 
 // NUM_C, NUM_N, and CT_MODE are specified at compile time and defined
 // with -D in the Makefile
 
 #define NUM_Q (NUM_C+NUM_N)
 #define NUM_G 2
+
+#define MAX_CELLS_PER_SEG   64
+
 
 //Magnetic field tracking things.  Can be set to zero if there is no MHD.
 #if CT_MODE == 0        //No CT
@@ -132,6 +136,14 @@ struct diagnostic_avg{
    double t_avg;
 };
 
+struct segment{
+    int j;
+    int k;
+    int jk;
+    int ia;
+    int ib;
+};
+
 struct domain{
 
    struct cell ** theCells;
@@ -139,6 +151,10 @@ struct domain{
    struct face * theFaces_2;
    struct planet * thePlanets;
    struct profiler *prof;
+   struct segment *segCellInner;
+   struct segment *segCellAll;
+   int nSegCellInner;
+   int nSegCellAll;
    int * Np;
    int Nr,Nz,Ng;
    int NgRa, NgRb, NgZa, NgZb;

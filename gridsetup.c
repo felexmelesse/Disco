@@ -11,6 +11,7 @@ int getN0( int drank , int dsize , int dnum ){
    return(N0);
 }
 
+void setupSegments(struct domain *theDomain);
 
 void setupGrid( struct domain * theDomain ){
 
@@ -116,6 +117,9 @@ void setupGrid( struct domain * theDomain ){
    theDomain->phi_max = theDomain->theParList.phimax;
    setGeometryParams( theDomain );
 
+   int nSegCellAll = 0;
+   int nSegCellInner = 0;
+
    for( k=0 ; k<Nz ; ++k ){
       double zp = theDomain->z_kph[k];
       double zm = theDomain->z_kph[k-1];
@@ -137,8 +141,86 @@ void setupGrid( struct domain * theDomain ){
          int Np = (int)(Pmax/dp);
          if( Np<4 ) Np=4;
          theDomain->Np[jk] = Np;
+
+         nSegCellAll += Np/MAX_CELLS_PER_SEG + 1;
+         if(k >= NgZa && k < Nz-NgZb && j >= NgRa && j < Nr-NgRb)
+             nSegCellInner += Np/MAX_CELLS_PER_SEG + 1;
       }
    }
+
+   setupSegments(theDomain);
+}
+
+void setupSegments(struct domain *theDomain)
+{
+    int Nz = theDomain->Nz;
+    int Nr = theDomain->Nr;
+    int *Np = theDomain->Np;
+    int NgRa = theDomain->NgRa;
+    int NgRb = theDomain->NgRb;
+    int NgZa = theDomain->NgZa;
+    int NgZb = theDomain->NgZb;
+
+    int nSegCellAll = 0;
+    int nSegCellInner = 0;
+
+    int j, k;
+
+    for(k=0; k<Nz; k++)
+        for(j=0; j<Nr; j++)
+        {
+            int jk = j+Nr*k;
+
+            nSegCellAll += Np[jk]/MAX_CELLS_PER_SEG + 1;
+            if(k >= NgZa && k < Nz-NgZb && j >= NgRa && j < Nr-NgRb)
+                nSegCellInner += Np[jk]/MAX_CELLS_PER_SEG + 1;
+        }
+
+    theDomain->segCellAll = (struct segment *) malloc(nSegCellAll
+                                                     * sizeof(struct segment));
+    theDomain->segCellInner = (struct segment *) malloc(nSegCellInner
+                                                     * sizeof(struct segment));
+    int s = 0;
+    for(k=0; k<Nz; k++)
+        for(j=0; j<Nr; j++)
+        {
+            int jk = Nr*k + j;
+            int nseg = Np[jk]/MAX_CELLS_PER_SEG + 1;
+
+            int is;
+            for(is=0; is < nseg; is++)
+            {
+                theDomain->segCellAll[s].k = k;
+                theDomain->segCellAll[s].j = j;
+                theDomain->segCellAll[s].jk = jk;
+                //All segments in an annulus are similar lengths,
+                //smaller than MAX_CELLS_PER_SEG
+                theDomain->segCellAll[s].ia = (is*Np[jk])/nseg;
+                theDomain->segCellAll[s].ib = ((is+1)*Np[jk])/nseg;
+                s++;
+            }
+        }
+
+    s = 0;
+    for(k=NgZa; k<Nz-NgZb; k++)
+        for(j=NgRa; j<Nr-NgRb; j++)
+        {
+            int jk = Nr*k + j;
+            int nseg = Np[jk]/MAX_CELLS_PER_SEG + 1;
+
+            int is;
+            for(is=0; is < nseg; is++)
+            {
+                theDomain->segCellInner[s].k = k;
+                theDomain->segCellInner[s].j = j;
+                theDomain->segCellInner[s].jk = jk;
+                //Inner segments in an annulus are similar lengths,
+                //smaller than MAX_CELLS_PER_SEG
+                theDomain->segCellInner[s].ia = (is*Np[jk])/nseg;
+                theDomain->segCellInner[s].ib = ((is+1)*Np[jk])/nseg;
+                s++;
+            }
+        }
 }
 
 

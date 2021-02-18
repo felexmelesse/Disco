@@ -555,32 +555,28 @@ void sink_src( double * , double * , double * , double * , double );
 
 void add_source( struct domain * theDomain , double dt ){
 
-   struct cell ** theCells = theDomain->theCells;
-   struct planet * thePlanets = theDomain->thePlanets;
-   int Nr = theDomain->Nr;
-   int Nz = theDomain->Nz;
-   int NgRa = theDomain->NgRa;
-   int NgRb = theDomain->NgRb;
-   int NgZa = theDomain->NgZa;
-   int NgZb = theDomain->NgZb;
-   int * Np = theDomain->Np;
-   int Npl = theDomain->Npl;
+    struct cell ** theCells = theDomain->theCells;
+    struct planet * thePlanets = theDomain->thePlanets;
+    int Npl = theDomain->Npl;
 
-   int visc_flag = theDomain->theParList.visc_flag;
+    int visc_flag = theDomain->theParList.visc_flag;
 
-   double * r_jph = theDomain->r_jph;
-   double * z_kph = theDomain->z_kph;
+    double * r_jph = theDomain->r_jph;
+    double * z_kph = theDomain->z_kph;
 
-   int i,j,k,p;
-   for( k=NgZa ; k<Nz-NgZb ; ++k ){
-      for( j=NgRa ; j<Nr-NgRb ; ++j ){
-         int jk = j+Nr*k;
-         for( i=0 ; i<Np[jk] ; ++i ){
-            struct cell * c = &(theCells[jk][i]);
+    int idx;
+#pragma omp parallel for schedule(dynamic) private(idx)
+    for(idx=0; idx<theDomain->nSegCellInner; idx++)
+    {
+        struct segment s = theDomain->segCellInner[idx];
+        int i, p;
+        for(i=s.ia; i<s.ib; i++)
+        {
+            struct cell * c = &(theCells[s.jk][i]);
             double phip = c->piph;
             double phim = c->piph - c->dphi;
-            double xp[3] = {r_jph[j]  ,phip,z_kph[k]  };
-            double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
+            double xp[3] = {r_jph[s.j]  ,phip,z_kph[s.k]  };
+            double xm[3] = {r_jph[s.j-1],phim,z_kph[s.k-1]};
             double dV = get_dV(xp,xm);
             source( c->prim , c->cons , xp , xm , dV*dt);
             for( p=0 ; p<Npl ; ++p ){
@@ -591,10 +587,8 @@ void add_source( struct domain * theDomain , double dt ){
                             xp, xm, dV*dt);
             omega_src( c->prim , c->cons , xp , xm , dV*dt );
             sink_src( c->prim , c->cons , xp , xm , dV*dt );
-         }    
-      }    
-   }   
-
+        }
+    }
 }
 
 void longandshort( struct domain * theDomain , double * L , double * S , int * iL , int * iS , struct cell * sweep , int j , int k ){
