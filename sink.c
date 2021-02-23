@@ -33,9 +33,18 @@ static double rmin;
 static double zmax;
 static double zmin;
 
-static int DAMP_OUTER, DAMP_INNER, DAMP_UPPER, DAMP_LOWER;
-static double dampTimeInner, dampTimeOuter, dampTimeUpper, dampTimeLower;
-static double dampLenInner, dampLenOuter, dampLenUpper, dampLenLower;
+static int DAMP_OUTER = 0;
+static int DAMP_INNER = 0;
+static int DAMP_LOWER = 0;
+static int DAMP_UPPER = 0;
+static double dampTimeInner = 0.0;
+static double dampTimeOuter = 0.0;
+static double dampTimeLower = 0.0;
+static double dampTimeUpper = 0.0;
+static double dampLenInner = 0.0;
+static double dampLenOuter = 0.0;
+static double dampLenUpper = 0.0;
+static double dampLenLower = 0.0;
 
 void planetaryForce( struct planet * , double , double , double , double * , double * , double * , int );
 double phigrav( double , double , double , int);
@@ -375,37 +384,40 @@ void damping(double *prim, double *cons, double *xp, double *xm, double dV, doub
       ratetot = (count*ratetot + dampFactor/dampTime)/(1.0+count);
       count = count + 1.0;
     }
-    if (DAMP_UPPER > 0){
-      dampTime = dampTimeUpper;
-      if (DAMP_UPPER == 2) dampTime = dampTime/omtot;
-      dampLen = dampLenUpper;
-      theta = (zmax-x[2])/dampLen;
-      if (theta > 1.0) dampFactor = 0.0;
-      else dampFactor = pow(1.0 - pow(theta,2.0), 2.0);
-      ratetot = (count*ratetot + dampFactor/dampTime)/(1.0+count);
-      count = count + 1.0;
+    if (twoD == 0){
+      if (DAMP_UPPER > 0){
+        dampTime = dampTimeUpper;
+        if (DAMP_UPPER == 2) dampTime = dampTime/omtot;
+        dampLen = dampLenUpper;
+        theta = (zmax-x[2])/dampLen;
+        if (theta > 1.0) dampFactor = 0.0;
+        else dampFactor = pow(1.0 - pow(theta,2.0), 2.0);
+        ratetot = (count*ratetot + dampFactor/dampTime)/(1.0+count);
+        count = count + 1.0;
+      }
+      if (DAMP_LOWER > 0){
+        dampTime = dampTimeLower;
+        if (DAMP_LOWER == 2) dampTime = dampTime/omtot;
+        dampLen = dampLenLower;
+        theta = (zmax-x[2])/dampLen;
+        if (theta > 1.0) dampFactor = 0.0;
+        else dampFactor = 1.0-pow(1.0 - pow(theta,2.0), 2.0);
+        ratetot = (count*ratetot + dampFactor/dampTime)/(1.0+count);
+        count = count + 1.0;
+      }
     }
-    if (DAMP_LOWER > 0){
-      dampTime = dampTimeLower;
-      if (DAMP_LOWER == 2) dampTime = dampTime/omtot;
-      dampLen = dampLenLower;
-      theta = (zmax-x[2])/dampLen;
-      if (theta > 1.0) dampFactor = 0.0;
-      else dampFactor = 1.0-pow(1.0 - pow(theta,2.0), 2.0);
-      ratetot = (count*ratetot + dampFactor/dampTime)/(1.0+count);
-      count = count + 1.0;
-    }
-    dampFactor = expm1(dt*dampFactor);
+    dampFactor = expm1(-dt*dampFactor);
+    //dampFactor = -1.0*dt*dampFactor;
     double prims0[NUM_Q];
     double cons0[NUM_Q];
     double cons1[NUM_Q];
     initial(prims0, x);
     prim2cons(prims0, cons0, x, dV);
     prim2cons(prim, cons1, x, dV);
-    cons[DDD] = (cons0[DDD] - cons1[DDD])*dampFactor;
-    cons[SRR] = (cons0[SRR] - cons1[SRR])*dampFactor;
-    cons[LLL] = (cons0[LLL] - cons1[LLL])*dampFactor;
-    cons[SZZ] = (cons0[SZZ] - cons1[SZZ])*dampFactor;
-    cons[TAU] = (cons0[TAU] - cons1[TAU])*dampFactor;
+    cons[DDD] += (cons1[DDD] - cons0[DDD])*dampFactor;
+    cons[SRR] += (cons1[SRR] - cons0[SRR])*dampFactor;
+    cons[LLL] += (cons1[LLL] - cons0[LLL])*dampFactor;
+    cons[SZZ] += (cons1[SZZ] - cons0[SZZ])*dampFactor;
+    cons[TAU] += (cons1[TAU] - cons0[TAU])*dampFactor;
   }
 }

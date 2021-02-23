@@ -545,6 +545,7 @@ void planet_src( struct planet * , double * , double * , double * , double * , d
 void omega_src( double * , double * , double * , double * , double );
 void sink_src( double * , double * , double * , double * , double, double );
 void cooling( double * , double * , double * , double * , double, double);
+void damping( double * , double * , double * , double * , double, double);
 
 void add_source( struct domain * theDomain , double dt ){
 
@@ -576,6 +577,7 @@ void add_source( struct domain * theDomain , double dt ){
             double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
             double dV = get_dV(xp,xm);
             cooling( c->prim , c->cons , xp , xm , dV, dt );
+            damping( c->prim , c->cons , xp , xm , dV, dt );
             source( c->prim , c->cons , xp , xm , dV*dt  );
             for( p=0 ; p<Npl ; ++p ){
                planet_src( thePlanets+p , c->prim , c->cons , xp , xm , dV*dt );
