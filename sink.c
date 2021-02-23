@@ -30,10 +30,12 @@ static double Mach = 1.0;
 
 static double rmax;
 static double rmin;
+static double zmax;
+static double zmin;
 
 static int DAMP_OUTER, DAMP_INNER, DAMP_UPPER, DAMP_LOWER;
 static double dampTimeInner, dampTimeOuter, dampTimeUpper, dampTimeLower;
-static double damplenInner, damplenOuter, damplenUpper, damplenLower;
+static double dampLenInner, dampLenOuter, dampLenUpper, dampLenLower;
 
 void planetaryForce( struct planet * , double , double , double , double * , double * , double * , int );
 double phigrav( double , double , double , int);
@@ -61,6 +63,8 @@ void setSinkParams(struct domain *theDomain)
 
     rmax = theDomain->theParList.rmax;
     rmin = theDomain->theParList.rmin;
+    zmax = theDomain->theParList.zmax;
+    zmin = theDomain->theParList.zmin;
 
     gamma_law = theDomain->theParList.Adiabatic_Index;
     if(theDomain->Nz == 1)
@@ -355,7 +359,7 @@ void damping(double *prim, double *cons, double *xp, double *xm, double dV, doub
       dampTime = dampTimeInner;
       if (DAMP_INNER == 2) dampTime = dampTime/omtot;
       dampLen = dampLenInner;
-      theta = (x[0]-rmin)/innerLen;
+      theta = (x[0]-rmin)/dampLen;
       if (theta > 1.0) dampFactor = 0.0;
       else dampFactor = 1.0 - pow(1.0 - pow(theta,2.0), 2.0);
       ratetot = (count*ratetot + dampFactor/dampTime)/(1.0+count);
@@ -392,16 +396,16 @@ void damping(double *prim, double *cons, double *xp, double *xm, double dV, doub
       count = count + 1.0;
     }
     dampFactor = expm1(dt*dampFactor);
-    double pims0[NUM_Q];
+    double prims0[NUM_Q];
     double cons0[NUM_Q];
     double cons1[NUM_Q];
     initial(prims0, x);
     prim2cons(prims0, cons0, x, dV);
     prim2cons(prim, cons1, x, dV);
-    cons[DDD] = (cons0[DDD] - cons1[DDD])*factor;
-    cons[SRR] = (cons0[SRR] - cons1[SRR])*factor;
-    cons[LLL] = (cons0[LLL] - cons1[LLL])*factor;
-    cons[SZZ] = (cons0[SZZ] - cons1[SZZ])*factor;
-    cons[TAU] = (cons0[TAU] - cons1[TAU])*factor;
+    cons[DDD] = (cons0[DDD] - cons1[DDD])*dampFactor;
+    cons[SRR] = (cons0[SRR] - cons1[SRR])*dampFactor;
+    cons[LLL] = (cons0[LLL] - cons1[LLL])*dampFactor;
+    cons[SZZ] = (cons0[SZZ] - cons1[SZZ])*dampFactor;
+    cons[TAU] = (cons0[TAU] - cons1[TAU])*dampFactor;
   }
 }
