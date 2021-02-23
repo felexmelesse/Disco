@@ -28,8 +28,17 @@ static struct planet *thePlanets = NULL;
 static double visc = 0.0;
 static double Mach = 1.0;
 
+static double rmax;
+static double rmin;
+
+static int DAMP_OUTER, DAMP_INNER, DAMP_UPPER, DAMP_LOWER;
+static double dampTimeInner, dampTimeOuter, dampTimeUpper, dampTimeLower;
+static double damplenInner, damplenOuter, damplenUpper, damplenLower;
+
 void planetaryForce( struct planet * , double , double , double , double * , double * , double * , int );
 double phigrav( double , double , double , int);
+void initial( double * , double * );
+void prim2cons( double * , double * , double * , double );
 
 void setSinkParams(struct domain *theDomain)
 {
@@ -50,6 +59,9 @@ void setSinkParams(struct domain *theDomain)
     coolPar3 = theDomain->theParList.coolPar3;
     coolPar4 = theDomain->theParList.coolPar4;
 
+    rmax = theDomain->theParList.rmax;
+    rmin = theDomain->theParList.rmin;
+
     gamma_law = theDomain->theParList.Adiabatic_Index;
     if(theDomain->Nz == 1)
         twoD = 1;
@@ -59,6 +71,19 @@ void setSinkParams(struct domain *theDomain)
 
     thePlanets = theDomain->thePlanets;
     Npl = theDomain->Npl;
+
+    DAMP_INNER = theDomain->theParList.dampInnerType;
+    DAMP_OUTER = theDomain->theParList.dampOuterType;
+    DAMP_UPPER = theDomain->theParList.dampUpperType;
+    DAMP_LOWER = theDomain->theParList.dampLowerType;
+    dampTimeInner = theDomain->theParList.dampTimeInner;
+    dampLenInner = theDomain->theParList.dampLenInner;
+    dampTimeOuter = theDomain->theParList.dampTimeOuter;
+    dampLenOuter = theDomain->theParList.dampLenOuter;
+    dampTimeUpper = theDomain->theParList.dampTimeUpper;
+    dampLenUpper = theDomain->theParList.dampLenUpper;
+    dampTimeLower = theDomain->theParList.dampTimeLower;
+    dampLenLower = theDomain->theParList.dampLenLower;
 }
 
 
@@ -280,5 +305,103 @@ void cooling(double *prim, double *cons, double *xp, double *xm, double dV, doub
       double Tm1 = expm1(-dt*omtot/beta);
       cons[TAU] += rho*dV*( enCurrent - enTarget)*Tm1;	//N.B. Tm1 is in [-1 and 0]
     }
+  }
+}
+
+
+void damping(double *prim, double *cons, double *xp, double *xm, double dV, double dt )
+{
+  if (DAMP_INNER + DAMP_OUTER + DAMP_LOWER + DAMP_UPPER > 0){
+    double x[3];
+    get_centroid_arr(xp, xm, x);
+
+    double omtot = 1.0;
+    if (DAMP_INNER==2 || DAMP_OUTER==2 || DAMP_LOWER==2 || DAMP_UPPER==2){
+      double r = x[0];
+      double phi = x[1];
+      double z = x[2];
+
+      double cosg = cos(phi);
+      double sing = sin(phi);
+      double gx = r*cosg;
+      double gy = r*sing;
+
+      int pi;
+      omtot = 0.0;
+      double fr,fp,fz, cosp, sinp, px, py, dx, dy, mag;
+      for (pi=0; pi<Npl; pi++)
+      {
+        cosp = cos(thePlanets[pi].phi);
+        sinp = sin(thePlanets[pi].phi);
+        px = thePlanets[pi].r*cosp;
+        py = thePlanets[pi].r*sinp;
+
+        dx = gx-px;
+        dy = gy-py;
+        mag = dx*dx + dy*dy;
+        mag = sqrt(mag);
+        planetaryForce( thePlanets + pi, r, phi, z, &fr, &fp, &fz, 1);
+        omtot += sqrt(fr*fr + fp*fp + fz*fz)/mag;
+      }
+      omtot = sqrt(omtot);
+    }
+    double ratetot = 0.0;
+    double count = 0.0;
+    double dampTime;
+    double dampFactor;
+    double dampLen;
+    double theta;
+    if (DAMP_INNER > 0){
+      dampTime = dampTimeInner;
+      if (DAMP_INNER == 2) dampTime = dampTime/omtot;
+      dampLen = dampLenInner;
+      theta = (x[0]-rmin)/innerLen;
+      if (theta > 1.0) dampFactor = 0.0;
+      else dampFactor = 1.0 - pow(1.0 - pow(theta,2.0), 2.0);
+      ratetot = (count*ratetot + dampFactor/dampTime)/(1.0+count);
+      count = count + 1.0;
+    }
+    if (DAMP_OUTER > 0){
+      dampTime = dampTimeOuter;
+      if (DAMP_OUTER == 2) dampTime = dampTime/omtot;
+      dampLen = dampLenOuter;
+      theta = (rmax-x[0])/dampLen;
+      if (theta > 1.0) dampFactor = 0.0;
+      else dampFactor = pow(1.0 - pow(theta,2.0), 2.0);
+      ratetot = (count*ratetot + dampFactor/dampTime)/(1.0+count);
+      count = count + 1.0;
+    }
+    if (DAMP_UPPER > 0){
+      dampTime = dampTimeUpper;
+      if (DAMP_UPPER == 2) dampTime = dampTime/omtot;
+      dampLen = dampLenUpper;
+      theta = (zmax-x[2])/dampLen;
+      if (theta > 1.0) dampFactor = 0.0;
+      else dampFactor = pow(1.0 - pow(theta,2.0), 2.0);
+      ratetot = (count*ratetot + dampFactor/dampTime)/(1.0+count);
+      count = count + 1.0;
+    }
+    if (DAMP_LOWER > 0){
+      dampTime = dampTimeLower;
+      if (DAMP_LOWER == 2) dampTime = dampTime/omtot;
+      dampLen = dampLenLower;
+      theta = (zmax-x[2])/dampLen;
+      if (theta > 1.0) dampFactor = 0.0;
+      else dampFactor = 1.0-pow(1.0 - pow(theta,2.0), 2.0);
+      ratetot = (count*ratetot + dampFactor/dampTime)/(1.0+count);
+      count = count + 1.0;
+    }
+    dampFactor = expm1(dt*dampFactor);
+    double pims0[NUM_Q];
+    double cons0[NUM_Q];
+    double cons1[NUM_Q];
+    initial(prims0, x);
+    prim2cons(prims0, cons0, x, dV);
+    prim2cons(prim, cons1, x, dV);
+    cons[DDD] = (cons0[DDD] - cons1[DDD])*factor;
+    cons[SRR] = (cons0[SRR] - cons1[SRR])*factor;
+    cons[LLL] = (cons0[LLL] - cons1[LLL])*factor;
+    cons[SZZ] = (cons0[SZZ] - cons1[SZZ])*factor;
+    cons[TAU] = (cons0[TAU] - cons1[TAU])*factor;
   }
 }
