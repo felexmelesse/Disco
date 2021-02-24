@@ -180,6 +180,9 @@ void setupSegments(struct domain *theDomain)
                                                      * sizeof(struct segment));
     theDomain->segCellInner = (struct segment *) malloc(nSegCellInner
                                                      * sizeof(struct segment));
+    theDomain->nSegCellAll = nSegCellAll;
+    theDomain->nSegCellInner = nSegCellInner;
+
     int s = 0;
     for(k=0; k<Nz; k++)
         for(j=0; j<Nr; j++)

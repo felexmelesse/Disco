@@ -38,43 +38,41 @@ void clean_pi( struct domain * theDomain ){
 
 double getmindt( struct domain * theDomain ){
 
-   struct cell ** theCells = theDomain->theCells;
-   int Nr = theDomain->Nr;
-   int Nz = theDomain->Nz;
-   int NgRa = theDomain->NgRa;
-   int NgRb = theDomain->NgRb;
-   int NgZa = theDomain->NgZa;
-   int NgZb = theDomain->NgZb;
-   int * Np = theDomain->Np;
-   double * r_jph = theDomain->r_jph;
-   double * z_kph = theDomain->z_kph;
+    struct cell ** theCells = theDomain->theCells;
+    int * Np = theDomain->Np;
+    double * r_jph = theDomain->r_jph;
+    double * z_kph = theDomain->z_kph;
 
-   double dt = theDomain->theParList.maxDT / theDomain->theParList.CFL;
-   if(dt <= 0.0)
-       dt = 1.0e100; //HUGE_VAL
+    double dt = theDomain->theParList.maxDT / theDomain->theParList.CFL;
+    if(dt <= 0.0)
+        dt = 1.0e100; //HUGE_VAL
 
-   int i,j,k;
-   for( k=NgZa ; k<Nz-NgZb ; ++k ){
-      for( j=NgRa ; j<Nr-NgRb ; ++j ){
-         int jk = j+Nr*k;
-         for( i=0 ; i<Np[jk] ; ++i ){
-            struct cell * c = &(theCells[jk][i]);
+    int idx;
+#pragma omp parallel for schedule(dynamic) private(idx)
+    for(idx=0; idx<theDomain->nSegCellInner; idx++)
+    {
+        struct segment s = theDomain->segCellInner[idx];
+        
+        int i;
+        for(i=s.ia; i<s.ib; i++)
+        {
+            struct cell * c = &(theCells[s.jk][i]);
             if(!(c->real))
                 continue;
             double phip = c->piph;
             double phim = phip - c->dphi;
-            double xp[3] = {r_jph[j  ] , phip , z_kph[k  ]};
-            double xm[3] = {r_jph[j-1] , phim , z_kph[k-1]};
-            int im = i-1;
-            if( i==0 ) im = Np[jk]-1; 
-            double wm = theCells[jk][im].wiph;
+            double xp[3] = {r_jph[s.j  ] , phip , z_kph[s.k  ]};
+            double xm[3] = {r_jph[s.j-1] , phim , z_kph[s.k-1]};
+            int im = i==0 ? Np[s.jk]-1 : i-1;
+            double wm = theCells[s.jk][im].wiph;
             double wp = c->wiph;
             double w = .5*(wm+wp);
             double dt_temp = mindt( c->prim , w , xp , xm );
-            if( dt > dt_temp ) dt = dt_temp;
-         }
-      }
-   }
+            if( dt > dt_temp ) 
+                dt = dt_temp;
+        }
+    }
+
    dt *= theDomain->theParList.CFL; 
 #if USE_MPI
    MPI_Allreduce( MPI_IN_PLACE , &dt , 1 , MPI_DOUBLE , MPI_MIN , theDomain->theComm );
@@ -223,24 +221,26 @@ void regrid( struct domain * theDomain ){
 }
 
 
-void adjust_RK_cons( struct domain * theDomain , double RK ){
-   struct cell ** theCells = theDomain->theCells;
-   int Nr = theDomain->Nr;
-   int Nz = theDomain->Nz;
-   int * Np = theDomain->Np;
+void adjust_RK_cons( struct domain * theDomain , double RK )
+{
+    struct cell ** theCells = theDomain->theCells;
 
-   int i,jk,q;
-   for( jk=0 ; jk<Nr*Nz ; ++jk ){
-      for( i=0 ; i<Np[jk] ; ++i ){
-         struct cell * c = &(theCells[jk][i]);
-         for( q=0 ; q<NUM_Q ; ++q ){
-            c->cons[q] = (1.-RK)*c->cons[q] + RK*c->RKcons[q];
-         }
-         for( q=0 ; q<NUM_FACES ; ++q ){
-            c->Phi[q] = (1.-RK)*c->Phi[q] + RK*c->RK_Phi[q];
-         }
-      }
-   }
+    int idx;
+#pragma omp parallel for schedule(dynamic) private(idx)
+    for(idx=0; idx<theDomain->nSegCellAll; idx++)
+    {
+        struct segment s = theDomain->segCellAll[idx];
+        int i;
+        for(i=s.ia; i<s.ib; i++)
+        {
+            struct cell * c = &(theCells[s.jk][i]);
+            int q;
+            for( q=0 ; q<NUM_Q ; ++q )
+                c->cons[q] = (1.-RK)*c->cons[q] + RK*c->RKcons[q];
+            for( q=0 ; q<NUM_FACES ; ++q )
+                c->Phi[q] = (1.-RK)*c->Phi[q] + RK*c->RK_Phi[q];
+        }
+    }
 }
 
 void planet_RK_adjust( struct planet * , double );
@@ -253,114 +253,116 @@ void adjust_RK_planets( struct domain * theDomain , double RK ){
    }
 }
 
-void move_cells( struct domain * theDomain , double dt){
-   struct cell ** theCells = theDomain->theCells;
-   int Nr = theDomain->Nr;
-   int Nz = theDomain->Nz;
-   int * Np = theDomain->Np;
-   int i,jk;
-   for( jk=0 ; jk<Nr*Nz ; ++jk ){
-      for( i=0 ; i<Np[jk] ; ++i ){
-         struct cell * c = &(theCells[jk][i]);
-         c->piph += c->wiph*dt;
-      }
-   }
+void move_cells( struct domain * theDomain , double dt)
+{
+    struct cell ** theCells = theDomain->theCells;
+   
+    int idx;
+#pragma omp parallel for schedule(dynamic) private(idx)
+    for(idx=0; idx<theDomain->nSegCellAll; idx++)
+    {
+        struct segment s = theDomain->segCellAll[idx];
+        int i;
+        for(i=s.ia; i<s.ib; i++)
+        {
+            struct cell * c = &(theCells[s.jk][i]);
+            c->piph += c->wiph*dt;
+        }
+    }
 }
 
 
-void calc_dp( struct domain * theDomain ){
-   struct cell ** theCells = theDomain->theCells;
-   int Nr = theDomain->Nr;
-   int Nz = theDomain->Nz;
-   int * Np = theDomain->Np;
+void calc_dp( struct domain * theDomain )
+{
+    struct cell ** theCells = theDomain->theCells;
+    int * Np = theDomain->Np;
 
-   int i,jk;
-   for( jk=0 ; jk<Nr*Nz ; ++jk ){
-      for( i=0 ; i<Np[jk] ; ++i ){
-         int im = i-1;
-         if( i == 0 ) im = Np[jk]-1;
-         double phim = theCells[jk][im].piph;
-         double phip = theCells[jk][i ].piph;
-         double dphi = get_dp(phip,phim);
-         theCells[jk][i].dphi = dphi;
-      }
-   }
+    int idx;
+#pragma omp parallel for schedule(dynamic) private(idx)
+    for(idx=0; idx<theDomain->nSegCellAll; idx++)
+    {
+        struct segment s = theDomain->segCellAll[idx];
+        int i;
+        for(i=s.ia; i<s.ib; i++)
+        {
+            int im = i == 0 ? Np[s.jk]-1 : i-1;
+            double phim = theCells[s.jk][im].piph;
+            double phip = theCells[s.jk][i ].piph;
+            double dphi = get_dp(phip,phim);
+         
+            theCells[s.jk][i].dphi = dphi;
+        }
+    }
 }
 
-void calc_prim( struct domain * theDomain ){
+void calc_prim( struct domain * theDomain )
+{
 
-   struct cell ** theCells = theDomain->theCells;
-   int Nr = theDomain->Nr;
-   int Nz = theDomain->Nz;
-   int NgRa = theDomain->NgRa;
-   int NgRb = theDomain->NgRb;
-   int NgZa = theDomain->NgZa;
-   int NgZb = theDomain->NgZb;
-   int * Np = theDomain->Np;
-   double * r_jph = theDomain->r_jph;
-   double * z_kph = theDomain->z_kph;
+    struct cell ** theCells = theDomain->theCells;
+    double * r_jph = theDomain->r_jph;
+    double * z_kph = theDomain->z_kph;
 
-   int i,j,k;
-   for( k=NgZa ; k<Nz-NgZb ; ++k ){
-      double zm = z_kph[k-1];
-      double zp = z_kph[k];
-      double z = get_centroid(zp, zm, 2);
-      for( j=NgRa ; j<Nr-NgRb ; ++j ){
-         int jk = j+Nr*k;
-         double rm = r_jph[j-1];
-         double rp = r_jph[j];
-         double r = get_centroid(rp, rm, 1);
-         for( i=0 ; i<Np[jk] ; ++i ){
-            struct cell * c = &(theCells[jk][i]);
+    int idx;
+#pragma omp parallel for schedule(dynamic) private(idx)
+    for(idx=0; idx<theDomain->nSegCellInner; idx++)
+    {
+        struct segment s = theDomain->segCellInner[idx];
+        double zm = z_kph[s.k-1];
+        double zp = z_kph[s.k];
+        double z = get_centroid(zp, zm, 2);
+        double rm = r_jph[s.j-1];
+        double rp = r_jph[s.j];
+        double r = get_centroid(rp, rm, 1);
+        
+        int i;
+        for(i=s.ia; i<s.ib; i++)
+        {
+            struct cell * c = &(theCells[s.jk][i]);
             double phip = c->piph;
             double phim = phip-c->dphi;
             double xp[3] = {rp, phip, zp};
             double xm[3] = {rm, phim, zm};
             double dV = get_dV( xp , xm );
             double x[3] = {r, 0.5*(phim+phip), z};
+            
             cons2prim( c->cons , c->prim , x , dV, xp, xm );
-         }
-      }
-   }
+        }
+    }
 }
 
-void calc_cons( struct domain * theDomain ){
+void calc_cons( struct domain * theDomain )
+{
 
-   struct cell ** theCells = theDomain->theCells;
-   int Nr = theDomain->Nr;
-   int Nz = theDomain->Nz;
-   int NgRa = theDomain->NgRa;
-   int NgRb = theDomain->NgRb;
-   int NgZa = theDomain->NgZa;
-   int NgZb = theDomain->NgZb;
-   int * Np = theDomain->Np;
-   double * r_jph = theDomain->r_jph;
-   double * z_kph = theDomain->z_kph;
+    struct cell ** theCells = theDomain->theCells;
+    double *r_jph = theDomain->r_jph;
+    double *z_kph = theDomain->z_kph;
 
-   int i,j,k;
-   for( k=NgZa ; k<Nz-NgZb ; ++k ){
-      double zm = z_kph[k-1];
-      double zp = z_kph[k];
-      double z = get_centroid(zp, zm, 2);
-
-      for( j=NgRa ; j<Nr-NgRb ; ++j ){
-         double rm = r_jph[j-1];
-         double rp = r_jph[j];
-         double r = get_centroid(rp, rm, 1);
-
-         int jk = j+Nr*k;
-         for( i=0 ; i<Np[jk] ; ++i ){
-            struct cell * c = &(theCells[jk][i]);
+    int idx;
+#pragma omp parallel for schedule(dynamic) private(idx)
+    for(idx=0; idx<theDomain->nSegCellInner; idx++)
+    {
+        struct segment s = theDomain->segCellInner[idx];
+        double zm = z_kph[s.k-1];
+        double zp = z_kph[s.k];
+        double z = get_centroid(zp, zm, 2);
+        double rm = r_jph[s.j-1];
+        double rp = r_jph[s.j];
+        double r = get_centroid(rp, rm, 1);
+        
+        int i;
+        for(i=s.ia; i<s.ib; i++)
+        {
+            struct cell * c = &(theCells[s.jk][i]);
             double phip = c->piph;
             double phim = phip-c->dphi;
             double xp[3] = {rp, phip, zp};
             double xm[3] = {rm, phim, zm};
             double dV = get_dV( xp , xm );
             double x[3] = {r, 0.5*(phim+phip), z};
+
             prim2cons( c->prim , c->cons , x , dV , xp, xm);
          }
-      }
-   }
+    }
 }
 
 void riemann_phi( struct cell * , struct cell * , double * , const double *,
@@ -570,6 +572,7 @@ void add_source( struct domain * theDomain , double dt ){
     {
         struct segment s = theDomain->segCellInner[idx];
         int i, p;
+
         for(i=s.ia; i<s.ib; i++)
         {
             struct cell * c = &(theCells[s.jk][i]);
