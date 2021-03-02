@@ -18,7 +18,7 @@
 #include <OpenGL/gl.h>	// Header File For The OpenGL32 Library
 #include <OpenGL/glu.h>	// Header File For The GLu32 Library
 #else
-#include <glut.h>    // Header File For The GLUT Library 
+#include <GL/glut.h>    // Header File For The GLUT Library 
 #include <GL/gl.h>	// Header File For The OpenGL32 Library
 #include <GL/glu.h>	// Header File For The GLu32 Library
 #endif
@@ -30,7 +30,7 @@
 #define VAL_FLOOR -1   //0.95//0 //-8e-3//-3e-2 //(-HUGE_VAL)  //.96
 #define VAL_CEIL  1 //4.5e-3 //1.05//5.25e-21 //5.25e-9 //8e-3//3e-2 //5.24e-5 //(HUGE_VAL)  //1.04
 #define FIXMAXMIN 1
-#define COLORMAX 7
+#define COLORMAX 13
 #define CAM_BACKUP  1.5
 #define ZRORDER 1 // 1: checkpoints organized with faster index r (default,new)
                   // 0: checkpoints organized with slower index r (old)
@@ -46,7 +46,8 @@ int FullScreenMode=0;
 int dim3d = 0;
 int t_off = 0;
 int p_off = 0;
-int cmap = 4;
+int flipCM = 0;
+int cmap = 6;
 int draw_1d = 0;
 int draw_bar = 0;
 int draw_t   = 0;
@@ -94,7 +95,7 @@ char **filenameList = NULL;
 int nfiles = 0;
 int currentFile = 0;
 
-void get_rgb( double , float * , float * , float * , int );
+void get_rgb( double , float * , float * , float * , int, int );
 void loadSliceZ(char *filename, int k);
 void loadSlicePhi(char *filename);
 void loadDiagnostics(char *filename, int k);
@@ -117,7 +118,7 @@ double getval( double * thisZone , int q ){
    double Br = thisZone[5];
    double Bp = thisZone[6];
    double Bz = thisZone[7];
-   return( .5*(Br*Br+Bp*Bp+Bz*Bz) ); //fabs(P/pow(rho,5./3.)-1.) );// fabs(thisZone[1]/pow(thisZone[0],5./3.)-1.) );
+   return( sqrt(5*P/(3*rho)) ); //fabs(P/pow(rho,5./3.)-1.) );// fabs(thisZone[1]/pow(thisZone[0],5./3.)-1.) );
 //   return( rho*P );
 }
 
@@ -271,7 +272,11 @@ void readPatch( char * file , char * group , char * dset , void * data , hid_t t
 int window; 
 
 // Here are the fonts: 
-void ** glutFonts[7] = { 
+#ifdef OSX
+void * glutFonts[7] = { 
+#else
+void * glutFonts[7] = { 
+#endif
     GLUT_BITMAP_9_BY_15, 
     GLUT_BITMAP_8_BY_13, 
     GLUT_BITMAP_TIMES_ROMAN_10, 
@@ -282,7 +287,12 @@ void ** glutFonts[7] = {
 }; 
 
 // This function prints some text wherever you want it. 
+#ifdef OSX
 void glutPrint(float x, float y, float z , void ** font, char* text, float r, float g, float b, float a) 
+#else
+void glutPrint(float x, float y, float z , void * font, char* text, float r, float g, float b, float a) 
+#endif
+
 { 
     if(!text || !strlen(text)) return; 
     int blending = 0; 
@@ -389,7 +399,6 @@ void draw1dRadialData(double RotationAngleX, double RotationAngleY,
     /*
     glColor3f(0.5,0.5,0.5);
     glBegin( GL_LINE_STRIP );
-
     for( j=0 ; j<Nr ; ++j )
     {
         //if(logscale) val = log(getval(theZones[i],q))/log(10.);
@@ -681,7 +690,7 @@ void drawZSlice(double camdist, double xoff, double yoff, double zoff, int q,
             //if( uMax < u ) uMax = u;
 
             float rrr,ggg,bbb;
-            get_rgb( val , &rrr , &ggg , &bbb , cmap );
+            get_rgb( val , &rrr , &ggg , &bbb , cmap, flipCM );
 
             if( (!dim3d || (sin(phi)>0 || cos(phi+.25)<0.0)) && dim3d !=2 )
             {
@@ -745,7 +754,7 @@ void drawPhiSlice(double camdist, double xoff, double yoff, double zoff, int q,
             if( val < 0.0 ) 
                 val = 0.0;
             float rrr,ggg,bbb;
-            get_rgb( val , &rrr , &ggg , &bbb , cmap );
+            get_rgb( val , &rrr , &ggg , &bbb , cmap, flipCM );
             if( !draw_border_now )
             { 
                 glColor3f( rrr , ggg , bbb );
@@ -821,7 +830,7 @@ void drawColorBar(double RotationAngleX, double RotationAngleY,
         double y = (double)k*dy - .5*hb;
         double val = (double)k/(double)Nb;
         float rrr,ggg,bbb;
-        get_rgb( val , &rrr , &ggg , &bbb , cmap );
+        get_rgb( val , &rrr , &ggg , &bbb , cmap, flipCM );
         glLineWidth(0.0f);
         glColor3f( rrr , ggg , bbb );
         glBegin(GL_POLYGON);
@@ -839,7 +848,7 @@ void drawColorBar(double RotationAngleX, double RotationAngleY,
         double y = (double)k*hb/(double)(Nv-1) - .5*hb;
         double val = ((double)k/(double)(Nv-1))*(maxval-minval) + minval;
         char valname[256];
-        sprintf(valname,"%+.3e",val);
+        sprintf(valname,"%+.6e",val);
         glLineWidth(1.0f);
         glColor3f(0.0,0.0,0.0);
         glBegin(GL_LINE_LOOP);
@@ -944,14 +953,12 @@ void drawSpiral(double RotationAngleX, double RotationAngleY,
     double phi0 = ((double)k-.5)/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
     double x0 = 1.+e*cos(phi0);
     double y0 = e*sin(phi0);
-
     double phi = atan2(y0,x0);
     double r   = sqrt(x0*x0+y0*y0);
     //         double phi = (double)k/(double)Nr*2.*M_PI;//(3.-2.*sqrt(1./r)-r)*20.;
     //         double r   = 2./(1.+sin(phi));//1.0;//((double)k+0.5)/(double)Nr*(Rmax-Rmin) + Rmin;
     //         if( r<1. ) phi = -phi;
     r /= rescale;
-
     glVertex3f( r*cos(phi)-xoff , r*sin(phi)-yoff , camdist + .0011 );
     if( k%2==1 ){
     glEnd();
@@ -977,18 +984,19 @@ void drawHelp(double RotationAngleX, double RotationAngleY,
                     double RotationAngleZ, double camdist, double xoff,
                     double yoff, double zoff)
 {
-    int NLines = 9;
+    int NLines = 10;
     double dy = -.04;
     char help[NLines][256];
     sprintf(help[0],"Help Display:");
     sprintf(help[1],"b - Toggle Colorbar");
-    sprintf(help[2],"c - Change Colormap");
-    sprintf(help[3],"f - Toggle Max/Min Floors");
-    sprintf(help[4],"p - Toggle Planet Data");
-    sprintf(help[5],"1-9 - Choose Primitive Variable to Display");
-    sprintf(help[6],"wasd - Move Camera");
-    sprintf(help[7],"z/x - Zoom in/out");
-    sprintf(help[8],"h - Toggle Help Screen");
+    sprintf(help[2],"B - Flip Colormap");
+    sprintf(help[3],"[ / ] - Change Colormap");
+    sprintf(help[4],"f - Toggle Max/Min Floors");
+    sprintf(help[5],"p - Toggle Planet Data");
+    sprintf(help[6],"1-9 - Choose Primitive Variable to Display");
+    sprintf(help[7],"arrow keys - Move Camera");
+    sprintf(help[8],"z/x - Zoom in/out");
+    sprintf(help[9],"h - Toggle Help Screen");
     int i;
     for( i=0 ; i<NLines ; ++i )
     {
@@ -1096,6 +1104,7 @@ void keyPressed(unsigned char key, int x, int y)
    }
    if( key >= (int)'0' && key < (int)'1'+Nq ) valq = (int)key-(int)'1';
    if( key == 'b' ) draw_bar = !draw_bar;
+   if( key == 'B' ) flipCM = !flipCM;
    if( key == 'd' ) {++dim3d; if(dim3d==3) dim3d=0;}
    if( key == 'f' ){
        floors = (floors+1)%3;

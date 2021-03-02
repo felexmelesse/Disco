@@ -1,9 +1,9 @@
 #include "paul.h"
-#include <string.h>
+#include "geometry.h"
+#include "hydro.h"
+#include "omega.h"
 
-double get_dA( double * , double * , int );
-double get_dV( double * , double * );
-double get_centroid( double , double , int);
+#include <string.h>
 
 void clean_pi( struct domain * theDomain ){
    
@@ -35,7 +35,6 @@ void clean_pi( struct domain * theDomain ){
 
 }
 
-double mindt( double * , double , double * , double * );
 
 double getmindt( struct domain * theDomain ){
 
@@ -85,8 +84,6 @@ double getmindt( struct domain * theDomain ){
 }
 
 void initial( double * , double * );
-void prim2cons( double * , double * , double * , double );
-void cons2prim( double * , double * , double * , double );
 void restart( struct domain * );
 /*
 void clear_w( struct domain * theDomain ){
@@ -100,9 +97,6 @@ void clear_w( struct domain * theDomain ){
       }
    }
 }*/
-
-double get_omega( double * , double * );
-double mesh_om( double *);
 
 void set_wcell( struct domain * theDomain ){
    struct cell ** theCells = theDomain->theCells;
@@ -249,13 +243,23 @@ void adjust_RK_cons( struct domain * theDomain , double RK ){
    }
 }
 
-void planet_RK_adjust( struct planet * , double );
+void planet_RK_adjust_kin( struct planet * , double );
 
-void adjust_RK_planets( struct domain * theDomain , double RK ){
+void adjust_RK_planets_kin( struct domain * theDomain , double RK ){
    int Npl = theDomain->Npl;
    int p;
    for( p=0 ; p<Npl ; ++p ){
-      planet_RK_adjust( theDomain->thePlanets+p , RK );
+      planet_RK_adjust_kin( theDomain->thePlanets+p , RK );
+   }
+}
+
+void planet_RK_adjust_aux( struct planet * , double );
+
+void adjust_RK_planets_aux( struct domain * theDomain , double RK ){
+   int Npl = theDomain->Npl;
+   int p;
+   for( p=0 ; p<Npl ; ++p ){
+      planet_RK_adjust_aux( theDomain->thePlanets+p , RK );
    }
 }
 
@@ -273,7 +277,6 @@ void move_cells( struct domain * theDomain , double dt){
    }
 }
 
-double get_dp( double , double );
 
 void calc_dp( struct domain * theDomain ){
    struct cell ** theCells = theDomain->theCells;
@@ -370,9 +373,7 @@ void calc_cons( struct domain * theDomain ){
    }
 }
 
-void plm_phi( struct domain * );
 void riemann_phi( struct cell * , struct cell * , double * , double );
-int set_B_flag();
 
 void phi_flux( struct domain * theDomain , double dt ){
 
@@ -407,7 +408,6 @@ void phi_flux( struct domain * theDomain , double dt ){
 
 
    int i,j,k;
-   plm_phi( theDomain );
    for( k=kmin ; k<kmax ; ++k ){
       double zp = z_kph[k];
       double zm = z_kph[k-1];
@@ -436,7 +436,6 @@ void phi_flux( struct domain * theDomain , double dt ){
 }
 
 void buildfaces( struct domain * , int , int );
-void plm_trans( struct domain * , struct face * , int , int );
 void riemann_trans( struct face * , double , int );
 
 void trans_flux( struct domain * theDomain , double dt , int dim ){
@@ -460,12 +459,10 @@ void trans_flux( struct domain * theDomain , double dt , int dim ){
     int jmin, jmax, kmin, kmax, Nfr;
 
     int *fI;
-    int Nf;
     struct face * theFaces;
 
     if( dim==1 )
     {
-        Nf = theDomain->fIndex_r[theDomain->N_ftracks_r];
         fI = theDomain->fIndex_r;
         theFaces = theDomain->theFaces_1;
         Nfr = Nr-1;
@@ -485,7 +482,6 @@ void trans_flux( struct domain * theDomain , double dt , int dim ){
     }
     else
     {
-        Nf = theDomain->fIndex_z[theDomain->N_ftracks_z];
         fI = theDomain->fIndex_z;
         theFaces = theDomain->theFaces_2;
         Nfr = Nr;
@@ -503,7 +499,6 @@ void trans_flux( struct domain * theDomain , double dt , int dim ){
         kmax = NgZb==0 ? Nz-1 : Nz-NgZb;
     }
 
-    plm_trans(theDomain, theFaces, Nf, dim);
 
     int j, k;
     for(k=kmin; k<kmax; k++)
@@ -546,11 +541,11 @@ void setup_faces( struct domain * theDomain , int dim ){
 
 }
 
-void source( double * , double * , double * , double * , double );
 void planet_src( struct planet * , double * , double * , double * , double * , double );
 void omega_src( double * , double * , double * , double * , double );
 void sink_src( double * , double * , double * , double * , double, double );
 void cooling( double * , double * , double * , double * , double, double);
+void damping( double * , double * , double * , double * , double, double);
 
 void add_source( struct domain * theDomain , double dt ){
 
@@ -564,6 +559,8 @@ void add_source( struct domain * theDomain , double dt ){
    int NgZb = theDomain->NgZb;
    int * Np = theDomain->Np;
    int Npl = theDomain->Npl;
+
+   int visc_flag = theDomain->theParList.visc_flag;
 
    double * r_jph = theDomain->r_jph;
    double * z_kph = theDomain->z_kph;
@@ -580,10 +577,14 @@ void add_source( struct domain * theDomain , double dt ){
             double xm[3] = {r_jph[j-1],phim,z_kph[k-1]};
             double dV = get_dV(xp,xm);
             cooling( c->prim , c->cons , xp , xm , dV, dt );
+            damping( c->prim , c->cons , xp , xm , dV, dt );
             source( c->prim , c->cons , xp , xm , dV*dt  );
             for( p=0 ; p<Npl ; ++p ){
                planet_src( thePlanets+p , c->prim , c->cons , xp , xm , dV*dt );
             }
+            if(visc_flag)
+                visc_source( c->prim, c->gradr, c->gradp, c->gradz, c->cons,
+                            xp, xm, dV*dt);
             omega_src( c->prim , c->cons , xp , xm , dV*dt );
             sink_src( c->prim , c->cons , xp , xm , dV, dt );
          }    
@@ -755,7 +756,6 @@ void print_welcome()
     printf("\n");
 }
 
-void get_centroid_arr(double *xp, double *xm, double *x);
 
 void dump_grid(struct domain *theDomain, char filename[])
 {

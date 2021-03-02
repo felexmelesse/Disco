@@ -1,6 +1,10 @@
+#ifndef PAUL
+#define PAUL
+
 enum{RHO,PPP,URR,UPP,UZZ,BRR,BPP,BZZ};
 enum{DDD,TAU,SRR,LLL,SZZ};
-enum{PLPOINTMASS, PLPW, PLSURFACEGRAV};
+enum{PLPOINTMASS, PLPW, PLSURFACEGRAV, PLSPLINE};
+enum{COOL_NONE, COOL_BETA, COOL_BETA_RELAX};
 
 #if USE_MPI
 #include <mpi.h>
@@ -78,7 +82,6 @@ struct param_list{
    double Drift_Rate,Drift_Exp;
    int grav2D;
    int alpha_flag;
-   double grav_eps;
 
    int restart_flag;
    int CT;
@@ -108,6 +111,7 @@ struct param_list{
    double sinkPar2;
    double sinkPar3;
    double sinkPar4;
+   double sinkPar5;
    int nozzleType;
    double nozzlePar1;
    double nozzlePar2;
@@ -118,6 +122,21 @@ struct param_list{
    double coolPar2;
    double coolPar3;
    double coolPar4;
+
+   int dampInnerType;
+   int dampOuterType;
+   int dampUpperType;
+   int dampLowerType;
+   double dampTimeInner;
+   double dampLenInner;
+   double dampTimeOuter;
+   double dampLenOuter;
+   double dampTimeLower;
+   double dampLenLower;
+   double dampTimeUpper;
+   double dampLenUpper;
+
+   double grav_eps;
 };
 
 struct diagnostic_avg{
@@ -178,8 +197,9 @@ struct cell{
    double prim[NUM_Q];
    double cons[NUM_Q];
    double RKcons[NUM_Q];
-   double grad[NUM_Q];
+   double gradr[NUM_Q];
    double gradp[NUM_Q];
+   double gradz[NUM_Q];
    double piph;
    double dphi;
    double wiph;
@@ -239,15 +259,21 @@ struct planet{
 
    double Ls;
    double RK_Ls;
-   double L;
-   double RK_L;
+   double accL;
+   double RK_accL;
+
+   double gravL;
+   double RK_gravL;
 
    double kin;
    double RK_kin;
    double therm;
    double RK_therm;
 
-
+   double linXmom;
+   double RK_linXmom;
+   double linYmom;
+   double RK_linYmom;
 
    double eps;
    double Fr;
@@ -256,3 +282,4 @@ struct planet{
    int type;
 };
 
+#endif

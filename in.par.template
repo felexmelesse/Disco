@@ -43,9 +43,9 @@ CFL			            0.2
 PLM			            1.5
 Max_DT                  0.0 //If > 0.0, the maximum allowed time step.
 Timestep                0   // 0=RK2, 1=FE
-Riemann_Solver		    0	//0=HLL, 1=HLLC, 2=HLLD
-Mesh_Motion		        3	//0=Fixed, 1=By Cell, 2=Riemann, 3=Avg, 4=Exact
-Exact_Mesh_Omega        0   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep
+Riemann_Solver		    0	//0=HLL, 1=HLLC, 2=HLLD, 3=HLLC damped center
+Mesh_Motion		        4	//0=Fixed, 1=By Cell, 2=Riemann, 3=Avg, 4=Exact
+Exact_Mesh_Omega        3   //0=Fixed, 1=Rigid, 2=Kep, 3=Rig2Kep
 Exact_Mesh_Omega_Par    0.0 //unused so far
 Absorbing_BC		    0
 Initial_Regrid		    0
@@ -115,6 +115,22 @@ Cool_Par2       0.0     //(double)
 Cool_Par3       0.0     //(double)
 Cool_Par4       0.0     //(double)
 
+//Cooling parameters
+DampInner_Type       0       //0: No damping, 1: "time" is actual time, 2: "time" is fraction of orbital time
+DampInner_Time       1.e-2     //(double)
+DampInner_Len        1.0     //(double)
+
+DampOuter_Type       0       //0: No damping, 1: "time" is actual time, 2: "time" is fraction of orbital time
+DampOuter_Time       1.e-2     //(double)
+DampOuter_Len        1.0     //(double)
+
+DampLower_Type       0       //0: No damping, 1: "time" is actual time, 2: "time" is fraction of orbital time
+DampLower_Time       1.e-2     //(double)
+DampLower_Len        1.0     //(double)
+
+DampUpper_Type       0       //0: No damping, 1: "time" is actual time, 2: "time" is fraction of orbital time
+DampUpper_Time       1.e-2     //(double)
+DampUpper_Len        1.0     //(double)
 
 //Metric Parameters
 Metric_Par0     0    //(int)
@@ -122,5 +138,3 @@ Metric_Par1     0.0  //Om_rot (double)
 Metric_Par2     1.0  //M (double)
 Metric_Par3     0.0  //a (double)
 Metric_Par4     0.0
-
-

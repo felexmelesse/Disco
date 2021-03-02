@@ -53,6 +53,23 @@ parnames = ['Restart',
             'Init_Par2',
             'Init_Par3',
             'Init_Par4',
+            'Nozzle_Type',
+            'Nozzle_Par1',
+            'Nozzle_Par2',
+            'Nozzle_Par3',
+            'Nozzle_Par4',
+            'Sink_Type',
+            'Sink_Par1',
+            'Sink_Par2',
+            'Sink_Par3',
+            'Sink_Par4',
+            'Sink_Par5',
+            'Cool_Type',
+            'Cool_Par1',
+            'Cool_Par2',
+            'Cool_Par3',
+            'Cool_Par4',
+            'Softening',
             'Noise_Type',
             'Noise_Abs',
             'Noise_Rel']
@@ -84,10 +101,10 @@ def readParfile(filename):
                     val = None
             pars[key] = val
 
-        if words[0] is "T_Times_2pi":
+        if words[0] == "T_Times_2pi":
             if int(words[1]) != 0:
                 t2pi = True
-        if words[0] is "P_Times_2pi":
+        if words[0] == "P_Times_2pi":
             if int(words[1]) != 0:
                 p2pi = True
 

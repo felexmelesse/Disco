@@ -1,7 +1,7 @@
 
 #include "paul.h"
+#include "geometry.h"
 
-double get_signed_dp( double , double );
 
 double minmod( double a , double b , double c ){
    double m = a;
@@ -50,10 +50,6 @@ void plm_phi( struct domain * theDomain ){
    }
 }
 
-double get_dA( double * , double * , int );
-double get_centroid(double , double , int );
-void geom_grad(double *prim, double *grad, double *xp, double *xm, 
-                double PLM, int dim, int LR);
 void plm_geom_boundary(struct domain *theDomain, int jmin, int jmax, int kmin,
                         int kmax, int dim, int LR);
 
@@ -74,7 +70,10 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
       for( k=0 ; k<Nz ; ++k ){
          int jk = j+Nr*k;
          for( i=0 ; i<Np[jk] ; ++i ){
-            memset( theCells[jk][i].grad , 0 , NUM_Q*sizeof(double) );
+             if(dim == 1)
+                memset( theCells[jk][i].gradr , 0 , NUM_Q*sizeof(double) );
+             else
+                memset( theCells[jk][i].gradz , 0 , NUM_Q*sizeof(double) );
          }
       }
    }
@@ -96,13 +95,17 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
       double dpL = get_signed_dp(phi,phiL);
       double dpR = get_signed_dp(phiR,phi);
       double dA  = f->dA;
+
+      double *gradL = dim==1 ? cL->gradr : cL->gradz;
+      double *gradR = dim==1 ? cR->gradr : cR->gradz;
+
       for( q=0 ; q<NUM_Q ; ++q ){
          double WL = cL->prim[q] + dpL*cL->gradp[q];
          double WR = cR->prim[q] - dpR*cR->gradp[q];
 
          double S = (WR-WL)/(dxR+dxL);
-         cL->grad[q] += S*dA;
-         cR->grad[q] += S*dA;
+         gradL[q] += S*dA;
+         gradR[q] += S*dA;
       }
    }
 
@@ -130,8 +133,10 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
             double dAtot = dAp+dAm;
             if( (dim==1 && j==0   ) || (dim==2 && k==0   ) ) dAtot = dAp;
             if( (dim==1 && j==Nr-1) || (dim==2 && k==Nz-1) ) dAtot = dAm;
+      
+            double *grad = dim==1 ? c->gradr : c->gradz;
             for( q=0 ; q<NUM_Q ; ++q ){
-               c->grad[q] /= dAtot;
+               grad[q] /= dAtot;
             }
          }    
       }    
@@ -149,22 +154,26 @@ void plm_trans( struct domain * theDomain , struct face * theFaces , int Nf , in
       double phiR = cR->piph - .5*cR->dphi;
       double dpL = get_signed_dp(phi,phiL);
       double dpR = get_signed_dp(phiR,phi);
+      
+      double *gradL = dim==1 ? cL->gradr : cL->gradz;
+      double *gradR = dim==1 ? cR->gradr : cR->gradz;
+
       for( q=0 ; q<NUM_Q ; ++q ){
          double WL = cL->prim[q] + dpL*cL->gradp[q];
          double WR = cR->prim[q] - dpR*cR->gradp[q];
 
          double S = (WR-WL)/(dxR+dxL);
-         double SL = cL->grad[q];
-         double SR = cR->grad[q];
+         double SL = gradL[q];
+         double SR = gradR[q];
          if( S*SL < 0.0 ){
-            cL->grad[q] = 0.0; 
+            gradL[q] = 0.0; 
          }else if( fabs(PLM*S) < fabs(SL) ){
-            cL->grad[q] = PLM*S;
+            gradL[q] = PLM*S;
          }
          if( S*SR < 0.0 ){
-            cR->grad[q] = 0.0; 
+            gradR[q] = 0.0; 
          }else if( fabs(PLM*S) < fabs(SR) ){
-            cR->grad[q] = PLM*S;
+            gradR[q] = PLM*S;
          }    
       }    
    }
@@ -213,7 +222,10 @@ void plm_geom_boundary(struct domain *theDomain, int jmin, int jmax,
                xp[1] = c->piph;
                xm[1] = c->piph - c->dphi;
 
-               geom_grad(c->prim, c->grad, xp, xm, PLM, dim, LR); 
+               if(dim == 1)
+                   geom_grad(c->prim, c->gradr, xp, xm, PLM, dim, LR); 
+               else
+                   geom_grad(c->prim, c->gradz, xp, xm, PLM, dim, LR); 
            }
        }
     }

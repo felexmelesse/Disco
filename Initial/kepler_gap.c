@@ -17,6 +17,8 @@ void setICparams( struct domain * theDomain ){
    a	= theDomain->theParList.RotD;
 }
 
+double get_cs2(double *);
+
 void initial( double * prim , double * x ){
 
    double r		= x[0];
@@ -48,6 +50,7 @@ void initial( double * prim , double * x ){
    if(q_planet <= 0.0)
        rho = rho_0;
    double Pp		= rho/(gam*Mach*Mach);
+   Pp = rho * get_cs2(x) / gam;
 
    double X = 0.0; 
    if( r*cos(x[1]) > 0.0 ) X = 1.0; 

@@ -6,17 +6,18 @@ EXE  = vdisco
 GLUT = /usr/X11R6
 HDF5 = $(H55)
 
-LIBS = 
-CFLAGS = 
+LIBS = $(LOCAL_LDFLAGS)
+CFLAGS = $(LOCAL_CFLAGS)
 
 #LIBS = -L$(GLUT)/lib -L$(HDF5)/lib -framework GLUT -framework OpenGL -lXmu -lXext -lXi -lX11 -lm -lhdf5 -lz
 UNAME = $(shell uname -s)
 ifeq ($(UNAME), Linux)
-	LIBS = -L$(HDF5)/lib -L$(GLUT)/lib -lhdf5 -lm
+	GLUT = /usr/include
+	LIBS += -L$(HDF5)/lib -L$(GLUT)/lib -lGL -lGLU -lglut -lhdf5 -lm
 	CFLAGS += -D LINUX
 endif
 ifeq ($(UNAME), Darwin)
-	LIBS = -L$(HDF5)/lib -framework GLUT -framework OpenGL -lhdf5 -lm
+	LIBS += -L$(HDF5)/lib -framework GLUT -framework OpenGL -lhdf5 -lm
 	CFLAGS += -D OSX
 endif
 

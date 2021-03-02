@@ -1,5 +1,6 @@
 
 #include "paul.h"
+#include "omega.h"
 
 static int meshOmChoice = 0;
 static double meshOmPar = 0.0;
@@ -16,9 +17,12 @@ static double r1 = 0.0;
 static double r2 = 0.0;
 static double H0 = 0.0;
 static double M = 0.0;
-static double Hor = 0.0;
+static double eps = 0.0;
 
 static struct planet *thePlanets = NULL;
+
+
+double phigrav( double , double , double , int); //int here is type
 
 
 void setOmegaParams( struct domain * theDomain ){
@@ -37,7 +41,7 @@ void setOmegaParams( struct domain * theDomain ){
    H0 = theDomain->theParList.initPar4; // Scale Height
    M = theDomain->theParList.metricPar2;
    Npl = theDomain->Npl;
-   Hor = theDomain->theParList.coolPar1;
+   eps = theDomain->theParList.grav_eps;
 
    thePlanets = theDomain->thePlanets;
 
@@ -48,9 +52,10 @@ void setOmegaParams( struct domain * theDomain ){
    }
 }
 
-double mesh_om( double *x)
+double mesh_om( const double *x)
 {
     double r = x[0];
+    r = sqrt(r*r + eps*eps);
     double omega;
     if(meshOmChoice == 1)
         omega = 1.0;
@@ -58,7 +63,7 @@ double mesh_om( double *x)
         omega = pow(r,-1.5);
     else if(meshOmChoice == 3)
     {
-        double n = 8.0;
+        double n = 4.0;
         omega = 1./pow( pow( r , 1.5*n ) + 1. , 1./n );
     }
     else
@@ -67,8 +72,9 @@ double mesh_om( double *x)
    return( omega );
 }
 
-double get_om( double *x ){
+double get_om( const double *x ){
     double r = x[0];
+    r = sqrt(r*r + eps*eps);
     double om;
 
     if(enOmChoice == 1)
@@ -92,8 +98,9 @@ double get_om( double *x ){
     return om;
 }
   
-double get_om1( double *x){
+double get_om1( const double *x){
     double r = x[0];
+    r = sqrt(r*r + eps*eps);
     double om1;
 
     if(enOmChoice == 1)
@@ -117,11 +124,11 @@ double get_om1( double *x){
     return om1;
 }
   
-double get_om2( double *x){
+double get_om2( const double *x){
     return 0.0;
 }
 
-double get_cs2( double *x ){
+double get_cs2( const double *x ){
     double r = x[0];
     double cs2;
 
@@ -138,13 +145,14 @@ double get_cs2( double *x ){
     }
     else if(cs2Choice == 4)
     {
+        r = sqrt(r*r + eps*eps);
         double v2 = M/r;
         cs2 = v2/(Mach*Mach);
     }
     else if(cs2Choice == 5) 
     {
-      double r = 0.5*x[0];
-      double phi = 0.5*x[1];
+      double r = x[0];
+      double phi = x[1];
 
       double cosp = cos(phi);
       double sinp = sin(phi);
@@ -162,8 +170,8 @@ double get_cs2( double *x ){
         px = thePlanets[pi].r*cosp;
         py = thePlanets[pi].r*sinp;
         pr = (px-gx)*(px-gx) + (py-gy)*(py-gy);
-
-        phip += thePlanets[pi].M/pow( pr + pow(thePlanets[pi].eps,n) , 1./n );
+        //phip += thePlanets[pi].M/pow( pr + pow(thePlanets[pi].eps,n) , 1./n );
+        phip += phigrav( thePlanets[pi].M , sqrt(pr) , thePlanets[pi].eps , thePlanets[pi].type );
       }
       cs2 = phip/(Mach*Mach);        
     }

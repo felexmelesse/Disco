@@ -1,14 +1,36 @@
 #include "paul.h"
+#include "geometry.h"
 
 double PHI_ORDER = 2.0;
 static int grav2D = 0;
-
-double get_scale_factor( double * , int );
-double get_dp( double , double );
+static int polar_sources_r = 0;
+static int polar_sources_p = 0;
+static int polar_sources_z = 0;
 
 void setGravParams( struct domain * theDomain ){
 
    grav2D = theDomain->theParList.grav2D; 
+   if(strcmp(GEOMETRY, "cylindrical") == 0
+             && theDomain->theParList.NoBC_Rmin == 1)
+   {
+       polar_sources_r = 1;
+       polar_sources_p = 1;
+   }
+   if(strcmp(GEOMETRY, "spherical") == 0)
+   {
+       //if(theDomain->theParList.NoBC_Rmin == 1)
+       if(theDomain->theParList.NoBC_Rmin == 0)
+       {
+           polar_sources_r = 1;
+           polar_sources_p = 1;
+       }
+       if(theDomain->theParList.NoBC_Zmin == 1
+          || theDomain->theParList.NoBC_Zmax == 1)
+       {
+           polar_sources_p = 1;
+           polar_sources_z = 1;
+       }
+   }
 
 }
 
@@ -28,6 +50,16 @@ double phigrav( double M , double r , double eps , int type)
         return M*r; // M is gravitational acceleration
                     // only makes sense if grav2D is on
     }
+    else if(type == PLSPLINE)
+    {
+        eps = eps*2.8;
+        double u = r/eps;
+        double val;
+        if (u<0.5) val = 16.*u*u/3. - 48.*u*u*u*u/5. + 32.*u*u*u*u*u/5. - 14./5.;
+        else if (u < 1.0) val = 1./(15.*u) + 32.*u*u/3. - 16.*u*u*u + 48.*u*u*u*u/5. - 32.*pow(u, 5.0)/15. - 3.2;
+        else val = -1./u ;
+        return -1*M*val/eps;
+    }
     return 0.0;
 }
 
@@ -46,6 +78,16 @@ double fgrav( double M , double r , double eps , int type)
     {
         return M; // M is gravitational acceleration
                   // only makes sense if grav2D is on
+    }
+    else if(type == PLSPLINE)
+    {
+        eps = eps*2.8;
+        double u = r/eps;
+        double val;
+        if (u<0.5) val = 32.*u/3. - 192.*u*u*u/5. + 32.*u*u*u*u;
+        else if (u < 1.0) val = -1./(15.*u*u) + 64.*u/3. - 48.*u*u + 192.*u*u*u/5. - 32*u*u*u*u/3.;
+        else val = 1./u/u;
+        return M*val/eps/eps;
     }
     return 0.0;
     
@@ -127,10 +169,6 @@ void planetaryForce( struct planet * pl , double r , double phi , double z , dou
    *fz = f1*cost;
 }
 
-double get_centroid( double , double , int);
-double get_rpz( double *, double *);
-double get_vec_from_rpz( double *, double *, double *);
-
 void planet_src( struct planet * pl , double * prim , double * cons , double * xp , double * xm , double dVdt ){
 
    double rho = prim[RHO];
@@ -158,6 +196,17 @@ void planet_src( struct planet * pl , double * prim , double * cons , double * x
    double hp = get_scale_factor(x, 0);
    double hz = get_scale_factor(x, 2);
 
+   if(polar_sources_r || polar_sources_p || polar_sources_z)
+   {
+       double adjust[3];
+       geom_polar_vec_adjust(xp, xm, adjust);
+       if(polar_sources_r)
+           F[0] *= adjust[0];
+       if(polar_sources_p)
+           F[1] *= adjust[1];
+       if(polar_sources_z)
+           F[2] *= adjust[2];
+   }
 
    cons[SRR] += rho*hr*F[0]*dVdt;
    cons[LLL] += rho*hp*F[1]*dVdt;
@@ -173,22 +222,31 @@ void planet_RK_copy( struct planet * pl ){
    pl->RK_omega = pl->omega;
    pl->RK_vr    = pl->vr;
    pl->RK_dM    = pl->dM;
-   pl->RK_L     = pl->L;
+   pl->RK_accL  = pl->accL;
    pl->RK_Ls    = pl->Ls;
    pl->RK_therm = pl->therm;
    pl->RK_kin   = pl->kin;
+   pl->RK_gravL = pl->gravL;
+   pl->RK_linXmom = pl->linXmom;
+   pl->RK_linYmom = pl->linYmom;
 
 }
 
-void planet_RK_adjust( struct planet * pl , double RK ){
+void planet_RK_adjust_kin( struct planet * pl , double RK ){
    pl->r     = (1.-RK)*pl->r     + RK*pl->RK_r;
    pl->phi   = (1.-RK)*pl->phi   + RK*pl->RK_phi;
    pl->M     = (1.-RK)*pl->M     + RK*pl->RK_M;
    pl->omega = (1.-RK)*pl->omega + RK*pl->RK_omega;
    pl->vr    = (1.-RK)*pl->vr    + RK*pl->RK_vr;
+}
+
+void planet_RK_adjust_aux( struct planet * pl , double RK ){
    pl->dM    = (1.-RK)*pl->dM    + RK*pl->RK_dM;
-   pl->L     = (1.-RK)*pl->L     + RK*pl->RK_L;
+   pl->accL  = (1.-RK)*pl->accL  + RK*pl->RK_accL;
    pl->Ls    = (1.-RK)*pl->Ls    + RK*pl->RK_Ls;
    pl->kin   = (1.-RK)*pl->kin   + RK*pl->RK_kin;
    pl->therm = (1.-RK)*pl->therm + RK*pl->RK_therm;
+   pl->gravL = (1.-RK)*pl->gravL + RK*pl->RK_gravL;
+   pl->linXmom = (1.-RK)*pl->linXmom + RK*pl->RK_linXmom;
+   pl->linYmom = (1.-RK)*pl->linYmom + RK*pl->RK_linYmom;
 }

@@ -1,5 +1,6 @@
 
 #include "paul.h"
+#include "hydro.h"
 
 void AMR( struct domain * ); 
 void move_BCs( struct domain * , double );
@@ -8,7 +9,10 @@ void clean_pi( struct domain * );
 void set_wcell( struct domain * );
 
 void adjust_RK_cons( struct domain * , double );
-void adjust_RK_planets( struct domain * , double );
+
+void adjust_RK_planets_aux( struct domain * , double );
+void adjust_RK_planets_kin( struct domain * , double );
+
 void move_cells( struct domain * , double );
 void calc_dp( struct domain * );
 void calc_prim( struct domain * );
@@ -16,6 +20,8 @@ void calc_cons( struct domain * );
 void B_faces_to_cells( struct domain * , int );
 
 void setup_faces( struct domain * , int );
+void plm_phi( struct domain * );
+void plm_trans( struct domain * , struct face * , int , int );
 void phi_flux( struct domain * , double dt );
 void trans_flux( struct domain * , double dt , int );
 void add_source( struct domain * , double dt );
@@ -29,12 +35,10 @@ void flip_fluxes( struct domain * , int );
 void movePlanets( struct planet * , double , double );
 int planet_motion_analytic(void);
 
-void boundary_r( struct domain * );
 void boundary_trans( struct domain * , int );
 void exchangeData( struct domain * , int );
 
 //int get_num_rzFaces( int , int , int );
-int set_B_flag( void );
 
 void checkNaNs(struct domain *theDomain, char label[])
 {
@@ -53,19 +57,19 @@ void checkNaNs(struct domain *theDomain, char label[])
             {
                 struct cell *c = &(theDomain->theCells[jk][i]);
 
-                int flag = 0;
+                //int flag = 0;
                 for(q=0; q<NUM_Q; q++)
                 {
                     if(c->prim[q] != c->prim[q])
                     {
                         count_p++;
-                        flag = 1;
+                        //flag = 1;
 
                     }
                     if(c->cons[q] != c->cons[q])
                     {
                         count_c++;
-                        flag = 1;
+                        //flag = 1;
                     }
                 }
                 //if(flag)
@@ -82,27 +86,42 @@ void checkNaNs(struct domain *theDomain, char label[])
 void onestep( struct domain * theDomain , double RK , double dt , int first_step , int last_step , double global_dt ){
 
    int Nz = theDomain->Nz;
+   int Nr = theDomain->Nr;
    int bflag = set_B_flag();
 
    if( first_step ) set_wcell( theDomain );
    adjust_RK_cons( theDomain , RK );
+   adjust_RK_planets_aux( theDomain , RK );
 
-   phi_flux( theDomain , dt );
-
-   setup_faces( theDomain , 1 );
-   trans_flux( theDomain , dt , 1 );
-
+   //Reconstruction
+   plm_phi( theDomain );
+   if( Nr > 1 ){
+      setup_faces( theDomain , 1 );
+      int Nfr = theDomain->fIndex_r[theDomain->N_ftracks_r];
+      plm_trans(theDomain, theDomain->theFaces_1, Nfr, 1);
+   }
    if( Nz > 1 ){
       setup_faces( theDomain , 2 );
-      trans_flux( theDomain , dt , 2 );
+      int Nfz = theDomain->fIndex_z[theDomain->N_ftracks_z];
+      plm_trans(theDomain, theDomain->theFaces_2, Nfz, 2);
    }
 
+   //Flux
+   phi_flux( theDomain , dt );
+   if( Nr > 1)
+      trans_flux( theDomain , dt , 1 );
+   if( Nz > 1 )
+      trans_flux( theDomain , dt , 2 );
+   
+
+   //CT update
    if( bflag && NUM_EDGES >= 4 ){
       avg_Efields( theDomain );
       subtract_advective_B_fluxes( theDomain );
       update_B_fluxes( theDomain , dt );
    }
-   
+  
+   //Soucres
    add_source( theDomain , dt );
 
    if( first_step ){
@@ -119,7 +138,7 @@ void onestep( struct domain * theDomain , double RK , double dt , int first_step
    
 
    if( !planet_motion_analytic() || first_step ){
-      adjust_RK_planets( theDomain , RK );
+      adjust_RK_planets_kin( theDomain , RK );
       movePlanets( theDomain->thePlanets , theDomain->t , dt );
    }
    clean_pi( theDomain );

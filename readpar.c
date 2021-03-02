@@ -148,6 +148,7 @@ int read_par_file( struct domain * theDomain ){
          err += readvar(pfile, "Sink_Par2", VAR_DOUB, &(theList->sinkPar2));
          err += readvar(pfile, "Sink_Par3", VAR_DOUB, &(theList->sinkPar3));
          err += readvar(pfile, "Sink_Par4", VAR_DOUB, &(theList->sinkPar4));
+         err += readvar(pfile, "Sink_Par5", VAR_DOUB, &(theList->sinkPar5));
          err += readvar(pfile, "Nozzle_Type", VAR_INT , &(theList->nozzleType));
          err += readvar(pfile, "Nozzle_Par1", VAR_DOUB, &(theList->nozzlePar1));
          err += readvar(pfile, "Nozzle_Par2", VAR_DOUB, &(theList->nozzlePar2));
@@ -158,7 +159,22 @@ int read_par_file( struct domain * theDomain ){
          err += readvar(pfile, "Cool_Par2", VAR_DOUB, &(theList->coolPar2));
          err += readvar(pfile, "Cool_Par3", VAR_DOUB, &(theList->coolPar3));
          err += readvar(pfile, "Cool_Par4", VAR_DOUB, &(theList->coolPar4));
+         err += readvar(pfile, "DampInner_Type", VAR_INT , &(theList->dampInnerType));
+         err += readvar(pfile, "DampInner_Time", VAR_DOUB, &(theList->dampTimeInner));
+         err += readvar(pfile, "DampInner_Len", VAR_DOUB, &(theList->dampLenInner));
+         err += readvar(pfile, "DampOuter_Type", VAR_INT , &(theList->dampOuterType));
+         err += readvar(pfile, "DampOuter_Time", VAR_DOUB, &(theList->dampTimeOuter));
+         err += readvar(pfile, "DampOuter_Len", VAR_DOUB, &(theList->dampLenOuter));
+         err += readvar(pfile, "DampUpper_Type", VAR_INT , &(theList->dampUpperType));
+         err += readvar(pfile, "DampUpper_Time", VAR_DOUB, &(theList->dampTimeUpper));
+         err += readvar(pfile, "DampUpper_Len", VAR_DOUB, &(theList->dampLenUpper));
+         err += readvar(pfile, "DampLower_Type", VAR_INT , &(theList->dampLowerType));
+         err += readvar(pfile, "DampLower_Time", VAR_DOUB, &(theList->dampTimeLower));
+         err += readvar(pfile, "DampLower_Len", VAR_DOUB, &(theList->dampLenLower));
          err += readvar(pfile, "Softening", VAR_DOUB, &(theList->grav_eps));
+
+
+
       }
 #if USE_MPI
       MPI_Barrier(MPI_COMM_WORLD);

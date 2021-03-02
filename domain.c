@@ -1,19 +1,18 @@
 
 #include "paul.h"
+#include "geometry.h"
+#include "hydro.h"
+#include "omega.h"
 
-double get_centroid( double , double , int);
-double get_dV( double * , double * );
 
 int num_diagnostics( void );
 void initializePlanets( struct planet * );
 
 void setICparams( struct domain * );
-void setHydroParams( struct domain * );
 void setRiemannParams( struct domain * );
 void setGravParams( struct domain * );
 void setPlanetParams( struct domain * );
 void setHlldParams( struct domain * );
-void setOmegaParams( struct domain * );
 void setRotFrameParams( struct domain * );
 void setMetricParams( struct domain * );
 void setFrameParams(struct domain * );
@@ -128,17 +127,13 @@ void setupDomain( struct domain * theDomain ){
 }
 
 void initial( double * , double * ); 
-void prim2cons( double * , double * , double * , double );
-void cons2prim( double * , double * , double * , double );
 void restart( struct domain * ); 
 void calc_dp( struct domain * );
 void set_wcell( struct domain * );
 void adjust_gas( struct planet * , double * , double * , double );
-int set_B_flag();
 void set_B_fields( struct domain * );
 void subtract_omega( double * );
 void addNoise(double *prim, double *x);
-void get_centroid_arr(double *, double *, double *);
 void exchangeData(struct domain *, int);
 
 void setupCells( struct domain * theDomain ){
@@ -253,8 +248,9 @@ void clear_cell( struct cell * c ){
       c->prim[q]   = 0.0;
       c->cons[q]   = 0.0;
       c->RKcons[q] = 0.0;
-      c->grad[q]   = 0.0;
-      c->gradr[q]  = 0.0;
+      c->gradr[q]   = 0.0;
+      c->gradp[q]  = 0.0;
+      c->gradz[q]  = 0.0;
    }
    c->riph = 0.0;
    c->RKriph = 0.0;
@@ -334,7 +330,7 @@ void possiblyOutput( struct domain * theDomain , int override ){
       theDomain->nrpt = n0;
       //longandshort( &theDomain , &L , &S , &iL , &iS , theDomain.theCells[0] , 0 , 0 );
       report( theDomain );
-      if( theDomain->rank==0 ) printf("t = %.3e\n",t);
+      if( theDomain->rank==0 ) printf("t = %.5e\n",t);
    }
    n0 = (int)( t*Nchk/t_fin );
    if( LogOut ) n0 = (int)( Nchk*log(t/t_min)/log(t_fin/t_min) );
