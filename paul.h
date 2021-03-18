@@ -70,6 +70,7 @@ struct param_list{
 
    double CFL, PLM, maxDT;
    int Cartesian_Interp;
+   double Cartesian_Interp_R0;
    double Density_Floor, Pressure_Floor;
 
    int Exact_Mesh_Omega;

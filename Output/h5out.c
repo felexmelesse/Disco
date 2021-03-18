@@ -221,6 +221,8 @@ void writePars(struct domain *theDomain, char filename[])
                     H5T_NATIVE_DOUBLE);
     dumpVal(filename, "Pars", "Cartesian_Interp", &(pars->Cartesian_Interp),
                     H5T_NATIVE_INT);
+    dumpVal(filename, "Pars", "Cartesian_Interp_R0",
+                    &(pars->Cartesian_Interp_R0), H5T_NATIVE_DOUBLE);
     dumpVal(filename, "Pars", "Max_DT", &(pars->maxDT),
                     H5T_NATIVE_DOUBLE);
     dumpVal(filename, "Pars", "Adiabatic_Index", &(pars->Adiabatic_Index),

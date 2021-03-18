@@ -185,17 +185,18 @@ void geom_polar_vec_adjust(const double *xp, const double *xm, double *fac)
 
 void geom_interpolate(const double *prim, const double *gradp,
                       const double *gradT, const double *x,
-                      double dphi, double dxT, double * primI, int dim)
+                      double dphi, double dxT, double * primI, double w,
+                      int dim)
 {
     double r = x[0];
     double sp = sin(dphi);
     double cp = cos(dphi);
 
-    primI[RHO] = prim[RHO] + dphi * gradp[RHO];
-    primI[PPP] = prim[PPP] + dphi * gradp[PPP];
+    primI[RHO] = (1-w) * primI[RHO] + w * (prim[RHO] + dphi * gradp[RHO]);
+    primI[PPP] = (1-w) * primI[PPP] + w * (prim[PPP] + dphi * gradp[PPP]);
 
-    primI[URR] = cp*prim[URR] + sp*r*prim[UPP];
-    primI[UPP] = -sp*prim[URR]/r + cp*prim[UPP];
+    primI[URR] = (1-w) * primI[URR] + w * (cp*prim[URR] + sp*r*prim[UPP]);
+    primI[UPP] = (1-w) * primI[UPP] + w * (-sp*prim[URR]/r + cp*prim[UPP]);
 
     primI[UZZ] = prim[UZZ] + dphi * gradp[UZZ];
 

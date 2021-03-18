@@ -4,17 +4,17 @@ Restart			0	//Restart from input.h5
 
 //Time Range//
 T_Start			0.0 //1.0
-T_End		    0.015
+T_End		    0.005
 T_Times_2pi		0
 
 //Output Frequency//
 Num_Reports		    4e4
 Num_Snapshots		0
-Num_Checkpoints     10
+Num_Checkpoints 0
 Use_Logtime		    0
 
 //Grid Dimensions//
-Num_R               64
+Num_R 0128
 Num_Z			    1
 aspect			    1.0	//Cell Aspect Ratio, for calculating N_phi
 Max_Aspect_Short	1.5	
@@ -40,7 +40,8 @@ NoBC_Zmax       0   //    No ghost zones or explicit BC applied.
 
 //Numerical Parameters
 CFL			            0.4
-PLM			            2.0
+PLM			            1.5
+Cartesian_Interp        0   // Fixes the pole at the cost of disks 0 off, 1 on  
 Max_DT                  0.0 //If > 0.0, the maximum allowed time step.
 Timestep                1   // 0=RK2, 1=FE
 Riemann_Solver		    0	//0=HLL, 1=HLLC, 2=HLLD
