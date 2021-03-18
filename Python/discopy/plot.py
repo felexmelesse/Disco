@@ -56,8 +56,7 @@ def plotZSlice(fig, ax, rjph, piph, r, q, Z, label, pars, opts, vmin=None,
 
         x, y, z = geom.getXYZ(rf[:,None], phif[None,:], Z.mean(), opts, pars)
 
-        C = ax.pcolormesh(x, y, aq[None,:], 
-                cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
+        C = ax.pcolormesh(x, y, aq[None,:], cmap=cmap, norm=norm)
 
         if lim_float and rf.max() > rmax:
             rmax = rf.max()
@@ -155,7 +154,7 @@ def plotPhiSlice(fig, ax, rjph, zkph, q, label, pars, opts, vmin=None,
     x, y, z = geom.getXYZ(rjph_loc[None, :], 0.0, zkph_loc[:, None],
                           opts, pars)
 
-    C = ax.pcolormesh(x, z, dat, cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
+    C = ax.pcolormesh(x, z, dat, cmap=cmap, norm=norm)
 
     if lim_float and rjph_loc.max() > rmax:
         rmax = rjph_loc.max()

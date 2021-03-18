@@ -15,7 +15,7 @@ void setRiemannParams( struct domain * theDomain ){
    riemann_solver = theDomain->theParList.Riemann_Solver;
    visc_flag = theDomain->theParList.visc_flag;
    use_B_fields = set_B_flag();
-   Cartesian_Interp = theDomain->theParList.Cartesian_Interp;
+   Cartesian_Interp = 0; //theDomain->theParList.Cartesian_Interp;
 
    if( !use_B_fields && riemann_solver == _HLLD_ && theDomain->rank==0 ){
       printf("Ya dun goofed.\nRiemann Solver = HLLD,\nHydro does not include magnetic fields.\n");
@@ -157,7 +157,7 @@ void riemann_trans( struct face * F , double dt , int dim , double rp,
    for( q=0 ; q<NUM_Q ; ++q ){
       primL[q] = cL->prim[q] + gradL[q]*dxL + cL->gradp[q]*dpL;
       primR[q] = cR->prim[q] - gradR[q]*dxR + cR->gradp[q]*dpR;
-      grad[q] = ((cR->prim[q] - cR->gradp[q]*dpR)
+      grad[q] = ((cR->prim[q] + cR->gradp[q]*dpR)
                   - (cL->prim[q] + cL->gradp[q]*dpL)) / (dxL+dxR);
    }
 
