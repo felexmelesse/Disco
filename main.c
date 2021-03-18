@@ -76,7 +76,9 @@ int main( int argc , char * argv[] ){
       prof_tick(&prof, PROF_OUTPUT);
       possiblyOutput( &theDomain , 0 );
       prof_tock(&prof, PROF_OUTPUT);
-      
+     
+      if(theDomain.rank == 0)
+        printf("t: %.6le    dt: %.6le\n", theDomain.t, dt);
       prof_tick(&prof, PROF_TIMESTEP);
       timestep( &theDomain , dt );
       prof_tock(&prof, PROF_TIMESTEP);

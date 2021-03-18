@@ -64,6 +64,13 @@ void prim2cons(const double * prim, double * cons, const double * x,
    cons[LLL] = r*rho*vp*dV * cart_adjust;
    cons[SZZ] = rho*vz*dV;
 
+   if(0 && NUM_N > 0)
+   {
+       // EXPERIMENTAL. Ideal-gas specific entropy (NOT VALID FOR RAD-PRESSURE GAS)
+       double s = log(Pp * pow(rho, -gamma_law)) / (gamma_law - 1.0);
+       cons[NUM_C] = rho * s * dV;
+   }
+
    int q;
    for( q=NUM_C ; q<NUM_Q ; ++q ){
       cons[q] = prim[q]*cons[DDD];
@@ -136,7 +143,17 @@ void cons2prim( const double * cons , double * prim , const double * x , double 
    double rhoe = E-KE;
    double Pp = (gamma_law - 1.)*rhoe;
 
-   if( Pp  < PRE_FLOOR*rho ) Pp = PRE_FLOOR*rho;
+   if(0 && (Pp <= 0.0 && NUM_N > 0))
+   {
+       //EXPERIMENTAL ENTROPY FIX
+       double s = cons[NUM_C] / cons[DDD];
+       Pp = exp((gamma_law-1.0)*s) * pow(rho, gamma_law);
+   }
+   else if(Pp < PRE_FLOOR*rho)
+   {
+       Pp = PRE_FLOOR*rho;
+   }
+
    if( isothermal ){
       double cs2 = get_cs2( x );
       Pp = cs2*rho/gamma_law;
@@ -148,8 +165,15 @@ void cons2prim( const double * cons , double * prim , const double * x , double 
    prim[UPP] = vp/r;
    prim[UZZ] = vz;
 
+   if(0 && NUM_N > 0)
+   {
+       //EXPERIMENTAL entropy fix
+       double s = log(Pp * pow(rho, -gamma_law)) / (gamma_law - 1.0);
+       prim[NUM_C] = s;
+   }
+
    int q;
-   for( q=NUM_C ; q<NUM_Q ; ++q ){
+   for( q=NUM_C+1 ; q<NUM_Q ; ++q ){
       prim[q] = cons[q]/cons[DDD];
    }
 
@@ -344,6 +368,25 @@ void visc_source(const double * prim, const double * gradr, const double *gradp,
    double om_z = get_om2( x );
 
    cons[TAU] += (2 * rho * nu * (srp * om_r + spz * om_z)) * dVdt;
+
+   if(0 && NUM_N > 0)
+   {
+       //EXPERIMENTAL Viscous entropy source
+       //
+       // covariant _{ij} shear tensor components that we don't
+       // already have
+       double sRR = gradr[URR] - divV_o_d;
+       double sZZ = gradz[UZZ] - divV_o_d;
+       double sRZ = 0.5*(gradr[UZZ] + gradz[URR]);
+
+       double s2 = sRR*sRR + spp*spp * (r*r*r*r) + sZZ*sZZ
+                    + 2*(srp*srp + spz*spz)/(r*r) + 2*sRZ*sRZ;
+
+       // IDEAL GAS TEMPERATURE. NOT APPROPRIATE FOR RAD-PRESSURE GAS
+       double T = prim[PPP] / rho;
+
+       cons[NUM_C] += 2*rho*nu * s2 / T * dVdt;
+   }
 }
 
 void flux_to_E( const double * Flux , const double * Ustr , const double * x, 
