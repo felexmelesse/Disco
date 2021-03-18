@@ -20,7 +20,11 @@ int readvar( char * filename , char * varname , int vartype , void * ptr ){
    }
    
    fclose( inFile );
-   if( found==0 ) return(1);
+   if( found==0 )
+   {
+       printf("Could not read: %s\n", varname);
+       return(1);
+   }
 
    char * s2 = s1+strlen(nm)+strspn(s1+strlen(nm),"\t :=>_");
 
