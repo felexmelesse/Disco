@@ -3,8 +3,8 @@
 make
 
 # NR=(0016 0032 0064 0128 0256)
-NR=(0032 0048 0064 0096 0128)
-# NR=(0032 0048 0064 0096 0128 0192 0256)
+# NR=(0032 0048 0064 0096 0128)
+NR=(0032 0048 0064 0096 0128 0192 0256)
 # NR=(0032 0048 0064 0096 0128 0196 0256 0384 0512)
 #NR=(0128 0256 0512 1024 2048)
 
@@ -25,8 +25,9 @@ do
     mv output.h5 output.$nr.h5
 done
 
-python3 Python/shearCartAnalysis.py output.*.h5
-# python3 Python/acousticwaveAnalysis.py output.*.h5
+#python3 Python/shearCartAnalysis.py output.*.h5
+python3 Python/acousticwaveAnalysis.py output.*.h5
 #python3 Python/alfvenwaveAnalysis.py output.*.h5
 #python3 Python/magnetosonicwaveAnalysis.py output.*.h5
-#python3 Python/advectionAnalysis.py output.*.h5
+# python3 Python/advectionAnalysis.py output.*.h5
+# python3 Python/entropywaveAnalysis.py output.*.h5

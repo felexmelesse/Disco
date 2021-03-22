@@ -60,7 +60,7 @@ void initial( double * prim , double * x )
     {
         double xyz[3];
         get_xyz(x, xyz);
-        if(xyz[0] < Vxyz[0]*(*t)-0.4)
+        if(xyz[0] < Vxyz[0]*(*t)-0.1)
             prim[NUM_C] = 1.0;
     }
 }

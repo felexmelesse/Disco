@@ -185,46 +185,27 @@ void geom_polar_vec_adjust(const double *xp, const double *xm, double *fac)
 
 void geom_interpolate(const double *prim, const double *gradp,
                       const double *gradT, const double *x,
-                      double dphi, double dxT, double * primI, double w,
-                      int dim)
+                      double dphi, double dxT, double * primI,
+                      double w, int dim)
 {
     double r = x[0];
     double sp = sin(dphi);
     double cp = cos(dphi);
 
-    primI[RHO] = (1-w) * primI[RHO] + w * (prim[RHO] + dphi * gradp[RHO]);
-    primI[PPP] = (1-w) * primI[PPP] + w * (prim[PPP] + dphi * gradp[PPP]);
-
-    primI[URR] = (1-w) * primI[URR] + w * (cp*prim[URR] + sp*r*prim[UPP]);
-    primI[UPP] = (1-w) * primI[UPP] + w * (-sp*prim[URR]/r + cp*prim[UPP]);
-
-    primI[UZZ] = prim[UZZ] + dphi * gradp[UZZ];
-
-    int q;
-    for(q=5; q<NUM_Q; q++)
-        primI[q] = prim[q] + dphi * gradp[q];
+    double ur_pt = cp*prim[URR] + sp*r*prim[UPP];
+    double up_pt = -sp*prim[URR]/r + cp*prim[UPP];
 
     if(dim == 1)
-    {
-        primI[RHO] = prim[RHO] + dxT * gradT[RHO];
-        primI[PPP] = prim[PPP] + dxT * gradT[PPP];
+        up_pt *= r/(r+dxT);
 
-        primI[UPP] = primI[UPP]*r/(r+dxT);
+    int q;
+    for(q=0; q<NUM_Q; q++)
+        primI[q] = prim[q] + dphi * gradp[q];
 
-        primI[UZZ] = prim[UZZ] + dxT * gradT[UZZ];
+    if(dim == 1 || dim == 2)
+        for(q=0; q<NUM_Q; q++)
+            primI[q] += dxT * gradT[q];
 
-        for(q=5; q<NUM_Q; q++)
-            primI[q] = prim[q] + dphi * gradp[q];
-    }
-
-    if(dim == 2)
-    {
-        primI[RHO] = prim[RHO] + dxT * gradT[RHO];
-        primI[PPP] = prim[PPP] + dxT * gradT[PPP];
-
-        primI[UZZ] = prim[UZZ] + dxT * gradT[UZZ];
-
-        for(q=5; q<NUM_Q; q++)
-            primI[q] = prim[q] + dphi * gradp[q];
-    }
+    primI[URR] = (1.0-w) * primI[URR] + w * ur_pt;
+    primI[UPP] = (1.0-w) * primI[UPP] + w * up_pt;
 }

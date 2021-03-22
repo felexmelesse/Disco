@@ -15,7 +15,7 @@ void setRiemannParams( struct domain * theDomain ){
    riemann_solver = theDomain->theParList.Riemann_Solver;
    visc_flag = theDomain->theParList.visc_flag;
    use_B_fields = set_B_flag();
-   Cartesian_Interp = 0; //theDomain->theParList.Cartesian_Interp;
+   Cartesian_Interp = theDomain->theParList.Cartesian_Interp;
 
    if( !use_B_fields && riemann_solver == _HLLD_ && theDomain->rank==0 ){
       printf("Ya dun goofed.\nRiemann Solver = HLLD,\nHydro does not include magnetic fields.\n");
@@ -54,13 +54,17 @@ void riemann_phi( struct cell * cL , struct cell * cR, double * x ,
 
    if(Cartesian_Interp)
    {
-
-       double xL[3] = {x[0], cL->piph - 0.5*cL->dphi, x[2]};
-       double xR[3] = {x[0], cR->piph - 0.5*cR->dphi, x[2]};
-       geom_interpolate(cL->prim, cL->gradp, NULL, xL,  0.5*cL->dphi, 0.0,
-                        primL, 0);
-       geom_interpolate(cR->prim, cR->gradp, NULL, xR, -0.5*cR->dphi, 0.0,
-                        primR, 0);
+       double weight = getCartInterpWeight(x);
+       
+       if(weight > 0.0)
+       {
+           double xL[3] = {x[0], cL->piph - 0.5*cL->dphi, x[2]};
+           double xR[3] = {x[0], cR->piph - 0.5*cR->dphi, x[2]};
+           geom_interpolate(cL->prim, cL->gradp, NULL, xL,  0.5*cL->dphi, 0.0,
+                            primL, weight, 0);
+           geom_interpolate(cR->prim, cR->gradp, NULL, xR, -0.5*cR->dphi, 0.0,
+                            primR, weight, 0);
+       }
    }
 
 
@@ -163,22 +167,27 @@ void riemann_trans( struct face * F , double dt , int dim , double rp,
 
    if(Cartesian_Interp)
    {
-       double xL[3] = {F->cm[0], phiL, F->cm[2]};
-       double xR[3] = {F->cm[0], phiR, F->cm[2]};
-       if(dim == 1)
+       double weight = getCartInterpWeight(F->cm);
+
+       if(weight > 0.0)
        {
-           xL[0] -= dxL;
-           xR[0] += dxR;
+           double xL[3] = {F->cm[0], phiL, F->cm[2]};
+           double xR[3] = {F->cm[0], phiR, F->cm[2]};
+           if(dim == 1)
+           {
+               xL[0] -= dxL;
+               xR[0] += dxR;
+           }
+           else
+           {
+               xL[2] -= dxL;
+               xR[2] += dxR;
+           }
+           geom_interpolate(cL->prim, cL->gradp, gradL, xL, dpL,  dxL,
+                            primL, weight, dim);
+           geom_interpolate(cR->prim, cR->gradp, gradR, xR, dpR, -dxR,
+                            primR, weight, dim);
        }
-       else
-       {
-           xL[2] -= dxL;
-           xR[2] += dxR;
-       }
-       geom_interpolate(cL->prim, cL->gradp, gradL, xL, dpL,  dxL,
-                        primL, dim);
-       geom_interpolate(cR->prim, cR->gradp, gradR, xR, dpR, -dxR,
-                        primR, dim);
    }
    
    double n[3] = {0.0,0.0,0.0};

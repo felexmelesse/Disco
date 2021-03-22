@@ -13,6 +13,7 @@ static int isothermal = 0;
 static int alpha_flag = 0;
 static int polar_sources = 0;
 static int Cartesian_Interp = 0;
+static double Cartesian_Interp_R0 = 0;
 
 void setHydroParams( struct domain * theDomain ){
    gamma_law = theDomain->theParList.Adiabatic_Index;
@@ -23,6 +24,7 @@ void setHydroParams( struct domain * theDomain ){
    include_viscosity = theDomain->theParList.visc_flag;
    alpha_flag = theDomain->theParList.alpha_flag;
    Cartesian_Interp = theDomain->theParList.Cartesian_Interp;
+   Cartesian_Interp_R0 = theDomain->theParList.Cartesian_Interp_R0;
    if(theDomain->theParList.NoBC_Rmin == 1)
        polar_sources = 1;
 }
@@ -173,7 +175,7 @@ void cons2prim( const double * cons , double * prim , const double * x , double 
    }
 
    int q;
-   for( q=NUM_C+1 ; q<NUM_Q ; ++q ){
+   for( q=NUM_C ; q<NUM_Q ; ++q ){
       prim[q] = cons[q]/cons[DDD];
    }
 
@@ -515,4 +517,14 @@ double bfield_scale_factor(double x, int dim)
     // dim == 0: r, dim == 1: p, dim == 2: z
     
     return 1.0;
+}
+
+double getCartInterpWeight(const double *x)
+{
+    if(x[0] >= Cartesian_Interp_R0)
+        return 0.0;
+    else if(x[0] >= 0.5 * Cartesian_Interp_R0)
+        return (Cartesian_Interp_R0 - x[0]) / (0.5*Cartesian_Interp_R0);
+    else
+        return 1.0;
 }

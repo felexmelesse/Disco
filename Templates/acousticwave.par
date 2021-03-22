@@ -41,7 +41,6 @@ NoBC_Zmax       0   //    No ghost zones or explicit BC applied.
 //Numerical Parameters
 CFL			0.5
 PLM			1.5
-Cartesian_Interp        0   // Fixes the pole at the cost of disks 0 off, 1 on  
 Max_DT                  0.0 //If > 0.0, the maximum allowed time step.
 Timestep                0   // 0=RK2, 1=FE
 Riemann_Solver		    1	//0=HLL, 1=HLLC, 2=HLLD
@@ -53,6 +52,8 @@ Initial_Regrid		0
 Density_Floor		0.0 //1e-5
 Pressure_Floor		0.0 //1e-5
 Constrained_Transport   0
+Cartesian_Interp        0   // Fixes the pole at the cost of disks 0 off, 1 on  
+Cartesian_Interp_R0     0.1 // Radius within which Cartesian_Interp acts.
 
 //Hydro Parameters
 Adiabatic_Index		1.66666666667

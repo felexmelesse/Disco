@@ -152,6 +152,7 @@ struct domain{
    double phi_max;
    int * fIndex_r;
    int * fIndex_z;
+   double dr0;
 
    time_t Wallt_init;
    int rank,size;

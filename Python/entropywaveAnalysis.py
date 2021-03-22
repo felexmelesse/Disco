@@ -18,7 +18,7 @@ def rhoProf(x, a, x0, L, rho0):
     return rho
 
 
-def calcAcousticWave(t, x, pars, tol=1.0e-6):
+def calcEntropyWave(t, x, pars):
     rho0 = 1.0
     cs0 = 1.0
     gam = pars['Adiabatic_Index']
@@ -31,34 +31,13 @@ def calcAcousticWave(t, x, pars, tol=1.0e-6):
     xL = x.min()
 
     v0 = mach * cs0
+    P0 = rho0 * cs0**2 / gam
 
-    rhomax = rho0 * (1+a)
-    csmax = cs0*np.power(rhomax/rho0, 0.5*(gam-1))
-    vmax = v0 + 2*(csmax-cs0)/(gam-1)
+    rho = rhoProf(x, a, x0+v0*t, L, rho0)
+    P = P0 * np.ones(x.shape)
+    v = v0 * np.ones(x.shape)
 
-    xa = x - (1.1*(vmax+csmax))*t
-    xb = x - (0.9*(v0+cs0))*t
-    err = np.empty(x.shape)
-    err[:] = np.inf
-
-    while np.fabs(err).min() > tol:
-        xc = 0.5*(xa+xb)
-        rho = rhoProf(xc, a, x0, L, rho0)
-        cs = cs0*np.power(rho/rho0, 0.5*(gam-1))
-        v = v0 + 2*(cs-cs0)/(gam-1)
-        xf = xc + (v+cs)*t
-        err = (xf-x) / (xR-xL)
-        over = err > 0
-        under = err < 0
-        xb[over] = xc[over]
-        xa[under] = xc[under]
-
-    xc = 0.5*(xa+xb)
-    rho = rhoProf(xc, a, x0, L, rho0)
-    cs = cs0*np.power(rho/rho0, 0.5*(gam-1))
-    v = v0 + 2*(cs-cs0)/(gam-1)
-
-    return rho, cs, v
+    return rho, P, v
 
 
 def analyzeSingle(filename):
@@ -95,19 +74,15 @@ def analyzeSingle(filename):
     Jm = V + 2*cs/(gam-1)
     Jp = V - 2*cs/(gam-1)
 
-    rhoS, csS, VS = calcAcousticWave(t, X, pars, 1.0e-13)
-    PS = rhoS*csS*csS/gam
+    rhoS, PS, VS = calcEntropyWave(t, X, pars)
+    csS = np.sqrt(gam*PS/rhoS)
     eSS = PS * np.power(rhoS, -gam)
     JmS = VS + 2*csS/(gam-1)
     JpS = VS - 2*csS/(gam-1)
 
     dV = geom.getDV(dat, opts, pars)
 
-    maskDistance = 0.5
-
     dVmask = dV.copy()
-    # dVmask[(x1 < pars['R_Min']+maskDistance)] = 0.0
-    dVmask[(x1 > pars['R_Max']-maskDistance)] = 0.0
 
     errRho = geom.integrate(np.fabs(rho-rhoS), dat, opts, pars, dVmask)
     errP = geom.integrate(np.fabs(P-PS), dat, opts, pars, dVmask)
@@ -149,14 +124,14 @@ def analyze(filenames):
         errJp[i] = dat[8]
         errJm[i] = dat[9]
 
-    makeErrPlot(t, nx, errRho, "acousticwave_errRho", r"$L_1(\rho)$")
-    makeErrPlot(t, nx, errP, "acousticwave_errP", r"$L_1(P)$")
-    makeErrPlot(t, nx, errVx, "acousticwave_errVx", r"$L_1(v_x)$")
-    makeErrPlot(t, nx, errVy, "acousticwave_errVy", r"$L_1(v_y)$")
-    makeErrPlot(t, nx, errVz, "acousticwave_errVz", r"$L_1(v_z)$")
-    makeErrPlot(t, nx, errS, "acousticwave_errS", r"$L_1(P/\rho^\gamma)$")
-    makeErrPlot(t, nx, errJp, "acousticwave_errJp", r"$L_1(J_{+})$")
-    makeErrPlot(t, nx, errJm, "acousticwave_errJm", r"$L_1(J_{-})$")
+    makeErrPlot(t, nx, errRho, "entropywave_errRho", r"$L_1(\rho)$")
+    makeErrPlot(t, nx, errP, "entropywave_errP", r"$L_1(P)$")
+    makeErrPlot(t, nx, errVx, "entropywave_errVx", r"$L_1(v_x)$")
+    makeErrPlot(t, nx, errVy, "entropywave_errVy", r"$L_1(v_y)$")
+    makeErrPlot(t, nx, errVz, "entropywave_errVz", r"$L_1(v_z)$")
+    makeErrPlot(t, nx, errS, "entropywave_errS", r"$L_1(P/\rho^\gamma)$")
+    makeErrPlot(t, nx, errJp, "entropywave_errJp", r"$L_1(J_{+})$")
+    makeErrPlot(t, nx, errJm, "entropywave_errJm", r"$L_1(J_{-})$")
 
 
 def makeErrPlot(t, nx, err, name, label):
