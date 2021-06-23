@@ -16,13 +16,13 @@ void initial( double * prim , double * x ){
 
    double omega, disk, angular_v, radial_v;
    double w, R0, l0,rho0, rhoatm, patm, l, e, phip;
-   w = 0.1;
+   w = 0.05;
    l0 = 0.8;
    patm = 1.0e-3;
    rhoatm = 1.0e-3;
    rho0 = 1 - rhoatm;
 
-   e = 0.3;
+   e = 0.5;
    phip = 2*(22.0/7.0);
    l = r*(1+e*cos(phi-phip));
    
