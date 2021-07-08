@@ -78,6 +78,15 @@ double get_om( const double *x ){
     else if(enOmChoice == 4)
         om =  10.*exp(-.5*r*r)-Omega0;
 
+    else if(enOmChoice == 5)
+    {
+        //circular motion in potential "C" from Wegg 2012, ApJ 749
+        double sq6 = sqrt(6);
+        double Alpha = -4*(2.0+sq6)/3;
+        double Rx = M*(4.0*sq6 - 9);
+        double Ry = -4*M*(2*sq6 - 3.0)/3.0;
+        om = sqrt(Alpha*M/(r*r*r) + (1-Alpha)*M/((r-Rx)*(r-Rx)*r) + 2*M*Ry/(r*r*r*r));
+    }
     else
         om = 0.0-Omega0;
 
