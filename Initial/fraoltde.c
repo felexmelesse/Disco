@@ -26,7 +26,7 @@ void initial( double * prim , double * x ){
    M = 1;
    //rp = 4;
    //ra = 20;
-   w = 0.01;
+   w = 0.005;
    //l0 = 0.8;
    patm = 1.0e-5;
    rhoatm = 1.0e-3;
@@ -58,11 +58,12 @@ void initial( double * prim , double * x ){
    
 //   disk = rhoatm + (rho0*exp(-((l-l0)*(l-l0))/(2*w*w)));
    //printf("phip %f, phi %f, phi0 %f\n",phip, phi, phi0);
+   printf("%lf\n",a_mb);
    
    if ((r > r_out) && (phi0 - 5*w < phi) && (phi < phi0 + 5*w)){
 // In the stream
       rho = 1;
-      p = 1.0e-4;
+      p = 1.0e-5;
       vr = radial_v;
       omega = angular_v;
       X = 1;
