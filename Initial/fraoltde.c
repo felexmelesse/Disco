@@ -8,7 +8,7 @@ void setICparams( struct domain * theDomain ){
 }
 
 void initial( double * prim , double * x ){
-   
+
    double r   = x[0];
    double phi = x[1];
 
@@ -41,11 +41,11 @@ void initial( double * prim , double * x ){
    e = e_mb;
    l = a*(1-(e*e));
    phip = M_PI;
-   
+
 
    J = sqrt(Gm_s*l);
    E = -0.5*(1-(e*e))*(Gm_s/l);
-   
+
    R0 = l/(1+(e*cos(phi-phip)));
    phi0 = phip - acos(((l/r)-1)/e); // Multi by (-ve) to make sure the gas enters the grid instaed of exit
    if(phi0 - phi < -M_PI)
@@ -53,13 +53,13 @@ void initial( double * prim , double * x ){
    if(phi0-phi > M_PI)
       phi0 -= 2*M_PI;
    angular_v = (sqrt(Gm_s*l)/(r*r));
-   
+
    radial_v = ((r*r)/l)*(e*sin(phi-phip))*angular_v;
-   
+
 //   disk = rhoatm + (rho0*exp(-((l-l0)*(l-l0))/(2*w*w)));
    //printf("phip %f, phi %f, phi0 %f\n",phip, phi, phi0);
-   printf("%lf\n",a_mb);
-   
+
+
    if ((r > r_out) && (phi0 - 5*w < phi) && (phi < phi0 + 5*w)){
 // In the stream
       rho = 1;
@@ -67,16 +67,16 @@ void initial( double * prim , double * x ){
       vr = radial_v;
       omega = angular_v;
       X = 1;
-   }  
+   }
    else{
-// In the atm 
+// In the atm
       rho = rhoatm;
       p = patm;
-      vr = 0;   
-      omega = sqrt(Gm_s/(r*r*r));  
+      vr = 0;
+      omega = sqrt(Gm_s/(r*r*r));
       X = 0;
    }
-   
+
 
 //   omega = Om*exp(-.5*r*r/R/R);
 //   Pp = P0 - .5*rho*Om*Om*R*R*exp(-r*r/R/R);
