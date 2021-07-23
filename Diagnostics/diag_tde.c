@@ -49,7 +49,7 @@ void get_diagnostics( double * x , double * prim , double * Qrz,
    Qrz[7] *= rho;
 
    struct planet * pl = theDomain->thePlanets;
-   double ebind = 0.5*(vr*vr + vp*vp) - phigrav( pl.M , r , 0.0 , pl.type);
+   double ebind = 0.5*(vr*vr + vp*vp) - phigrav( pl[0].M , r , 0.0 , pl[0].type);
    double e2 = 1.0 + 2*ebind*vp*vp;
    if (e2 < 0) e2 = 0;
    Qrz[8] = rho*sqrt(e2);
