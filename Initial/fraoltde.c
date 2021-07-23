@@ -22,11 +22,11 @@ void initial( double * prim , double * x ){
    //J = 3;
    M_star = 1.0e-6;
    R_star = 0.47;
-   beta = 5;
+   beta = 4;
    M = 1;
    //rp = 4;
    //ra = 20;
-   w = 0.005;
+   w = 0.0025;
    //l0 = 0.8;
    patm = 1.0e-5;
    rhoatm = 1.0e-3;
