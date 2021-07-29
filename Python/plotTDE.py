@@ -36,7 +36,15 @@ def analyzecheCkpoint(file):
     
     J = rho*(omega*r*r)
 
-    energy = (ke/rho) - (GM/r)
+    sq6 = np.sqrt(6)
+    Alpha = -4*(2.0+sq6)/3
+    Rx = GM*(4.0*sq6 - 9)
+    Ry = -4*GM*(2*sq6 - 3.0)/3.0
+    Phi = Alpha*GM/r + (1-Alpha)*GM/(r-Rx) + GM*Ry/(r*r)
+    energy = (ke/rho)- Phi
+
+#    energy = (ke/rho) - (GM/r)
+
     j = J/rho
    
     e2 = 1 + (2*j*j*energy)/(GM*GM)
