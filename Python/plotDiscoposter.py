@@ -10,6 +10,15 @@ import discopy.util as util
 import discopy.plot as plot
 import discopy.geom as geom
 
+C = 299792458.0
+G = 6.674e-11
+M_solar = 1.989e30
+M_BH = 1e6*M_solar
+tg_sec = G*M_BH/(C*C*C)
+Rg_meter = C*tg_sec
+Rg_AU = 6.6846e-12*Rg_meter
+t_disk = 1e4
+
 def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
                     bounds=None, rmax=None, planets=False, k=None):
     
@@ -29,10 +38,12 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
     vz = prim[:,4]
     GM = 1
 
+    r = r/Rg_AU
+    rjph = rjph/Rg_AU
     name = (file.stem).split("_")[-1]
     fig, ax = plt.subplots(1,1, figsize=(8,6))
 
-    plot.plotZSlice(fig, ax, rjph, piph+np.pi, r, rho, z, r"$\rho$",
+    plot.plotZSlice(fig, ax, rjph, piph+np.pi/2, r, rho, z, r"$\rho$",
                                 pars, opts,log=True)
     figname = "Density_%s.png" % name
     print("saving",figname)
