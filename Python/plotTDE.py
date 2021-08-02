@@ -12,6 +12,7 @@ import discopy.geom as geom
 from matplotlib import cm
 from matplotlib.colors import Normalize as norm
 
+plt.rcParams.update({'font.size': 26})
 C = 299792458.0
 G = 6.674e-11
 M_solar = 1.989e30
@@ -99,10 +100,11 @@ if __name__=="__main__":
         color = cmap(i/(len(sys.argv[1:])-1))
         ax_e.plot(R*Rg_AU,ecc_r,label = label, color = color)
         ax_rho.plot(R*Rg_AU,rho_r,label = label, color = color)
-        ax_H.plot(R*Rg_AU,HovrR_r,label = label, color = color)
+        #ax_H.plot(R*Rg_AU,HovrR_r,label = label, color = color)
         if t > t_disk: 
             ax_e_cut.plot(R*Rg_AU,ecc_r,label = label, color = color)
-    
+            ax_H.plot(R*Rg_AU,HovrR_r,label = label, color = color)
+
     fig_e.subplots_adjust(top = 0.95, bottom=0.05, left = 0.1, right = 0.8)
     cax = fig_e.add_axes([0.85,0.05,0.05, 0.9])
     cbar = plt.colorbar(cm.ScalarMappable(norm = norm(0.0, vmax = np.max(ts)), cmap=plt.get_cmap('plasma')), cax = cax)
@@ -117,7 +119,7 @@ if __name__=="__main__":
     fig_e.savefig(figname)
     plt.close(fig_e)
 
-    fig_rho.subplots_adjust(top = 0.95, bottom=0.05, left = 0.1, right = 0.8)
+    fig_rho.subplots_adjust(top = 0.95, bottom=0.15, left = 0.1, right = 0.825)
     cax = fig_rho.add_axes([0.85,0.05,0.05, 0.9])
     cbar = plt.colorbar(cm.ScalarMappable(norm = norm(0.0, vmax = np.max(ts)), cmap=plt.get_cmap('plasma')), cax = cax)
     cbar.set_label("Time (Hr)")
@@ -131,8 +133,8 @@ if __name__=="__main__":
     fig_rho.savefig(figname)
     plt.close(fig_rho)
 
-    fig_H.subplots_adjust(top = 0.95, bottom=0.05, left = 0.1, right = 0.8)
-    cax = fig_H.add_axes([0.85,0.05,0.05, 0.9])
+    fig_H.subplots_adjust(top = 0.95, bottom=0.10, left = 0.11, right = 0.825)
+    cax = fig_H.add_axes([0.85,0.10,0.05, 0.85])
     cbar = plt.colorbar(cm.ScalarMappable(norm = norm(0.0, vmax = np.max(ts)), cmap=plt.get_cmap('plasma')), cax = cax)
     cbar.set_label("Time (Hr)")
    
@@ -146,14 +148,14 @@ if __name__=="__main__":
     fig_H.savefig(figname)
     plt.close(fig_H)
 
-    fig_e_cut.subplots_adjust(top = 0.95, bottom=0.05, left = 0.1, right = 0.8)
-    cax = fig_e_cut.add_axes([0.85,0.05,0.05, 0.9])
+    fig_e_cut.subplots_adjust(top = 0.95, bottom=0.10, left = 0.11, right = 0.825)
+    cax = fig_e_cut.add_axes([0.85,0.10,0.05, 0.85])
     cbar = plt.colorbar(cm.ScalarMappable(norm = norm(0.0, vmax = np.max(ts)), cmap=plt.get_cmap('plasma')), cax = cax)
     cbar.set_label("Time (Hr)")
    
     #ax_e.legend()
     ax_e_cut.set_xlim(0,2)
-    ax_e_cut.set_ylim(0.8,1.1)
+    ax_e_cut.set_ylim(0.82,1.06)
     ax_e_cut.set_xlabel("R (AU)")
     ax_e_cut.set_ylabel("e")
     figname = "r_vs_e_cut_time.png"
