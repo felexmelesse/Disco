@@ -10,6 +10,8 @@ import discopy.util as util
 import discopy.plot as plot
 import discopy.geom as geom
 
+rho_min = 1e-5
+rho_max = 3
 C = 299792458.0
 G = 6.674e-11
 M_solar = 1.989e30
@@ -44,7 +46,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
     fig, ax = plt.subplots(1,1, figsize=(8,6))
 
     plot.plotZSlice(fig, ax, rjph, piph+np.pi/2, r, rho, z, r"$\rho$",
-                                pars, opts,log=True)
+                                pars, opts, log=True, vmin=rho_min, vmax=rho_max)
     figname = "Density_%s.png" % name
     print("saving",figname)
     fig.savefig(figname)
