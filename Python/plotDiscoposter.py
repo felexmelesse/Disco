@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import discopy.util as util
 import discopy.plot as plot
 import discopy.geom as geom
+import cmasher
 
 C = 299792458.0
 G = 6.674e-11
@@ -38,16 +39,19 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
     vz = prim[:,4]
     GM = 1
 
-    r = r/Rg_AU
-    rjph = rjph/Rg_AU
+    r = r*Rg_AU
+    rjph = rjph*Rg_AU
     name = (file.stem).split("_")[-1]
     fig, ax = plt.subplots(1,1, figsize=(8,6))
 
-    plot.plotZSlice(fig, ax, rjph, piph+np.pi/2, r, rho, z, r"$\rho$",
-                                pars, opts,log=True)
+    plot.plotZSlice(fig, ax, rjph, piph+np.pi/2, r, rho, z, r"$\Sigma$",
+                                pars, opts, log=True, cmap = plt.get_cmap('cmr.ember'))
+    
+    ax.set_xlabel("X (AU)")
+    ax.set_ylabel("Y (AU)")
     figname = "Density_%s.png" % name
     print("saving",figname)
-    fig.savefig(figname)
+    fig.savefig(figname,dpi=400)
     plt.close(fig)
 
 if __name__=="__main__":
