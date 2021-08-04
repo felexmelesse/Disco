@@ -11,6 +11,8 @@ import discopy.plot as plot
 import discopy.geom as geom
 import cmasher
 
+rho_min = 1e-5
+rho_max = 3
 C = 299792458.0
 G = 6.674e-11
 M_solar = 1.989e30
@@ -45,7 +47,7 @@ def plotCheckpoint(file, vars=None, logvars=None, noGhost=False, om=None,
     fig, ax = plt.subplots(1,1, figsize=(8,6))
 
     plot.plotZSlice(fig, ax, rjph, piph+np.pi/2, r, rho, z, r"$\Sigma$",
-                                pars, opts, log=True, cmap = plt.get_cmap('cmr.ember'))
+                                pars, opts, log=True, cmap = plt.get_cmap('cmr.ember'),vmin=rho_min, vmax=rho_max)
     
     ax.set_xlabel("X (AU)")
     ax.set_ylabel("Y (AU)")
