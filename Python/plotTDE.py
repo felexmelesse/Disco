@@ -140,7 +140,7 @@ if __name__=="__main__":
    
     
     #ax_H.legend()
-    ax_H.set_ylim(0,2)
+    ax_H.set_ylim(0,1)
     ax_H.set_xlabel("R (AU)")
     ax_H.set_ylabel("H/R")
     figname = "r_vs_HovrR_time.png"
